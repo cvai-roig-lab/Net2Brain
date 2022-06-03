@@ -80,7 +80,7 @@ Use the extracted features (activations) to generate a representational dissimil
 Our toolbox offers 3 different metrics for evaluating DNN RDMs and ROI RDMs. One is RSA, but also Weighted RSA and Searchlight Analysis. Select the evaluation metric along with DNNs from a certain dataset along with its brain ROIs for comparison. The function will return a list of results along with a plot that will be saved in the "eval" folder.
 CHANGE THE IMAGE!!!
 
-![Evaluation_Demo](./demo/evaluation_example.jpg)
+![Evaluation_Demo](./demo/evaluation_example.png)
 
 
 
