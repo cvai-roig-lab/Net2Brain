@@ -1,0 +1,39 @@
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Misc
+*.pth
+*.pth.tar
+*.pyc
+*.mp4
+
+*.mat
+/__pycache___
+*.dat
+.idea
+.git
+
+# Output folders
+/rdms
+/feats
+/output_data
+
+
+
+#/net2brain/tests/compare_files/to_be_tested_eval/
+#/net2brain/tests/compare_files/to_be_tested_eval/*.json
+/net2brain/tests/compare_files/to_be_tested_feats/
+/net2brain/tests/compare_files/to_be_tested_rdm/
+input_data/brain_data/78images/log.json

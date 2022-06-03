@@ -1,0 +1,15 @@
+[
+    {
+        "1_Day": "11.05.2022",
+        "2_Time": "15h49m31s",
+        "3_Networks": [
+            "standard_AlexNet"
+        ],
+        "4_Dataset": "78images",
+        "5_ROIs": [
+            "fmri_EVC_RDMs.npz",
+            "fmri_IT_RDMs.npz"
+        ],
+        "6_Metric": "RSA"
+    }
+]

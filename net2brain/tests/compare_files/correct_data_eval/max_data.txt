@@ -1,0 +1,3 @@
+['Dataset', 'Brain Region', 'Network', 'Layer', 'R²', 'Noise Ceiling %', 'Significance', 'Sem']
+['78images', 'fmri_EVC_RDMs', 'standard_AlexNet', 'features.8.npz', 0.0015959583378434567, 23.409177496002062, 0.006129771462884461, 0.0004951316313039529]
+['78images', 'fmri_IT_RDMs', 'standard_AlexNet', 'features.9.npz', 0.003419062888182656, 50.150087330983894, 0.002011714243021619, 0.0009034542770668774]
