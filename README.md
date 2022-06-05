@@ -23,7 +23,7 @@ To install net2brain, follow these steps:
 1. Clone this github repository in your local machine.
 You can use the following command in your terminal:
     ```bash
-    git clone https://USERNAME:PASSWORD@github.com/ToastyDom/Neural-Toolbox.git
+    git clone https://github.com/ToastyDom/Net2Brain.git
     ```
 2. Step into the directory of your local copy of net2brain:
     ```bash
@@ -78,7 +78,6 @@ Use the extracted features (activations) to generate a representational dissimil
 
 ## Evaluation
 Our toolbox offers 3 different metrics for evaluating DNN RDMs and ROI RDMs. One is RSA, but also Weighted RSA and Searchlight Analysis. Select the evaluation metric along with DNNs from a certain dataset along with its brain ROIs for comparison. The function will return a list of results along with a plot that will be saved in the "eval" folder.
-CHANGE THE IMAGE!!!
 
 ![Evaluation_Demo](./demo/evaluation_example.png)
 
