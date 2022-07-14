@@ -18,7 +18,7 @@ The program can be executed via CLI-Commands, a CLI-GUI, or via an intuitively d
 
 # Installation
 
-To install net2brain, follow these steps (or use our [Colab-Environment](## Google Colab Playground)):
+To install net2brain, follow these steps (or use our [Colab-Environment](#google-colab-playground) for faster usage):
 
 1. Clone this github repository in your local machine.
 You can use the following command in your terminal:
@@ -66,7 +66,7 @@ You can also use CLI Commands to call the functions like:
 ```bash
 python net2brain/toolbox_cli.py --commands
 ```
-A list of all commands can be found here.
+A list of all commands can be found [here](#cli-commands).
 
 You can then choose to execute one of the following options:
 
