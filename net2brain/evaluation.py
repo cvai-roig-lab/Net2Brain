@@ -127,7 +127,7 @@ class Plotting():
             if lnc_unc_dict[max(lnc_unc_dict)][1] != None:  # if we have noise ceiling
                 for k, brain_scan in enumerate(brain_data.keys()):
                     ax.fill_between((k - width / 2, k + width / 2), lnc_unc_dict[brain_scan][0],
-                                    lnc_unc_dict[brain_scan][1], color='gray')
+                                    lnc_unc_dict[brain_scan][1], color='gray', alpha=0.5)
 
 
             cleaned_layers = []
@@ -135,15 +135,13 @@ class Plotting():
             for counter, net_single in enumerate(networks):
                 cleaned_layers= cleaned_layers + layers[counter::len(networks)]
                 
-  
-                               
                 
             for counter, p in enumerate(ax.patches):
                 ax.annotate("*", (p.get_x() + p.get_width() / 2., p.get_height()),
                             ha='center', va='center', xytext=(0, 7), textcoords='offset points')
                 
                 ax.annotate(cleaned_layers[counter], (p.get_x() +
-                            p.get_width() / 2., p.get_height()/2), rotation = 90, fontsize=8)
+                            p.get_width() / 2., p.get_height()/2), rotation = 90, fontsize=10)
                 
 
             ax.set_title("Results of Evaluation")
