@@ -145,7 +145,7 @@ class Plotting():
                 
 
             ax.set_title("Results of Evaluation")
-            ax.legend(loc="upper right", prop={'size': 6})
+            ax.legend(loc="upper right", prop={'size': 10})
 
             plt.savefig(self.save_path + os.sep + "graph_" + dataset_name +
                         ".svg", bbox_inches="tight")  # save plot

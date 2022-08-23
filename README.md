@@ -1,5 +1,9 @@
-# Net2brain
+>This is the toolbox from the paper ["Net2Brain: A Toolbox to compare artificial vision models with human brain responses"](https://arxiv.org/abs/2208.09677) which has been presented at CCNeuro 2022.
+
+# Net2Brain
 ![GUI preview](./demo/GUI_Main.JPG)
+
+
 
 **Net2brain** is an easy-to-use framework that allows neuroscientists to
 compare human brain activity patterns in response to stimuli with the
@@ -225,7 +229,23 @@ Domenic Bersch, Kshitij Dwivedi, Martina Vilas, Radoslaw M. Cichy, Gemma Roig
 # Citing net2brain
 If you use net2brain in your research, please don't forget to cite us:
 ```bash
-    - 
+    @misc{https://doi.org/10.48550/arxiv.2208.09677,
+  doi = {10.48550/ARXIV.2208.09677},
+  
+  url = {https://arxiv.org/abs/2208.09677},
+  
+  author = {Bersch, Domenic and Dwivedi, Kshitij and Vilas, Martina and Cichy, Radoslaw M. and Roig, Gemma},
+  
+  keywords = {Computer Vision and Pattern Recognition (cs.CV), Artificial Intelligence (cs.AI), Neurons and Cognition (q-bio.NC), FOS: Computer and information sciences, FOS: Computer and information sciences, FOS: Biological sciences, FOS: Biological sciences},
+  
+  title = {Net2Brain: A Toolbox to compare artificial vision models with human brain responses},
+  
+  publisher = {arXiv},
+  
+  year = {2022},
+  
+  copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
+}
 ```
 
 
