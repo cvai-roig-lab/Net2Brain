@@ -5,7 +5,7 @@
 
 
 
-**Net2brain** is an easy-to-use framework that allows neuroscientists to
+**Net2Brain** is an easy-to-use framework that allows neuroscientists to
 compare human brain activity patterns in response to stimuli with the
 activation patterns of over 600 Deep Neural Networks (DNNs) processing the same
 stimuli.
@@ -22,24 +22,30 @@ The program can be executed via CLI-Commands, a CLI-GUI, or via an intuitively d
 
 # Installation
 
-To install net2brain, follow these steps (or use our [Colab-Environment](#google-colab-playground) for faster usage):
+To install Net2Brain, follow these steps (or use our [Colab-Environment](#google-colab-playground) for faster usage):
 
 1. Clone this github repository in your local machine.
 You can use the following command in your terminal:
     ```bash
     git clone https://github.com/ToastyDom/Net2Brain.git
     ```
-2. Step into the directory of your local copy of net2brain:
+2. Step into the directory of your local copy of Net2Brain:
     ```bash
     cd {your_path_to_net2brain}
     ```
-3. Install net2brain by running:
+3. In case you wish to create a virtual environment (Windows):
+    ```bash
+    pip install virtualenv
+    virtualenv --python . venv
+    .\venv\Scripts\activate
+    ```
+4. Install Net2Brain by running:
     ```bash
     pip install .
     ```
 
 > __NOTE__: we recommend that you use [conda enviroments](https://docs.conda.io/en/latest/)
- when installing net2brain.
+ when installing Net2Brain.
 
 
 ## Installing CLIP, VISSL and Detectron2
@@ -54,7 +60,7 @@ You can run net2brain in Google Colab for a quick demo, with the following steps
 
 # Usage
 
-You can use net2brain in your command line terminal by running:
+You can use Net2Brain in your command line terminal by running:
 
 ```bash
 python net2brain/toolbox_ui.py
@@ -166,7 +172,7 @@ The toolbox expects a numpy array in the form [ROI, subject, stimuli, stimuli] t
 
 # How to analyze your own dataset
 
-Net2brain includes 78 images from the LaMem dataset, which allows the user to 
+Net2Brain includes 78 images from the LaMem dataset, which allows the user to 
 quickly test the functionality of the toolbox, and intuitively demonstrates 
 where new data can be added for analysis.
 
@@ -214,38 +220,31 @@ python toolbox_cli.py --layers show --dnn standard-AlexNet
 
 # How to report a bug or suggest a feature
 
-We welcome new contributions to net2brain.
+We welcome new contributions to Net2Brain.
 If you find a bug or have ideas for a new feature, feel free to write an issue
 or submit pull requests yourself.
 
  
 
-# Contributors of net2brain
+# Contributors of Net2Brain
 ```bash
 Domenic Bersch, Kshitij Dwivedi, Martina Vilas, Radoslaw M. Cichy, Gemma Roig
 ```
 
 
-# Citing net2brain
-If you use net2brain in your research, please don't forget to cite us:
+# Citing Net2Brain
+If you use Net2Brain in your research, please don't forget to cite us:
 ```bash
-    @misc{https://doi.org/10.48550/arxiv.2208.09677,
-  doi = {10.48550/ARXIV.2208.09677},
-  
-  url = {https://arxiv.org/abs/2208.09677},
-  
-  author = {Bersch, Domenic and Dwivedi, Kshitij and Vilas, Martina and Cichy, Radoslaw M. and Roig, Gemma},
-  
-  keywords = {Computer Vision and Pattern Recognition (cs.CV), Artificial Intelligence (cs.AI), Neurons and Cognition (q-bio.NC), FOS: Computer and information sciences, FOS: Computer and information sciences, FOS: Biological sciences, FOS: Biological sciences},
-  
-  title = {Net2Brain: A Toolbox to compare artificial vision models with human brain responses},
-  
-  publisher = {arXiv},
-  
-  year = {2022},
-  
-  copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
-}
+@misc{https://doi.org/10.48550/arxiv.2208.09677,
+     doi = {10.48550/ARXIV.2208.09677},
+     url = {https://arxiv.org/abs/2208.09677},
+     author = {Bersch, Domenic and Dwivedi, Kshitij and Vilas, 
+     Martina and Cichy, Radoslaw M. and Roig, Gemma},
+     title = {Net2Brain: A Toolbox to compare artificial vision models 
+     with human brain responses},
+     publisher = {arXiv},
+     year = {2022},
+     copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}}
 ```
 
 
