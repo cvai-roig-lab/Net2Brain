@@ -114,9 +114,6 @@ MODEL_NODES = {'COCO-Detection_-_faster_rcnn_R_50_C4_1x.yaml': ['backbone'],
                'Detectron1-Comparisons_-_keypoint_rcnn_R_50_FPN_1x.yaml': ['backbone', 'backbone.bottom_up']}
          
 
-
-
-
 def configurator(model_name):
     """Detectron2 builds its model through configs. This function creates the config
 

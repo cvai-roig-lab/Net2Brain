@@ -3,13 +3,13 @@ import os.path as op
 import glob
 import scipy.io as sio
 import numpy as np
-from architectures.pytorch_models import MODELS as pymodels
-from architectures.timm_models import MODELS as timmmodels
-from architectures.torchhub_models import MODELS as torchmodels
-from architectures.unet_models import MODELS as unetmodels
-from architectures.yolo_models import MODELS as yolomodels
-from architectures.taskonomy_models import MODELS as taskonomymodels
-from architectures.slowfast_models import MODELS as pyvideomodels
+from net2brain.architectures.pytorch_models import MODELS as pymodels
+from net2brain.architectures.timm_models import MODELS as timmmodels
+from net2brain.architectures.torchhub_models import MODELS as torchmodels
+from net2brain.architectures.unet_models import MODELS as unetmodels
+from net2brain.architectures.yolo_models import MODELS as yolomodels
+from net2brain.architectures.taskonomy_models import MODELS as taskonomymodels
+from net2brain.architectures.slowfast_models import MODELS as pyvideomodels
 
 
 """Write down all relevant paths"""
@@ -77,19 +77,19 @@ AVAILABLE_NETWORKS = {'standard (' + str(len(pymodels)) + ')' : list(pymodels.ke
                      # 'yolo (' + str(len(yolomodels)) + ')': list(yolomodels.keys())}
                       
 if detectron_exist:
-    from architectures.detectron2_models import MODELS as detectronmodels
+    from net2brain.architectures.detectron2_models import MODELS as detectronmodels
     AVAILABLE_NETWORKS.update({'detectron2 (' + str(len(detectronmodels)) + ')': list(detectronmodels.keys())})
     
 if vissl_exist:
-    from architectures.vissl_models import MODELS as visslmodels
+    from net2brain.architectures.vissl_models import MODELS as visslmodels
     AVAILABLE_NETWORKS.update({'vissl (' + str(len(visslmodels)) + ')': list(visslmodels.keys())})
 
 if clip_exist:
-    from architectures.clip_models import MODELS as clipmodels
+    from net2brain.architectures.clip_models import MODELS as clipmodels
     AVAILABLE_NETWORKS.update({'clip (' + str(len(clipmodels)) + ')': list(clipmodels.keys())})
     
 if cornet_exist:
-    from architectures.cornet_models import MODELS as cornetmodels
+    from net2brain.architectures.cornet_models import MODELS as cornetmodels
     AVAILABLE_NETWORKS.update({'cornet (' + str(len(cornetmodels)) + ')': list(cornetmodels.keys())})
 
 
