@@ -101,6 +101,40 @@ def create_save_folder():
     return save_path
 
 
+
+def return_all_models():
+    """Returns all available models
+    """
+    return AVAILABLE_NETWORKS
+
+def return_all_netsets():
+    """Returns all available netsets
+    """
+    return list(AVAILABLE_NETWORKS.keys())
+
+def return_models(netset):
+    """Returns all models within a set netset
+    Args:
+        netset (str): The name of the netset
+    """
+    if netset in list(AVAILABLE_NETWORKS.keys()):
+        return AVAILABLE_NETWORKS[netset]
+    else:
+        raise KeyError(f"This netset '{netset}' is not available. Available are", list(AVAILABLE_NETWORKS.keys()))
+
+def find_like(name):
+    """Finds networks which have the given name within the model name.
+    Way to find models within the model zoo
+
+    Args:
+        name (str): Name of model
+    """
+    for key, values in AVAILABLE_NETWORKS.items():
+        for model_names in values:
+            if name.lower() in model_names.lower():
+                print(f'{key}: {model_names}')
+
+
 class FeatureExtractor:
     """ This class is for generating features.  In the init function we select
     the relevant parameters as they are all different for each netset.
@@ -111,7 +145,7 @@ class FeatureExtractor:
     self.device = GPU or CUDA
     self.save_path = Location to save features
     self.module = Where is our network-data located?
-    self.layers = The layers we want to extract
+    self.layers_to_extract= The layers we want to extract
     self.extractor = If we want to use torchextractor or anything else
     self.feature_cleaner = Some extractions return the arrays in a weird format,
                            which is why some networks require a cleanup
@@ -119,20 +153,26 @@ class FeatureExtractor:
     self.preprocess = Function for preprocessing the images
     """
 
-    def __init__(self):
+    def __init__(self, model, device, netset=None, transforms=None):
         """Initiating FeatureExtractor Class
         No parameters needed as they will be set depending if the model is imported or loaded from the zoo
         """
-        self.model = None
-        self.model_name = None
-        self.device = None
-        self.module = None
-        self.layers = None
-        self.extractor = None
-        self.feature_cleaner = None
-        self.transforms = None
-        self.preprocess = None
-        self.save_path = None
+
+        if type(model) == str:
+            self.load_model_netset(model, netset, device)
+        else: 
+            self.load_model(model, device, transforms)
+
+        # self.model = None
+        # self.model_name = None
+        # self.device = None
+        # self.module = None
+        # self.layers_to_extract= None
+        # self.extractor = None
+        # self.feature_cleaner = None
+        # self.transforms = None
+        # self.preprocess = None
+        # self.save_path = None
 
         pass
 
@@ -156,38 +196,8 @@ class FeatureExtractor:
 
         self.transforms = transforms
         self.preprocess = self.model_preprocess
+        self.layers_to_extract = None
 
-    def return_all_models(self):
-        """Returns all available models
-        """
-        return AVAILABLE_NETWORKS
-
-    def return_all_netsets(self):
-        """Returns all available netsets
-        """
-        return list(AVAILABLE_NETWORKS.keys())
-
-    def return_models(self, netset):
-        """Returns all models within a set netset
-        Args:
-            netset (str): The name of the netset
-        """
-        if netset in list(AVAILABLE_NETWORKS.keys()):
-            return AVAILABLE_NETWORKS[netset]
-        else:
-            raise KeyError(f"This netset '{netset}' is not available. Available are", list(AVAILABLE_NETWORKS.keys()))
-
-    def find_like(self, name):
-        """Finds networks which have the given name within the model name.
-        Way to find models within the model zoo
-
-        Args:
-            name (str): Name of model
-        """
-        for key, values in AVAILABLE_NETWORKS.items():
-            for model_names in values:
-                if name.lower() in model_names.lower():
-                    print(f'{key}: {model_names}')
 
     def model_preprocess(self, image, model_name):
         """Default preprocessing function based on the ImageNet values
@@ -234,7 +244,7 @@ class FeatureExtractor:
 
             # retrieve model data
             self.model = self.module.MODELS[model_name](pretrained=True)
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx
@@ -249,7 +259,7 @@ class FeatureExtractor:
             # retrieve model data
             self.model = self.module.MODELS[model_name]('pytorch/vision:v0.10.0', self.model_name, pretrained=True)
             self.model.eval()
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx
@@ -267,7 +277,7 @@ class FeatureExtractor:
             checkpoint = torch.utils.model_zoo.load_url(self.module.MODEL_WEIGHTS[model_name])
             self.model.load_state_dict(checkpoint['state_dict'])
 
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx
@@ -281,7 +291,7 @@ class FeatureExtractor:
 
             # retrieve model data
             self.model = self.module.MODELS[model_name]('mateuszbuda/brain-segmentation-pytorch', self.model_name, in_channels=3, out_channels=1, init_features=32, pretrained=True)
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx
@@ -297,7 +307,7 @@ class FeatureExtractor:
 
             # retrieve model data
             self.model = self.module.MODELS[model_name](correct_model_name, device=self.device)[0]
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx_clip
@@ -318,7 +328,7 @@ class FeatureExtractor:
                 self.module.MODEL_WEIGHTS[model_name], map_location=self.device)
             self.model.load_state_dict(ckpt_data['state_dict'])
 
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx
@@ -336,7 +346,7 @@ class FeatureExtractor:
             self.model = self.module.MODELS[model_name](
                 'ultralytics/yolov5', 'yolov5l', pretrained=True, device=self.device)
 
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx
@@ -353,7 +363,7 @@ class FeatureExtractor:
             self.model = self.module.MODELS[model_name](config)
             self.model.eval()  # needs to be put into eval mode
 
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx
@@ -369,7 +379,7 @@ class FeatureExtractor:
             config = self.module.configurator(self.model_name)  # d2 works with configs
             self.model = self.module.MODELS[model_name](config.MODEL, config.OPTIMIZER)
 
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx
@@ -388,10 +398,10 @@ class FeatureExtractor:
             except:
                 self.model = self.module.MODELS[model_name](
                     model_name, pretrained=True)
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to extract features
-            if self.layers == []:
+            if self.layers_to_extract == []:
                 self.extractor = self.extract_features_timm
             else:
                 self.extractor = self.extract_features_tx
@@ -406,7 +416,7 @@ class FeatureExtractor:
             # retrieve model data
             self.model = self.module.MODELS[model_name]('facebookresearch/pytorchvideo', self.model_name, pretrained=True)
             self.model.eval()
-            self.layers = self.module.MODEL_NODES[model_name]
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
 
             # select way to exract features
             self.extractor = self.extract_features_tx
@@ -418,7 +428,7 @@ class FeatureExtractor:
         self.model.to(self.device)
         self.preprocess = self.module.preprocess
 
-        return self.model, self.layers
+        return self.model, self.layers_to_extract
 
     def no_clean(self, features):
         """Cleanup function after feature extraction: This one requires no cleanup.
@@ -521,7 +531,7 @@ class FeatureExtractor:
             (dict:tensors): Features in form of tensors
         """
 
-        extrator = tx.Extractor(self.model, self.layers)  # load model to extractor
+        extrator = tx.Extractor(self.model, self.layers_to_extract)  # load model to extractor
 
         _, features = extrator(image)  # extract layers with image
 
@@ -540,7 +550,7 @@ class FeatureExtractor:
         """
 
         # load model to extractor
-        extrator = tx.Extractor(self.model, self.layers)
+        extrator = tx.Extractor(self.model, self.layers_to_extract)
 
         image_data = image[0]
         tokenized_data = image[1]
@@ -599,7 +609,7 @@ class FeatureExtractor:
 
             np.savez(save_path, **features)  # safe data
 
-    def start_extraction(self, layers, dataset_path, save_path=None):
+    def extract_feats(self, dataset_path, save_path=None, layers_to_extract=None):
         """Function to start the feature extraction
 
         Args:
@@ -616,7 +626,10 @@ class FeatureExtractor:
             self.save_path = save_path
 
         # Store layers in class
-        self.layers = layers
+        if layers_to_extract is None:
+            pass
+        else:
+            self.layers_to_extract = layers_to_extract
 
         # Find all input files
         image_list = glob.glob(op.join(dataset_path, "*"))
