@@ -1,29 +1,45 @@
-import torch
-import numpy as np
-import torchextractor as tx
-from tqdm import tqdm
+from datetime import datetime
 import glob
 import os.path as op
 import os
-from datetime import datetime
 from PIL import Image
+
+import numpy as np
+import torch
 from torch.autograd import Variable as V
+import torchextractor as tx
 from torchvision import transforms as T
+from tqdm import tqdm
 
 import net2brain.architectures.pytorch_models as pymodule
-import net2brain.architectures.torchhub_models as torchmodule
+import net2brain.architectures.slowfast_models as pyvideo
 import net2brain.architectures.taskonomy_models as taskonomy
+import net2brain.architectures.timm_models as timm
+import net2brain.architectures.torchhub_models as torchmodule
 import net2brain.architectures.unet_models as unet
 import net2brain.architectures.yolo_models as yolo
-import net2brain.architectures.timm_models as timm
-import net2brain.architectures.slowfast_models as pyvideo
 
-AVAILABLE_NETWORKS = {'standard': list(pymodule.MODELS.keys()),
-                      'timm': list(timm.MODELS.keys()),
-                      'pytorch': list(torchmodule.MODELS.keys()),
-                      'unet': list(unet.MODELS.keys()),
-                      'taskonomy': list(taskonomy.MODELS.keys()),
-                      'pyvideo': list(pyvideo.MODELS.keys())}
+
+## Define relevant paths
+CURRENT_DIR = op.abspath(os.curdir)
+BASE_DIR = op.dirname(os.path.dirname(os.path.abspath(__file__)))
+PARENT_DIR = op.dirname(BASE_DIR)  # path to parent folder
+FEATS_DIR = op.join(PARENT_DIR, 'feats')
+GUI_DIR = op.join(BASE_DIR, 'helper', 'gui')
+INPUTS_DIR = op.join(PARENT_DIR, 'input_data')
+STIMULI_DIR = op.join(INPUTS_DIR, 'stimuli_data')
+RDMS_DIR = op.join(PARENT_DIR, 'rdms')
+BRAIN_DIR = op.join(INPUTS_DIR, 'brain_data')
+
+## Get available networks
+AVAILABLE_NETWORKS = {
+    'standard': list(pymodule.MODELS.keys()),
+    'timm': list(timm.MODELS.keys()),
+    'pytorch': list(torchmodule.MODELS.keys()),
+    'unet': list(unet.MODELS.keys()),
+    'taskonomy': list(taskonomy.MODELS.keys()),
+    'pyvideo': list(pyvideo.MODELS.keys())
+}
 
 try:
     import clip
@@ -52,82 +68,71 @@ except ModuleNotFoundError:
 try:
     import detectron2
     import architectures.detectron2_models as detectron2_models
-    AVAILABLE_NETWORKS.update({'detectron2': list(detectron2_models.MODELS.keys())})
+    AVAILABLE_NETWORKS.update(
+        {'detectron2': list(detectron2_models.MODELS.keys())}
+    )
 except ModuleNotFoundError:
     print("Detectron2 is not installed.")
     detectron_exist = False
 
-"""Write down all relevant paths"""
-CURRENT_DIR = op.abspath(os.curdir)
-BASE_DIR = op.dirname(os.path.dirname(os.path.abspath(__file__)))
-PARENT_DIR = op.dirname(BASE_DIR)  # path to parent folder
-FEATS_DIR = op.join(PARENT_DIR, 'feats')
-GUI_DIR = op.join(BASE_DIR, 'helper', 'gui')
-INPUTS_DIR = op.join(PARENT_DIR, 'input_data')
-STIMULI_DIR = op.join(INPUTS_DIR, 'stimuli_data')
-RDMS_DIR = op.join(PARENT_DIR, 'rdms')
-BRAIN_DIR = op.join(INPUTS_DIR, 'brain_data')
 
+def print_all_models():
+    """Returns available models.
 
-def ensure_directory(path):
-    """Method to ensure directory exists
-
-    Args:
-        path (str): path to folder to create
-    """
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-
-def create_save_folder():
-    """Creates folder to save the features in. They are structured after daytime
-
-    Returns:
-        save_path(str): Path to save folder
-    """
-    # Get current time
-    now = datetime.now()
-    now_formatted = now.strftime("%d.%m.%y %H:%M:%S")
-
-    # Replace : through -
-    log_time = now_formatted.replace(":", "-")
-
-    # Combine to path
-    save_path = f"feats/{log_time}"
-
-    # Create directory
-    ensure_directory(f"feats/{log_time}")
-
-    return save_path
-
-
-
-def return_all_models():
-    """Returns all available models
+    Returns
+    -------
+    dict
+        Available models by netset.
     """
     return AVAILABLE_NETWORKS
 
-def return_all_netsets():
-    """Returns all available netsets
+
+def print_all_netsets():
+    """Returns available netsets.
+
+    Returns
+    -------
+    list
+       Available netsets.
     """
     return list(AVAILABLE_NETWORKS.keys())
 
-def return_models(netset):
-    """Returns all models within a set netset
-    Args:
-        netset (str): The name of the netset
+
+def print_netset_models(netset):
+    """Returns available models of a given netset.
+
+    Parameters
+    ----------
+    netset : str
+        Name of netset.
+
+    Returns
+    -------
+    list
+        Available models.
+
+    Raises
+    ------
+    KeyError
+        If netset is not available in the toolbox.
     """
     if netset in list(AVAILABLE_NETWORKS.keys()):
         return AVAILABLE_NETWORKS[netset]
     else:
-        raise KeyError(f"This netset '{netset}' is not available. Available are", list(AVAILABLE_NETWORKS.keys()))
+        raise KeyError(
+            f"This netset '{netset}' is not available. Available netsets are", 
+            list(AVAILABLE_NETWORKS.keys())
+        )
 
-def find_like(name):
-    """Finds networks which have the given name within the model name.
-    Way to find models within the model zoo
 
-    Args:
-        name (str): Name of model
+def find_model_like(name):
+    """Find models containing the given string. Way of finding a model within \
+        the model zoo.
+
+    Parameters
+    ----------
+    name : str
+        Name models.
     """
     for key, values in AVAILABLE_NETWORKS.items():
         for model_names in values:
@@ -198,7 +203,6 @@ class FeatureExtractor:
         self.preprocess = self.model_preprocess
         self.layers_to_extract = None
 
-
     def model_preprocess(self, image, model_name):
         """Default preprocessing function based on the ImageNet values
 
@@ -215,9 +219,7 @@ class FeatureExtractor:
                                          T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
         image = Image.open(image)  # Open image
-
         image = V(self.transforms(image).unsqueeze(0))  # Apply transformation
-
         image = image.to(self.device)  # To Device
 
         return image
@@ -620,9 +622,9 @@ class FeatureExtractor:
 
         # Create save path and ensure save path exists
         if save_path is None:
-            self.save_path = create_save_folder()
+            self.save_path = _create_save_folder()
         else:
-            ensure_directory(save_path)
+            _ensure_directory(save_path)
             self.save_path = save_path
 
         # Store layers in class
@@ -652,3 +654,35 @@ class FeatureExtractor:
         """
         layers = tx.list_module_names(self.model)
         return layers
+
+
+def _ensure_directory(path):
+    """Ensure directory exists.
+
+    Args:
+        path (str): Path to folder that will be created.
+    """
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
+def _create_save_folder():
+    """Creates folder to save the features in. They are structured after daytime
+
+    Returns:
+        save_path(str): Path to save folder
+    """
+    # Get current time
+    now = datetime.now()
+    now_formatted = now.strftime("%d.%m.%y %H:%M:%S")
+
+    # Replace : through -
+    log_time = now_formatted.replace(":", "-")
+
+    # Combine to path
+    save_path = f"feats/{log_time}"
+
+    # Create directory
+    _ensure_directory(f"feats/{log_time}")
+
+    return save_path
