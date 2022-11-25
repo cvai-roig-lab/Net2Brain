@@ -41,9 +41,6 @@ MODEL_NODES = {'slow_r50': ['blocks.1', 'blocks.2', 'blocks.3', 'blocks.4', 'blo
                'x3d_xs': ['blocks.1', 'blocks.2', 'blocks.3', 'blocks.4', 'blocks.5']}
 
 
-
-
-
 class PackPathway(torch.nn.Module):
     """
     Transform for converting video frames as a list of tensors. 
