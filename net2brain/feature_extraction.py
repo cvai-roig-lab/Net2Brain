@@ -24,7 +24,7 @@ import net2brain.architectures.yolo_models as yolo
 CURRENT_DIR = op.abspath(os.curdir)
 BASE_DIR = op.dirname(os.path.dirname(os.path.abspath(__file__)))
 PARENT_DIR = op.dirname(BASE_DIR)  # path to parent folder
-FEATS_DIR = op.join(PARENT_DIR, 'feats')
+FEATURES_DIR = op.join(PARENT_DIR, 'features')
 GUI_DIR = op.join(BASE_DIR, 'helper', 'gui')
 INPUTS_DIR = op.join(PARENT_DIR, 'input_data')
 STIMULI_DIR = op.join(INPUTS_DIR, 'stimuli_data')
@@ -141,259 +141,172 @@ def find_model_like(name):
 
 
 class FeatureExtractor:
-    """ This class is for generating features.  In the init function we select
-    the relevant parameters as they are all different for each netset.
-    The relevant ones are:
-
-    self.model = The actual model
-    self.model_name = Model name as string
-    self.device = GPU or CUDA
-    self.save_path = Location to save features
-    self.module = Where is our network-data located?
-    self.layers_to_extract= The layers we want to extract
-    self.extractor = If we want to use torchextractor or anything else
-    self.feature_cleaner = Some extractions return the arrays in a weird format,
-                           which is why some networks require a cleanup
-    self.transforms = Some images may need to be transformed/preprocessed before entering the network
-    self.preprocess = Function for preprocessing the images
-    """
+    # self.model = The actual model
+    # self.model_name = Model name as string
+    # self.device = GPU or CUDA
+    # self.save_path = Location to save features
+    # self.module = Where is our network-data located?
+    # self.layers_to_extract= The layers we want to extract
+    # self._extractor = If we want to use torchextractor or anything else
+    # self._features_cleaner = Some extractions return the arrays in a weird format,
+    #                        which is why some networks require a cleanup
+    # self.transforms = Some images may need to be transformed/preprocessed before entering the network
+    # self.preprocess = Function for preprocessing the images
 
     def __init__(self, model, device, netset=None, transforms=None):
-        """Initiating FeatureExtractor Class
-        No parameters needed as they will be set depending if the model is imported or loaded from the zoo
+        """Initializes feature extractor.
+
+        Parameters
+        ----------
+        model : str or PyTorch model.
+            If string is provided, the model will be loaded from the model zoo.
+            Else the custom model will be used.
+        device : str
+            CPU or CUDA.
+        netset : str optional
+            NetSet from which to extract model, by default None.
+        transforms : Pytorch Transforms, optional
+            The transforms to be applied to the inputs, by default None.
         """
-
-        if type(model) == str:
-            self.load_model_netset(model, netset, device)
-        else: 
-            self.load_model(model, device, transforms)
-
-        # self.model = None
-        # self.model_name = None
-        # self.device = None
-        # self.module = None
-        # self.layers_to_extract= None
-        # self.extractor = None
-        # self.feature_cleaner = None
-        # self.transforms = None
-        # self.preprocess = None
-        # self.save_path = None
-
-        pass
-
-    def load_model(self, model, device, transforms=None):
-        """Load model into the extractor not from the model zoo
-
-        Args:
-            model (model): The actual model
-            device (torch): GPU or CUDA
-            transforms (Torch transforms, optional): Possible transformation to the input images Defaults to None.
-        """
-        # Save inputs
-        self.model = model
-        self.model_name = "Inserted model"
+        # Set device
         self.device = device
-        self.feats_path = None
+        
+        # Load model from netset or load custom model
+        if type(model) == str:
+            self.load_netset_model(model, netset)
+        else: 
+            self.load_model(model, transforms)
+
+    def load_model(self, model, transforms=None):
+        """Load a custom model.
+
+        Parameters
+        ----------
+        model : PyTorch model
+            Custom model.
+        transforms : PyTorch Transforms, optional
+             The transforms to be applied to the inputs, by default None.
+        """
+        self.model = model
         self.model.to(self.device)
-
-        self.extractor = self.extract_features_tx
-        self.feature_cleaner = self.no_clean
-
+        self.model_name = "Custom model"
+        
+        # Define preprocessing strategy
         self.transforms = transforms
-        self.preprocess = self.model_preprocess
+        self.preprocess = self.preprocess_image
+        
+        # Define feature extraction parameters
         self.layers_to_extract = None
+        self.features_path = None
+        self._extractor = self._extract_features_tx
+        self._features_cleaner = self._no_clean
 
-    def model_preprocess(self, image, model_name):
-        """Default preprocessing function based on the ImageNet values
+    def load_netset_model(self, model_name, netset):
+        """Load a model from the model zoo.
 
-        Args:
-            image (path): path to image
-            model_name (str): model name, not needed in this case, only needed with models from model zoo
-
-        Returns:
-            _type_: _description_
+        Parameters
+        ----------
+        model_name : str
+            Name of the model.
+        netset : str
+            Netset from which to extract the model.
         """
-        if self.transforms is None:
-            self.transforms = T.Compose([T.Resize((224, 224)),
-                                         T.ToTensor(),
-                                         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-
-        image = Image.open(image)  # Open image
-        image = V(self.transforms(image).unsqueeze(0))  # Apply transformation
-        image = image.to(self.device)  # To Device
-
-        return image
-
-    def load_model_netset(self, model_name, netset, device):
-        """Function to load a model from our modelzoo
-
-        Args:
-            model_name (str): Name of model
-            netset (str): Name of netset
-            device (torch): CPU or CUDA
-
-        Returns:
-            model (torch): The actual model
-            layers (list): List of proposed layers to extract
-        """
-
         self.model_name = model_name
 
         if netset == "standard":
-
-            # select module
             self.module = pymodule
-
-            # retrieve model data
             self.model = self.module.MODELS[model_name](pretrained=True)
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to exract features
-            self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.no_clean
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._no_clean
 
         elif netset == 'pytorch':
-
             self.module = torchmodule
-
-            # retrieve model data
-            self.model = self.module.MODELS[model_name]('pytorch/vision:v0.10.0', self.model_name, pretrained=True)
+            self.model = self.module.MODELS[model_name](
+                'pytorch/vision:v0.10.0', self.model_name, pretrained=True
+            )
             self.model.eval()
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to exract features
-            self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.torch_clean
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._torch_clean
 
         elif netset == 'taskonomy':
-
             self.module = taskonomy
-
-            # retrieve model data
             self.model = self.module.MODELS[model_name](eval_only=True)
-            # Load Weights
-            checkpoint = torch.utils.model_zoo.load_url(self.module.MODEL_WEIGHTS[model_name])
+            checkpoint = torch.utils.model_zoo.load_url(
+                self.module.MODEL_WEIGHTS[model_name]
+            ) # Load weights
             self.model.load_state_dict(checkpoint['state_dict'])
-
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to exract features
-            self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.no_clean
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._no_clean
 
         elif netset == 'unet':
-
             self.module = unet
-
-            # retrieve model data
-            self.model = self.module.MODELS[model_name]('mateuszbuda/brain-segmentation-pytorch', self.model_name, in_channels=3, out_channels=1, init_features=32, pretrained=True)
+            self.model = self.module.MODELS[model_name](
+                'mateuszbuda/brain-segmentation-pytorch', self.model_name, 
+                in_channels=3, out_channels=1, init_features=32, 
+                pretrained=True
+            )
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to exract features
-            self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.no_clean
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._no_clean
 
         elif netset == 'clip':
-
             self.module = clip_models
-
             correct_model_name = self.model_name.replace("_-_", "/")
-
-            # retrieve model data
-            self.model = self.module.MODELS[model_name](correct_model_name, device=self.device)[0]
+            self.model = self.module.MODELS[model_name](
+                correct_model_name, device=self.device
+            )[0]
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to exract features
-            self.extractor = self.extract_features_tx_clip
-
-            # select way to clean features
-            self.feature_cleaner = self.no_clean
+            self._extractor = self._extract_features_tx_clip
+            self._features_cleaner = self._no_clean
 
         elif netset == 'cornet':
-
             self.module = cornet_models
-
-            # retrieve model data
             self.model = self.module.MODELS[model_name]()
-            self.model = torch.nn.DataParallel(self.model)  # turn into DataParallel
-
-            # Load Weights
+            self.model = torch.nn.DataParallel(self.model)
             ckpt_data = torch.utils.model_zoo.load_url(
-                self.module.MODEL_WEIGHTS[model_name], map_location=self.device)
+                self.module.MODEL_WEIGHTS[model_name], map_location=self.device
+            ) # Load weights
             self.model.load_state_dict(ckpt_data['state_dict'])
-
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to exract features
-            self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.CORnet_RT_clean
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._CORnet_RT_clean
 
         elif netset == 'yolo':
-
             # TODO: ONLY WORKS ON CUDA YET - NEEDS CLEANUP
-
             self.module = yolo
-
-            # retrieve model data
             self.model = self.module.MODELS[model_name](
-                'ultralytics/yolov5', 'yolov5l', pretrained=True, device=self.device)
-
+                'ultralytics/yolov5', 'yolov5l', pretrained=True, 
+                device=self.device
+            )
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to exract features
-            self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.no_clean
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._no_clean
 
         elif netset == 'detectron2':
-
             self.module = detectron2_models
-
-            # retrieve model data
-            config = self.module.configurator(self.model_name)  # d2 works with configs
+            config = self.module.configurator(self.model_name)
             self.model = self.module.MODELS[model_name](config)
-            self.model.eval()  # needs to be put into eval mode
-
+            self.model.eval()
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to exract features
-            self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.detectron_clean
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._detectron_clean
 
         elif netset == 'vissl':
-
             self.module = vissl_models
-
-            # retrieve model data
-            config = self.module.configurator(self.model_name)  # d2 works with configs
-            self.model = self.module.MODELS[model_name](config.MODEL, config.OPTIMIZER)
-
+            config = self.module.configurator(self.model_name)
+            self.model = (
+                self.module.MODELS[model_name]
+                (config.MODEL, config.OPTIMIZER)
+            )
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to exract features
-            self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.no_clean
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._no_clean
 
         elif netset == "timm":
-
             self.module = timm
-
-            # retrieve model data
             try:
                 self.model = self.module.MODELS[model_name](
                     model_name, pretrained=True, features_only=True)
@@ -401,39 +314,112 @@ class FeatureExtractor:
                 self.model = self.module.MODELS[model_name](
                     model_name, pretrained=True)
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-
-            # select way to extract features
             if self.layers_to_extract == []:
-                self.extractor = self.extract_features_timm
+                self._extractor = self._extract_features_timm
             else:
-                self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.no_clean
+                self._extractor = self._extract_features_tx
+            self._feature_cleaner = self._no_clean
 
         elif netset == 'pyvideo':
-
             self.module = pyvideo
-
-            # retrieve model data
-            self.model = self.module.MODELS[model_name]('facebookresearch/pytorchvideo', self.model_name, pretrained=True)
+            self.model = self.module.MODELS[model_name](
+                'facebookresearch/pytorchvideo', self.model_name, 
+                pretrained=True
+            )
             self.model.eval()
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._slowfast_clean
 
-            # select way to exract features
-            self.extractor = self.extract_features_tx
-
-            # select way to clean features
-            self.feature_cleaner = self.slowfast_clean
-
-        self.device = device
         self.model.to(self.device)
         self.preprocess = self.module.preprocess
 
-        return self.model, self.layers_to_extract
+    def preprocess_image(self, image):
+        """Default preprocessing based on ImageNet standard training.
 
-    def no_clean(self, features):
-        """Cleanup function after feature extraction: This one requires no cleanup.
+        Parameters
+        ----------
+        image : str
+            Path to the image to be preprocessed.
+
+        Returns
+        -------
+        PyTorch Tensor
+            Preprocessed image.
+        """
+        if self.transforms is None:
+            self.transforms = T.Compose([
+                T.Resize((224, 224)),
+                T.ToTensor(),
+                T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ])
+        image = Image.open(image)
+        image = V(self.transforms(image).convert('RGB').unsqueeze(0))
+        image = image.to(self.device)
+        return image
+
+    def _extract_features_tx(self, image):
+        """Extract features with torch extractor.
+
+        Parameters
+        ----------
+        image : Torch Tensor
+            Preprocessed image.
+
+        Returns
+        -------
+        dict of Torch Tensors
+            Features by layer.
+        """
+        extractor = tx.Extractor(self.model, self.layers_to_extract)
+        _, features = extractor(image)
+        features = self._features_cleaner(features)
+        return features
+
+    def _extract_features_tx_clip(self, image):
+        """Extract CLIP features with torch extractor.
+
+        Parameters
+        ----------
+        image : Torch Tensor
+            Preprocessed image.
+
+        Returns
+        -------
+        dict of Torch Tensors
+            Features by layer.
+        """
+        extractor = tx.Extractor(self.model, self.layers_to_extract)
+        image_data = image[0]
+        tokenized_data = image[1]
+        _, features = extractor(image_data, tokenized_data)
+        features = self._features_cleaner(features)
+        return features
+
+    def _extract_features_timm(self, image):
+        """Extract features with timm.
+
+        Parameters
+        ----------
+        image : Torch Tensor
+            Preprocessed image.
+
+        Returns
+        -------
+        dict of Torch Tensors
+            Features by layer.
+        """
+        features = self.model(image)
+        # Convert the features into a dict because timm extractor returns a 
+        # list of tensors
+        converted_features = {}
+        for counter, feature in enumerate(features):
+            converted_features[f"feature {str(counter+1)}"] = feature.data.cpu()
+        features = self._features_cleaner(converted_features)
+        return converted_features
+
+    def _no_clean(self, features):
+        """Cleanup after feature extraction: This one requires no cleanup.
         Just put it on cpu in case it isn't yet!
 
         Args:
@@ -442,10 +428,9 @@ class FeatureExtractor:
         Returns:
             (dict:tensors): dictionary of tensors
         """
-
         return {key: value.data.cpu() for key, value in features.items()}
 
-    def torch_clean(self, features):
+    def _torch_clean(self, features):
         """Cleanup function after feature extraction: This one contains subdictionaries which need to be eliminated
 
         Args:
@@ -454,17 +439,15 @@ class FeatureExtractor:
         Returns:
             (dict:tensors): dictionary of tensors
         """
-
         new_features = {}
         for key, value in features.items():
             try:
                 new_features[key] = value["out"].data.cpu()
             except:
                 new_features[key] = value.data.cpu()
-
         return new_features
 
-    def detectron_clean(self, features):
+    def _detectron_clean(self, features):
         """Cleanup function after feature extraction: This one contains subdictionaries which need to be eliminated
 
         Args:
@@ -480,7 +463,7 @@ class FeatureExtractor:
                 clean_dict.update({key: subdict[key].cpu()})
         return clean_dict
 
-    def CORnet_RT_clean(self, features):
+    def _CORnet_RT_clean(self, features):
         """Cleanup function after feature extraction: The RT-Model contains subdirectories
 
         Args:
@@ -501,7 +484,7 @@ class FeatureExtractor:
         else:
             return {key: value.cpu() for key, value in features.items()}
 
-    def slowfast_clean(self, features):
+    def _slowfast_clean(self, features):
         """Cleanup function after feature extraction: Some features have two values (list)
 
         Args:
@@ -522,69 +505,6 @@ class FeatureExtractor:
                 clean_dict.update({A_key: subtuple.cpu()})
 
         return clean_dict
-
-    def extract_features_tx(self, image):
-        """Function to extract features with torchextractor
-
-        Args:
-            image (PIL): image in PIL format
-
-        Returns:
-            (dict:tensors): Features in form of tensors
-        """
-
-        extrator = tx.Extractor(self.model, self.layers_to_extract)  # load model to extractor
-
-        _, features = extrator(image)  # extract layers with image
-
-        features = self.feature_cleaner(features)
-
-        return features
-
-    def extract_features_tx_clip(self, image):
-        """Function to extract features with torchextractor. CLIP needs text input which we chose to be random.
-
-        Args:
-            image (PIL): image in PIL format
-
-        Returns:
-            (dict:tensors): Features in form of tensors
-        """
-
-        # load model to extractor
-        extrator = tx.Extractor(self.model, self.layers_to_extract)
-
-        image_data = image[0]
-        tokenized_data = image[1]
-
-        _, features = extrator(image_data, tokenized_data)  # extract layers with image, and tokenized text
-
-        features = self.feature_cleaner(features)
-
-        return features
-
-    def extract_features_timm(self, image):
-        """Function to extract features with timm
-
-        Args:
-            image (PIL): image in PIL format
-
-        Returns:
-            (dict:tensors): Features in form of tensors
-        """
-
-        features = self.model(image)
-
-        converted_features = {}
-
-        # We need to convert the features into a dict, because timm returns a list of tensors1
-
-        for counter, feature in enumerate(features):
-            converted_features["feature " + str(counter + 1)] = feature.data.cpu()
-
-        features = self.feature_cleaner(converted_features)
-
-        return converted_features
 
     def extract_from_images(self, image_list):
         """Function to loop over all our images, extract features and save them as .npz
@@ -611,7 +531,7 @@ class FeatureExtractor:
 
             np.savez(save_path, **features)  # safe data
 
-    def extract_feats(self, dataset_path, save_path=None, layers_to_extract=None):
+    def extract(self, dataset_path, save_path=None, layers_to_extract=None):
         """Function to start the feature extraction
 
         Args:
@@ -680,9 +600,9 @@ def _create_save_folder():
     log_time = now_formatted.replace(":", "-")
 
     # Combine to path
-    save_path = f"feats/{log_time}"
+    save_path = f"features/{log_time}"
 
     # Create directory
-    _ensure_directory(f"feats/{log_time}")
+    _ensure_directory(f"features/{log_time}")
 
     return save_path
