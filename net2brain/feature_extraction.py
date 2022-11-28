@@ -2,6 +2,7 @@ from datetime import datetime
 import glob
 import os.path as op
 import os
+from pathlib import Path
 from PIL import Image
 
 import numpy as np
@@ -168,11 +169,13 @@ class FeatureExtractor:
         transforms : Pytorch Transforms, optional
             The transforms to be applied to the inputs, by default None.
         """
-        # Set device
+        # Set model and device
         self.device = device
         
         # Load model from netset or load custom model
         if type(model) == str:
+            if netset == None:
+                raise NameError("netset must be specified")
             self.load_netset_model(model, netset)
         else: 
             self.load_model(model, transforms)
@@ -431,7 +434,8 @@ class FeatureExtractor:
         return {key: value.data.cpu() for key, value in features.items()}
 
     def _torch_clean(self, features):
-        """Cleanup function after feature extraction: This one contains subdictionaries which need to be eliminated
+        """Cleanup function after feature extraction: 
+        This one contains subdictionaries which need to be eliminated.
 
         Args:
             features (dict:tensors): dictionary of tensors
@@ -448,7 +452,8 @@ class FeatureExtractor:
         return new_features
 
     def _detectron_clean(self, features):
-        """Cleanup function after feature extraction: This one contains subdictionaries which need to be eliminated
+        """Cleanup function after feature extraction.
+        Detectron models contain subdictionaries which need to be eliminated.
 
         Args:
             features (dict:tensors): dictionary of tensors
@@ -464,7 +469,8 @@ class FeatureExtractor:
         return clean_dict
 
     def _CORnet_RT_clean(self, features):
-        """Cleanup function after feature extraction: The RT-Model contains subdirectories
+        """Cleanup function after feature extraction.
+        The RT-Model contains subdirectories.
 
         Args:
             features (dict:tensors): dictionary of tensors
@@ -485,7 +491,8 @@ class FeatureExtractor:
             return {key: value.cpu() for key, value in features.items()}
 
     def _slowfast_clean(self, features):
-        """Cleanup function after feature extraction: Some features have two values (list)
+        """Cleanup function after feature extraction.
+        Some features have two values (list).
 
         Args:
             features (dict:tensors): dictionary of tensors
@@ -506,8 +513,43 @@ class FeatureExtractor:
 
         return clean_dict
 
+    def extract(self, dataset_path, save_path=None, layers_to_extract=None):
+        """Function to start the feature extraction
+
+        Args:
+            layers (list): list of layers to extract
+            dataset_path (path): path to dataset
+            save_path (path): Path where to save features. Defaults to None.
+        """
+
+        # Create save path and ensure save path exists
+        if save_path is None:
+            self.save_path = create_save_path()
+        else:
+            self.save_path = Path(save_path)
+            if not os.path.exists(save_path):
+                os.mkdir(save_path)
+
+        # Store layers in class
+        if layers_to_extract is None:
+            pass
+        else:
+            self.layers_to_extract = layers_to_extract
+
+        # Find all input files
+        image_list = glob.glob(op.join(dataset_path, "*"))
+        image_list.sort()
+
+        # If images are jpg, trigger the function
+        filetype = op.split(image_list[0])[-1].split(".")[1]
+        if filetype == "jpg":
+            self.extract_from_images(image_list)
+        else:
+            raise TypeError("Can only handle .jpg images for now")  
+            # TODO: Add .png and .mp4 video data
+
     def extract_from_images(self, image_list):
-        """Function to loop over all our images, extract features and save them as .npz
+        """Extract features from images and save them as .npz
 
         Args:
             image_list (list:str): List of paths to images
@@ -521,50 +563,17 @@ class FeatureExtractor:
             processsed_image = self.preprocess(image, self.model_name)
 
             # extract features
-            features = self.extractor(processsed_image)  # extract features
+            features = self._extractor(processsed_image)  
 
             # create save_path for file
-            save_path = op.join(self.save_path, filename + ".npz")  # create safe-path
+            save_path = op.join(self.save_path, filename + ".npz")
 
             # turn tensor into numpy array
-            features = {key: value.detach().numpy() for key, value in features.items()}
+            features = {
+                key: value.detach().numpy() for key, value in features.items()
+            }
 
             np.savez(save_path, **features)  # safe data
-
-    def extract(self, dataset_path, save_path=None, layers_to_extract=None):
-        """Function to start the feature extraction
-
-        Args:
-            layers (list): list of layers to extract
-            dataset_path (path): path to dataset
-            save_path (path): Path where to save features. Defaults to None.
-        """
-
-        # Create save path and ensure save path exists
-        if save_path is None:
-            self.save_path = _create_save_folder()
-        else:
-            _ensure_directory(save_path)
-            self.save_path = save_path
-
-        # Store layers in class
-        if layers_to_extract is None:
-            pass
-        else:
-            self.layers_to_extract = layers_to_extract
-
-        # Find all input files
-        image_list = glob.glob(op.join(dataset_path, "*"))
-        image_list.sort()
-
-        # get filetype
-        filetype = op.split(image_list[0])[-1].split(".")[1]
-
-        # If images are jpg, trigger the function
-        if filetype == "jpg":
-            self.extract_from_images(image_list)
-        else:
-            raise TypeError("Can only handle .jpg images for now")  # TODO: Add .png and .mp4 video data
 
     def get_all_layers(self):
         """Helping function to extract all possible layers from a model
@@ -576,33 +585,22 @@ class FeatureExtractor:
         return layers
 
 
-def _ensure_directory(path):
-    """Ensure directory exists.
+def create_save_path():
+    """ Creates folder to save the image features.
 
-    Args:
-        path (str): Path to folder that will be created.
+    Returns
+    -------
+    pathlib Path
+        Path to directory of features. Named after the current date in the
+        format "{year}_{month}_{day}_{hour}_{minute}"
     """
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-
-def _create_save_folder():
-    """Creates folder to save the features in. They are structured after daytime
-
-    Returns:
-        save_path(str): Path to save folder
-    """
-    # Get current time
+    # Get current time and format string accordingly
     now = datetime.now()
-    now_formatted = now.strftime("%d.%m.%y %H:%M:%S")
-
-    # Replace : through -
-    log_time = now_formatted.replace(":", "-")
-
-    # Combine to path
-    save_path = f"features/{log_time}"
+    now_formatted = f'{now.year}_{now.month}_{now.day}_{now.hour}_{now.minute}'
 
     # Create directory
-    _ensure_directory(f"features/{log_time}")
+    save_path = Path(f"features/{now_formatted}")
+    save_path.mkdir(parents=True, exist_ok=True)
 
     return save_path
+
