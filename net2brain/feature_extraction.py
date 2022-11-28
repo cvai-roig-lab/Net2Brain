@@ -513,6 +513,7 @@ class FeatureExtractor:
 
         return clean_dict
 
+
     def extract(self, dataset_path, save_path=None, layers_to_extract=None):
         """Function to start the feature extraction
 
@@ -527,13 +528,10 @@ class FeatureExtractor:
             self.save_path = create_save_path()
         else:
             self.save_path = Path(save_path)
-            if not os.path.exists(save_path):
-                os.mkdir(save_path)
+            self.save_path.mkdir(parents=True, exist_ok=True)
 
         # Store layers in class
-        if layers_to_extract is None:
-            pass
-        else:
+        if layers_to_extract != None:
             self.layers_to_extract = layers_to_extract
 
         # Find all input files
@@ -548,6 +546,7 @@ class FeatureExtractor:
             raise TypeError("Can only handle .jpg images for now")  
             # TODO: Add .png and .mp4 video data
 
+
     def extract_from_images(self, image_list):
         """Extract features from images and save them as .npz
 
@@ -556,16 +555,12 @@ class FeatureExtractor:
         """
 
         for image in tqdm(image_list):
-
-            filename = op.split(image)[-1].split(".")[0]  # get filename
-
-            # preprocess image
+            # preprocess image and extract features
             processsed_image = self.preprocess(image, self.model_name)
-
-            # extract features
             features = self._extractor(processsed_image)  
 
-            # create save_path for file
+            # create save_path for file TODO: do with pathlib
+            filename = op.split(image)[-1].split(".")[0]  # get filename
             save_path = op.join(self.save_path, filename + ".npz")
 
             # turn tensor into numpy array
@@ -573,7 +568,9 @@ class FeatureExtractor:
                 key: value.detach().numpy() for key, value in features.items()
             }
 
-            np.savez(save_path, **features)  # safe data
+            # Save data ## TODO: give option of tensor
+            np.savez(save_path, **features)
+
 
     def get_all_layers(self):
         """Helping function to extract all possible layers from a model
