@@ -1,11 +1,12 @@
+from collections import defaultdict
 from datetime import datetime
-import glob
 import os.path as op
 import os
 from pathlib import Path
 from PIL import Image
 
 import numpy as np
+from rsatoolbox.data.dataset import Dataset
 import torch
 from torch.autograd import Variable as V
 import torchextractor as tx
@@ -526,8 +527,9 @@ class FeatureExtractor:
             Path to the images to extract the features from. Images cneed to be
             .jpg or .png.
         save_format : str, optional
-            Format to save the features in. Can be 'npz' or 'pt', by default
-            'npz'.
+            Format to save the features in. Can be 'npz', 'pt' or 'datasaet',
+            by default 'npz'. If 'dataset', the features are saved in the
+            Dataset class format of the rsa toolbox.
         save_path : str or pathlib.Path, optional
             Path to save the features to. If None, the folder where the
             features are saved is named after the current date in the 
@@ -556,26 +558,30 @@ class FeatureExtractor:
         ]
         image_files.sort()
 
-        # If images are jpg, trigger the function
+        # Extract features from images
         if image_files != []:
-            self._extract_from_images(image_files)
+            fts = self._extract_from_images(image_files)
         else:
             raise ValueError(
                 "Could not find any .jpg or .png images in the given folder."
             )
 
-        return
+        return fts
 
 
     def _extract_from_images(self, image_files):
+        ## TODO: check no weird network names for saving
         
+        if self.save_format == 'dataset':
+            all_fts = defaultdict(list)
+
         for img in tqdm(image_files):
             
             # Preprocess image and extract features
             processsed_img = self.preprocess(img, self.model_name)
-            fts = self._extractor(processsed_img)  
+            fts = self._extractor(processsed_img)
 
-            # Save features
+            # Save features if npz or pt
             if self.save_format == 'npz':
                 fts = {k: v.detach().numpy() for k, v in fts.items()}
                 filename = self.save_path / f'{self.model_name}_{img.stem}.npz'
@@ -583,9 +589,27 @@ class FeatureExtractor:
             elif self.save_format == 'pt':
                 filename = self.save_path / f'{self.model_name}_{img.stem}.pt'
                 torch.save(fts, filename)
-            ## TODO: check no weird network names
+            # Add features to dictionary if dataset
+            elif self.save_format == 'dataset':
+                for l in fts.keys():
+                    all_fts[l].append(fts[l])
 
-        return
+        # Save and return features per layer in rsa toolbox format 
+        if self.save_format == 'dataset':
+            obs_imgs = {'images': np.array([i.stem for i in image_files])}
+            fts_datasets = {}
+            for l in all_fts.keys():
+                d = torch.flatten(torch.stack(all_fts[l]), start_dim=1)
+                fts_datasets[l] = Dataset(
+                    measurements=d.detach().numpy(),
+                    descriptors = {'dnn': self.model_name, 'layer': l},
+                    obs_descriptors = obs_imgs
+                )
+                filename = self.save_path / f'{self.model_name}_{l}.hdf5'
+                fts_datasets[l].save(filename)
+            return fts_datasets
+        else:
+            return
 
 
     def get_all_layers(self):
