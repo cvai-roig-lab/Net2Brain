@@ -526,7 +526,7 @@ class FeatureExtractor:
             Path to the images to extract the features from. Images cneed to be
             .jpg or .png.
         save_format : str, optional
-            Format to save the features in. Can be '.npz' or '.pt', by default
+            Format to save the features in. Can be 'npz' or 'pt', by default
             'npz'.
         save_path : str or pathlib.Path, optional
             Path to save the features to. If None, the folder where the
@@ -616,10 +616,3 @@ def create_save_path():
     save_path.mkdir(parents=True, exist_ok=True)
 
     return save_path
-
-
-path_images = '/Users/m_vilas/projects/Net2Brain/input_data/stimuli_data/78images'
-save_path = '/Users/m_vilas/test'
-
-fe = FeatureExtractor('ResNet50', 'cpu', 'standard')
-fe.extract(path_images, 'pt', save_path)
