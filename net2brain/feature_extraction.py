@@ -514,62 +514,78 @@ class FeatureExtractor:
         return clean_dict
 
 
-    def extract(self, dataset_path, save_path=None, layers_to_extract=None):
-        """Function to start the feature extraction
+    def extract(
+        self, dataset_path, save_format='npz', save_path=None, 
+        layers_to_extract=None
+    ):
+        """Compute feature extraction from image dataset.
 
-        Args:
-            layers (list): list of layers to extract
-            dataset_path (path): path to dataset
-            save_path (path): Path where to save features. Defaults to None.
+        Parameters
+        ----------
+        dataset_path : str or pathlib.Path
+            Path to the images to extract the features from. Images cneed to be
+            .jpg or .png.
+        save_format : str, optional
+            Format to save the features in. Can be '.npz' or '.pt', by default
+            'npz'.
+        save_path : str or pathlib.Path, optional
+            Path to save the features to. If None, the folder where the
+            features are saved is named after the current date in the 
+            format "{year}_{month}_{day}_{hour}_{minute}".
+        layers_to_extract : list, optional
+            List of layers to extract the features from. If None, use default
+            layers.       
+        
         """
-
-        # Create save path and ensure save path exists
+        # Define save parameters
+        self.save_format = save_format
         if save_path is None:
             self.save_path = create_save_path()
         else:
             self.save_path = Path(save_path)
             self.save_path.mkdir(parents=True, exist_ok=True)
 
-        # Store layers in class
+        # Define layers to extract
         if layers_to_extract != None:
             self.layers_to_extract = layers_to_extract
 
         # Find all input files
-        image_list = glob.glob(op.join(dataset_path, "*"))
-        image_list.sort()
+        image_files = [
+            i for i in Path(dataset_path).iterdir() 
+            if i.suffix in ['.jpg', '.png']
+        ]
+        image_files.sort()
 
         # If images are jpg, trigger the function
-        filetype = op.split(image_list[0])[-1].split(".")[1]
-        if filetype == "jpg":
-            self.extract_from_images(image_list)
+        if image_files != []:
+            self._extract_from_images(image_files)
         else:
-            raise TypeError("Can only handle .jpg images for now")  
-            # TODO: Add .png and .mp4 video data
+            raise ValueError(
+                "Could not find any .jpg or .png images in the given folder."
+            )
+
+        return
 
 
-    def extract_from_images(self, image_list):
-        """Extract features from images and save them as .npz
+    def _extract_from_images(self, image_files):
+        
+        for img in tqdm(image_files):
+            
+            # Preprocess image and extract features
+            processsed_img = self.preprocess(img, self.model_name)
+            fts = self._extractor(processsed_img)  
 
-        Args:
-            image_list (list:str): List of paths to images
-        """
+            # Save features
+            if self.save_format == 'npz':
+                fts = {k: v.detach().numpy() for k, v in fts.items()}
+                filename = self.save_path / f'{self.model_name}_{img.stem}.npz'
+                np.savez(filename, **fts)
+            elif self.save_format == 'pt':
+                filename = self.save_path / f'{self.model_name}_{img.stem}.pt'
+                torch.save(fts, filename)
+            ## TODO: check no weird network names
 
-        for image in tqdm(image_list):
-            # preprocess image and extract features
-            processsed_image = self.preprocess(image, self.model_name)
-            features = self._extractor(processsed_image)  
-
-            # create save_path for file TODO: do with pathlib
-            filename = op.split(image)[-1].split(".")[0]  # get filename
-            save_path = op.join(self.save_path, filename + ".npz")
-
-            # turn tensor into numpy array
-            features = {
-                key: value.detach().numpy() for key, value in features.items()
-            }
-
-            # Save data ## TODO: give option of tensor
-            np.savez(save_path, **features)
+        return
 
 
     def get_all_layers(self):
@@ -601,3 +617,9 @@ def create_save_path():
 
     return save_path
 
+
+path_images = '/Users/m_vilas/projects/Net2Brain/input_data/stimuli_data/78images'
+save_path = '/Users/m_vilas/test'
+
+fe = FeatureExtractor('ResNet50', 'cpu', 'standard')
+fe.extract(path_images, 'pt', save_path)
