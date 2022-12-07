@@ -1,13 +1,25 @@
+import pytest
 
-import sys
-sys.path.append(r'net2brain')
-import os
-from os import path as op
-from helper.helper import get_paths
-from feature_extraction import FeatureExtraction
-import filecmp
-import glob
+from net2brain.feature_extraction import FeatureExtractor
 
+
+@pytest.mark.parametrize(
+    "netset,model", [
+        ("standard","AlexNet"), ("timm", "vit_base_patch32_224_in21k"), 
+        ("pytorch", "deeplabv3_resnet101"), ("unet", "unet"),
+        ("taskonomy", "autoencoding"), ("pyvideo", "slowfast_r50"),
+        ('clip', 'RN50'), ("cornet", "cornet_z")
+
+    ]
+)
+def test_load_netset_model(netset, model):
+    fe = FeatureExtractor(model, netset)
+    assert fe.model == model
+    pass
+
+
+def test_extractor():
+    pass
 
 
 # def test_alexnet():

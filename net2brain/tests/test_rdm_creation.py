@@ -1,12 +1,12 @@
 
-import glob
-import filecmp
-import os
-import sys
-sys.path.append(r'net2brain')
-from rdm_generation import RDM
-from helper.helper import get_paths
-from os import path as op
+# import glob
+# import filecmp
+# import os
+# import sys
+# sys.path.append(r'net2brain')
+# from rdm_generation import RDM
+# from helper.helper import get_paths
+# from os import path as op
 
 # def test_rdm():
 #     """Write down all relevant paths"""
