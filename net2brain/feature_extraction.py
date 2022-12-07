@@ -22,6 +22,53 @@ import net2brain.architectures.unet_models as unet
 import net2brain.architectures.yolo_models as yolo
 
 
+## Get available networks
+AVAILABLE_NETWORKS = {
+    'standard': list(pymodule.MODELS.keys()),
+    'timm': list(timm.MODELS.keys()),
+    'pytorch': list(torchmodule.MODELS.keys()),
+    'unet': list(unet.MODELS.keys()),
+    'taskonomy': list(taskonomy.MODELS.keys()),
+    'pyvideo': list(pyvideo.MODELS.keys())
+}
+
+## TODO: don't import unless needed
+
+try:
+    #import clip
+    import net2brain.architectures.clip_models as clip_models
+    AVAILABLE_NETWORKS.update({'clip': list(clip_models.MODELS.keys())})
+except ModuleNotFoundError:
+    print("Clip models are not installed.")
+    clip_exist = False
+
+try:
+    #import cornet
+    import net2brain.architectures.cornet_models as cornet_models
+    AVAILABLE_NETWORKS.update({'cornet': list(cornet_models.MODELS.keys())})
+except ModuleNotFoundError:
+    print("CORnet models are not installed.")
+    cornet_exist = False
+
+try:
+    #import vissl
+    import net2brain.architectures.vissl_models as vissl_models
+    AVAILABLE_NETWORKS.update({'vissl': list(vissl_models.MODELS.keys())})
+except ModuleNotFoundError:
+    print("Vissl models are not installed")
+    vissl_exist = False
+
+try:
+    import detectron2
+    import net2brain.architectures.detectron2_models as detectron2_models
+    AVAILABLE_NETWORKS.update(
+        {'detectron2': list(detectron2_models.MODELS.keys())}
+    )
+except ModuleNotFoundError:
+    print("Detectron2 is not installed.")
+    detectron_exist = False
+
+
 ## Define relevant paths
 CURRENT_DIR = op.abspath(os.curdir)
 BASE_DIR = op.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,50 +80,6 @@ STIMULI_DIR = op.join(INPUTS_DIR, 'stimuli_data')
 RDMS_DIR = op.join(PARENT_DIR, 'rdms')
 BRAIN_DIR = op.join(INPUTS_DIR, 'brain_data')
 
-## Get available networks
-AVAILABLE_NETWORKS = {
-    'standard': list(pymodule.MODELS.keys()),
-    'timm': list(timm.MODELS.keys()),
-    'pytorch': list(torchmodule.MODELS.keys()),
-    'unet': list(unet.MODELS.keys()),
-    'taskonomy': list(taskonomy.MODELS.keys()),
-    'pyvideo': list(pyvideo.MODELS.keys())
-}
-
-try:
-    import clip
-    import architectures.clip_models as clip_models
-    AVAILABLE_NETWORKS.update({'clip': list(clip_models.MODELS.keys())})
-except ModuleNotFoundError:
-    print("Clip models are not installed.")
-    clip_exist = False
-
-try:
-    import cornet
-    import architectures.cornet_models as cornet_models
-    AVAILABLE_NETWORKS.update({'cornet': list(cornet_models.MODELS.keys())})
-except ModuleNotFoundError:
-    print("CORnet models are not installed.")
-    cornet_exist = False
-
-try:
-    import vissl
-    import architectures.vissl_models as vissl_models
-    AVAILABLE_NETWORKS.update({'vissl': list(vissl_models.MODELS.keys())})
-except ModuleNotFoundError:
-    print("Vissl models are not installed")
-    vissl_exist = False
-
-try:
-    import detectron2
-    import architectures.detectron2_models as detectron2_models
-    AVAILABLE_NETWORKS.update(
-        {'detectron2': list(detectron2_models.MODELS.keys())}
-    )
-except ModuleNotFoundError:
-    print("Detectron2 is not installed.")
-    detectron_exist = False
-
 
 def print_all_models():
     """Returns available models.
@@ -86,7 +89,12 @@ def print_all_models():
     dict
         Available models by netset.
     """
-    return AVAILABLE_NETWORKS
+    print("\n")
+    for key, values in AVAILABLE_NETWORKS.items():
+        print(f"NetSet: {key}")
+        print(f"Models: {[v for v in values]}")
+        print("\n")
+    return
 
 
 def print_all_netsets():
@@ -143,19 +151,10 @@ def find_model_like(name):
 
 
 class FeatureExtractor:
-    # self.model = The actual model
-    # self.model_name = Model name as string
-    # self.device = GPU or CUDA
-    # self.save_path = Location to save features
-    # self.module = Where is our network-data located?
     # self.layers_to_extract= The layers we want to extract
-    # self._extractor = If we want to use torchextractor or anything else
-    # self._features_cleaner = Some extractions return the arrays in a weird format,
-    #                        which is why some networks require a cleanup
-    # self.transforms = Some images may need to be transformed/preprocessed before entering the network
-    # self.preprocess = Function for preprocessing the images
+    ## TODO: define this here for all types or dont
 
-    def __init__(self, model, device, netset=None, transforms=None):
+    def __init__(self, model, netset=None, device='cpu', transforms=None):
         """Initializes feature extractor.
 
         Parameters
