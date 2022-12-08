@@ -2,6 +2,8 @@
 
 # Net2Brain 🧠
 
+> This is a Beta version of the toolbox. Expect many changes to the API!
+
 **Net2Brain** is an easy-to-use framework that allows neuroscientists to compare human brain activity patterns in response to visual stimuli with the activation patterns of over 600 Deep Neural Networks (DNNs) processing the same stimuli.
 
 Any dataset composed of either image or video files can be fed into the program
@@ -12,6 +14,9 @@ Analysis (RSA) ([Kriegeskorte et al., 2008](https://www.ncbi.nlm.nih.gov/pmc/art
 
 
 ## Installation
+
+> __NOTE__: we recommend that you use [conda enviroments](https://docs.conda.io/en/latest/)
+ when installing Net2Brain.
 
 To install Net2Brain, follow these steps:
 
@@ -24,19 +29,16 @@ You can use the following command in your terminal:
     ```bash
     cd {your_path_to_net2brain}
     ```
-3. In case you wish to create a virtual environment (Windows):
+<!-- 3. In case you wish to create a virtual environment (Windows):
     ```bash
     pip install virtualenv
     virtualenv --python . venv
     .\venv\Scripts\activate
-    ```
-4. Install Net2Brain by running:
+    ``` -->
+3. Install Net2Brain by running:
     ```bash
     pip install .
     ```
-
-> __NOTE__: we recommend that you use [conda enviroments](https://docs.conda.io/en/latest/)
- when installing Net2Brain.
 
 
 ### Installing VISSL and Detectron2
@@ -52,9 +54,9 @@ You can run net2brain in Google Colab for a quick demo, with the following steps
 ## Usage 
 
 ### Feature extraction
-The feature extraction module allows you to select one of many different DNNs to generate feature representations (i.e. activations) of a dataset composed of either .jpg, .png or .mp4 files.
+The feature extraction module allows you to select one of many different pretrained DNNs to generate feature representations (i.e. activations) of a dataset composed of either .jpg, .png or .mp4 files.
 
-These will be saved and will be accessed by the RDM-creation functionality of the toolbox.
+You can read about our feature extraction API in [this notebook](https://colab.research.google.com/github/cvai-roig-lab/Net2Brain/blob/Stable/notebooks/demo_feature_extraction.ipynb).
 
 <!-- # Usage
 
@@ -134,10 +136,14 @@ Displaying all layers of AlexNet that could potentially be extracted (if added t
 python toolbox_cli.py --layers show --dnn standard-AlexNet
 ``` -->
 
+### RDM creation
+> WORK IN PROGRESS
 
-## Evaluations
+### Evaluations
 
-### RSA
+> WORK IN PROGRESS
+
+#### RSA
 Although DNNs find their origin in the modeling of neurons, the systems are architecturally very different from the brain regions. Thus, a comparison of the individual model units and the neurons becomes a challenging task. Therefore, instead of comparing each neuron to each model unit, the toolbox employs Representational Similarity Analysis (RSA) ([Kriegeskorte et al., 2008](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2605405/)) as a metric to evaluate brain and network data. RSA abstracts from activity patterns to RDMs which allows to compare two completely different systems.
 
 The procedure is to take an activity pattern that resulted from one participant looking at a certain image and compare it to all the other patterns that resulted from the same participant looking at the other images. Comparisons are made by using the correlation distance that calculates the dissimilarity between the activations from two images *i* and *j* by subtracting 1 from the Pearson Correlation Coefficient.
@@ -148,13 +154,13 @@ Similar to the brain activities, the activations of a DNN can also be abstracted
 
 For the final RSA, brain RDM and model RDM are again compared using the correlation value between both. The resulting value is a measure for how different a model layer and a brain region interpret a given dataset. The evaluation follows the idea that if the brain interprets two images as different, the network should do the same.
 
-### Weighted RSA
+#### Weighted RSA
 When asserting brain ROIs using DNNs, there are several features as part of the dissimilarities we want to measure. They can be in the form of different layers and in the form of brain recordings from different participants. In normal RSA, each feature contributes equally to the overall correlation. However, these features all have different relative weights. When their relative weights are unknown, weighted RSA can be used ([Junhai Xu et al., 2021 ](https://www.sciencedirect.com/science/article/abs/pii/S0306452221002876)).
 
 In weighted RSA, an RDM is predicted as the weighted sum of the given RDMs. The weights are given as a theta value that weights each of the given RDMs to predict a new RDM. In the toolbox, this is implemented in two ways. With the common weighted RSA, a fitting model is fed with layer RDMs and then fitted with the brain data from an ROI to find a theta, that approximates that data RDMs as well as possible. Using this theta, a new RDM is predicted and used to calculate the correlation between itself and the RDMs of the current ROI. These correlation values between all participants of this ROI and the predicted RDM are averaged and returned as a result ([Kriegeskorte et al., 2008](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2605405/)).
 
 
-### Searchlight
+#### Searchlight
 Searchlight, also called "information mapping," is a method of multivariate pattern analysis used for fMRI data. This measure is an alternative to whole-brain or ROI-based analyses because it examines the whole brain in terms of voxel clusters. In this method, maps are created by computing correlations in spherical subsets (serachlights) centered on each voxel. To interpret the results, either a Support Vector Machine (SVM) is used to partition the data vectors into two classes of trials or rank correlation is applied.([Etzel et al., 2013](https://doi.org/10.1016/j.neuroimage.2013.03.041), [Allefeld et al., 2014](https://doi.org/10.1016/j.neuroimage.2013.11.043))
 
 The drawback of ROI-based analysis is that it examines whether the collective voxels contain information about different states, but not whether specific subregions of those ROIs also carry the majority of the classification. With Searchlight, by scanning the whole brain, there is the possibility of finding regions in the brain that distinguish between states. However, this also means that Searchlight analysis is computationally intensive without data parallelization ([Manoj et al., 2020](https://brainiak.org/tutorials/07-searchlight/)).\\
@@ -210,7 +216,7 @@ python toolbox_cli.py --layers show --dnn standard-AlexNet
 
 
 
-## How to report a bug or suggest a feature
+## Report a bug or suggest a feature
 
 We welcome new contributions to Net2Brain.
 If you find a bug or have ideas for a new feature, feel free to write an issue
