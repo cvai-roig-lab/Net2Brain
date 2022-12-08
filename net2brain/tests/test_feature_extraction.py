@@ -15,12 +15,12 @@ from net2brain.feature_extraction import FeatureExtractor
     ]
 )
 def test_load_netset_model(netset, model):
-    fe = FeatureExtractor(model, netset)
-    assert fe.model_name == model, "loaded model different than the one requested"
+    fx = FeatureExtractor(model, netset)
+    assert fx.model_name == model, "loaded model different than the one requested"
     #assert fe.transforms is not None, "transforms not loaded"
-    assert fe.preprocess is not None, "preprocess not loaded"
-    assert fe._extractor is not None, "extractor not loaded"
-    assert fe._features_cleaner is not None, "feature cleaner not loaded"
+    assert fx.preprocess is not None, "preprocess not loaded"
+    assert fx._extractor is not None, "extractor not loaded"
+    assert fx._features_cleaner is not None, "feature cleaner not loaded"
     return
 
 
@@ -39,19 +39,9 @@ def test_load_netset_model(netset, model):
     ]
 )
 def test_extractor_outputs(netset, model, save_format, output_type):
-
-    # For creating paths
-    if output_type == dict:
-        output_pathtype = "dict"
-    elif output_type is None:
-        output_pathtype = "None"
-    else:
-        output_pathtype = "test"
-        
-
     # Define paths
     imgs_path = Path('./net2brain/tests/images')
-    save_path = Path(f'./net2brain/tests/images/tmp/{model}/{str(output_pathtype)}')
+    save_path = Path(f'./net2brain/tests/images/tmp/{model}/{save_format}')
     save_path.mkdir(parents=True, exist_ok=True)
 
     # Extract features
@@ -82,3 +72,13 @@ def test_extractor_outputs(netset, model, save_format, output_type):
 
     return
     
+@pytest.mark.parametrize(
+    "input_layers,output_layers", [
+        (None, ["layer1", "layer2", "layer3", "layer4"]), 
+        (["layer1"], ["layer1"])
+    ]
+)
+def test_feature_extraction_layers(input_layers, output_layers):
+    fx = FeatureExtractor('ResNet50', 'standard', layers_to_extract=input_layers)
+    assert fx.layers_to_extract == output_layers
+    return
