@@ -165,10 +165,13 @@ class FeatureExtractor:
         model : str or PyTorch model.
             If string is provided, the model will be loaded from the model zoo.
             Else the custom model will be used.
-        device : str
-            CPU or CUDA.
         netset : str optional
             NetSet from which to extract model, by default None.
+        layers_to_extract : list, optional
+            List of layers to extract the features from. If None, use default
+            layers.   
+        device : str
+            CPU or CUDA.
         transforms : Pytorch Transforms, optional
             The transforms to be applied to the inputs, by default None.
         """
@@ -179,11 +182,11 @@ class FeatureExtractor:
         if type(model) == str:
             if netset == None:
                 raise NameError("netset must be specified")
-            self.load_netset_model(model, netset)
+            self.load_netset_model(model, netset, layers_to_extract)
         else: 
-            self.load_model(model, transforms)
+            self.load_model(model, layers_to_extract, transforms)
 
-    def load_model(self, model, transforms=None):
+    def load_model(self, model, layers_to_extract, transforms=None):
         """Load a custom model.
 
         Parameters
@@ -202,12 +205,12 @@ class FeatureExtractor:
         self.preprocess = self.preprocess_image
         
         # Define feature extraction parameters
-        self.layers_to_extract = None
+        self.layers_to_extract = layers_to_extract
         self.features_path = None
         self._extractor = self._extract_features_tx
         self._features_cleaner = self._no_clean
 
-    def load_netset_model(self, model_name, netset):
+    def load_netset_model(self, model_name, netset, layers_to_extract):
         """Load a model from the model zoo.
 
         Parameters
@@ -222,7 +225,6 @@ class FeatureExtractor:
         if netset == "standard":
             self.module = pymodule
             self.model = self.module.MODELS[model_name](pretrained=True)
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
@@ -232,7 +234,6 @@ class FeatureExtractor:
                 'pytorch/vision:v0.10.0', self.model_name, pretrained=True
             )
             self.model.eval()
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._torch_clean
 
@@ -243,7 +244,6 @@ class FeatureExtractor:
                 self.module.MODEL_WEIGHTS[model_name]
             ) # Load weights
             self.model.load_state_dict(checkpoint['state_dict'])
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
@@ -254,7 +254,6 @@ class FeatureExtractor:
                 in_channels=3, out_channels=1, init_features=32, 
                 pretrained=True
             )
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
@@ -264,7 +263,6 @@ class FeatureExtractor:
             self.model = self.module.MODELS[model_name](
                 correct_model_name, device=self.device
             )[0]
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx_clip
             self._features_cleaner = self._no_clean
 
@@ -276,7 +274,6 @@ class FeatureExtractor:
                 self.module.MODEL_WEIGHTS[model_name], map_location=self.device
             ) # Load weights
             self.model.load_state_dict(ckpt_data['state_dict'])
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._CORnet_RT_clean
 
@@ -287,7 +284,6 @@ class FeatureExtractor:
                 'ultralytics/yolov5', 'yolov5l', pretrained=True, 
                 device=self.device
             )
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
@@ -296,7 +292,6 @@ class FeatureExtractor:
             config = self.module.configurator(self.model_name)
             self.model = self.module.MODELS[model_name](config)
             self.model.eval()
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._detectron_clean
 
@@ -307,7 +302,6 @@ class FeatureExtractor:
                 self.module.MODELS[model_name]
                 (config.MODEL, config.OPTIMIZER)
             )
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
@@ -319,11 +313,13 @@ class FeatureExtractor:
             except:
                 self.model = self.module.MODELS[model_name](
                     model_name, pretrained=True)
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
-            if self.layers_to_extract == []:
-                self._extractor = self._extract_features_timm
-            else:
-                self._extractor = self._extract_features_tx
+            # Handle layers to extract differently
+            if layers_to_extract == None:
+                self.layers_to_extract = self.module.MODEL_NODES[model_name]
+                if self.layers_to_extract == []:
+                    self._extractor = self._extract_features_timm
+                else:
+                    self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
         elif netset == 'pyvideo':
@@ -333,11 +329,19 @@ class FeatureExtractor:
                 pretrained=True
             )
             self.model.eval()
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._slowfast_clean
 
+        # Define layers to extract
+        if (layers_to_extract == None) and (netset != "timm"):
+            self.layers_to_extract = self.module.MODEL_NODES[model_name]
+        else:
+            self.layers_to_extract = layers_to_extract
+
+        # Send model to device
         self.model.to(self.device)
+
+        # Define standard preprocessing
         self.preprocess = self.module.preprocess
 
     def preprocess_image(self, image):
@@ -519,7 +523,6 @@ class FeatureExtractor:
 
     def extract(
         self, dataset_path, save_format='npz', save_path=None, 
-        layers_to_extract=None
     ):
         """Compute feature extraction from image dataset.
 
@@ -535,10 +538,7 @@ class FeatureExtractor:
         save_path : str or pathlib.Path, optional
             Path to save the features to. If None, the folder where the
             features are saved is named after the current date in the 
-            format "{year}_{month}_{day}_{hour}_{minute}".
-        layers_to_extract : list, optional
-            List of layers to extract the features from. If None, use default
-            layers.       
+            format "{year}_{month}_{day}_{hour}_{minute}".    
         
         """
         # Define save parameters
@@ -548,10 +548,6 @@ class FeatureExtractor:
         else:
             self.save_path = Path(save_path)
             self.save_path.mkdir(parents=True, exist_ok=True)
-
-        # Define layers to extract
-        if layers_to_extract != None:
-            self.layers_to_extract = layers_to_extract
 
         # Find all input files
         image_files = [
