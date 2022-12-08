@@ -104,7 +104,7 @@ def preprocess(image, model_name):
         trn.ToTensor()
     ])
 
-    image = Image.open(image)
+    image = Image.open(image).convert('RGB')
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
