@@ -15,6 +15,9 @@ Analysis (RSA) ([Kriegeskorte et al., 2008](https://www.ncbi.nlm.nih.gov/pmc/art
 
 ## Installation
 
+> __NOTE__: we recommend that you use [conda enviroments](https://docs.conda.io/en/latest/)
+ when installing Net2Brain.
+
 To install Net2Brain, follow these steps:
 
 1. Clone this github repository in your local machine.
@@ -26,19 +29,16 @@ You can use the following command in your terminal:
     ```bash
     cd {your_path_to_net2brain}
     ```
-3. In case you wish to create a virtual environment (Windows):
+<!-- 3. In case you wish to create a virtual environment (Windows):
     ```bash
     pip install virtualenv
     virtualenv --python . venv
     .\venv\Scripts\activate
-    ```
-4. Install Net2Brain by running:
+    ``` -->
+3. Install Net2Brain by running:
     ```bash
     pip install .
     ```
-
-> __NOTE__: we recommend that you use [conda enviroments](https://docs.conda.io/en/latest/)
- when installing Net2Brain.
 
 
 ### Installing VISSL and Detectron2
