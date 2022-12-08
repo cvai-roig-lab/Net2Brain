@@ -154,7 +154,10 @@ class FeatureExtractor:
     # self.layers_to_extract= The layers we want to extract
     ## TODO: define this here for all types or dont
 
-    def __init__(self, model, netset=None, device='cpu', transforms=None):
+    def __init__(
+        self, model, netset=None, layers_to_extract=None, device='cpu', 
+        transforms=None
+    ):
         """Initializes feature extractor.
 
         Parameters
