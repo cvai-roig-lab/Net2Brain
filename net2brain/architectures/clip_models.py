@@ -47,19 +47,19 @@ def preprocess(image, model_name):
         PIL-Image: Preprocesses PIL Image
     """
 
-    centre_crop = trn.Compose([
+    # Get image
+    transforms = trn.Compose([
         trn.Resize((224, 224)),  # resize to 224 x 224 pixels
         trn.ToTensor(),  # transform to tensor
         # normalize according to ImageNet
         trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    image = Image.open(image)
+    img = Image.open(image).convert('RGB')
+    img = V(transforms(img).unsqueeze(0))
         
     # For clip we need to add text embedding. Since we dont extract word embedding, that can be random
     tokenized_text = torch.cat([clip.tokenize(f"a photo of a {c}") for c in ["word"]]).to("cpu") 
-    
-    image = V(centre_crop(image).unsqueeze(0))
     
     # Add to Cuda
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -67,7 +67,7 @@ def preprocess(image, model_name):
         image = image.cuda()
         tokenized_text = tokenized_text.cuda()
 
-    return [image, tokenized_text]
+    return [img, tokenized_text]
 
 
 def preprocess_frame(frame, model_name):
@@ -81,7 +81,7 @@ def preprocess_frame(frame, model_name):
         PIL-Image: Preprocesses PIL Image
     """
     
-    centre_crop = trn.Compose([
+    transforms = trn.Compose([
         trn.Resize((224, 224)),  # resize to 224 x 224 pixels
         trn.ToTensor(),  # transform to tensor
         # normalize according to ImageNet
@@ -93,12 +93,13 @@ def preprocess_frame(frame, model_name):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    # For clip we need to add text embedding. Since we dont extract word embedding, that can be random
-    tokenized_text = torch.cat([clip.tokenize(f"a photo of a {c}") for c in ["word"]]).to("cpu")
+    # For clip we need to add text embedding
+    tokenized_text = torch.cat(
+        [clip.tokenize(f"a photo of a {c}") for c in ["word"]]
+    )
     
     pil_image = V(centre_crop(pil_image).unsqueeze(0))
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda'):  # send to cuda
         pil_image = pil_image.cuda()
         tokenized_text = tokenized_text.cuda()

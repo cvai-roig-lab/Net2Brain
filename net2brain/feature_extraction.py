@@ -553,7 +553,7 @@ class FeatureExtractor:
         # Find all input files
         image_files = [
             i for i in Path(dataset_path).iterdir() 
-            if i.suffix in ['.jpg', '.png']
+            if i.suffix in ['.jpeg', '.jpg', '.png']
         ]
         image_files.sort()
 
