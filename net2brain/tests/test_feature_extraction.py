@@ -55,6 +55,7 @@ def test_extractor_outputs(netset, model, save_format, output_type):
     # Assert output files are as expected
     if save_format == 'dataset':
         assert len(output_files) == len(fx.layers_to_extract)
+        assert feats[list(feats.keys())[0]].measurements.shape[0] == 2
     else:
         assert len(output_files) == 2
 
