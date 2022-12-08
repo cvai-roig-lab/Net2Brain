@@ -56,7 +56,7 @@ You can run net2brain in Google Colab for a quick demo, with the following steps
 ### Feature extraction
 The feature extraction module allows you to select one of many different pretrained DNNs to generate feature representations (i.e. activations) of a dataset composed of either .jpg, .png or .mp4 files.
 
-
+You can read about our feature extraction API in [this notebook](https://colab.research.google.com/github/cvai-roig-lab/Net2Brain/blob/Stable/notebooks/demo_feature_extraction.ipynb).
 
 <!-- # Usage
 
