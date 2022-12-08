@@ -321,7 +321,7 @@ class FeatureExtractor:
                 self._extractor = self._extract_features_timm
             else:
                 self._extractor = self._extract_features_tx
-            self._feature_cleaner = self._no_clean
+            self._features_cleaner = self._no_clean
 
         elif netset == 'pyvideo':
             self.module = pyvideo

@@ -104,7 +104,7 @@ def preprocess(image, model_name):
         trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    image = Image.open(image)
+    image = Image.open(image).convert('RGB')
     
     image = V(centre_crop(image).unsqueeze(0))
 

@@ -130,22 +130,22 @@ def preprocess(image, model_name):
     
     
 
-    centre_crop = trn.Compose([
+    # Get image
+    transforms = trn.Compose([
         trn.Resize((224, 224)),  # resize to 224 x 224 pixels
         trn.ToTensor(),  # transform to tensor
         # normalize according to ImageNet
         trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    
-    image = Image.open(image)
-    
-    image = V(centre_crop(image).unsqueeze(0))
+
+    img = Image.open(image).convert('RGB')
+    img = V(transforms(img).unsqueeze(0))
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda'):  # send to cuda
-            image = image.cuda()
+            img = img.cuda()
 
-    return image
+    return img
 
 
 def preprocess_frame(frame, model_name):
