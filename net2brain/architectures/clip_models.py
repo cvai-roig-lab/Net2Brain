@@ -64,7 +64,7 @@ def preprocess(image, model_name):
     # Add to Cuda
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda'):  # send to cuda
-        image = image.cuda()
+        img = img.cuda()
         tokenized_text = tokenized_text.cuda()
 
     return [img, tokenized_text]
@@ -98,7 +98,7 @@ def preprocess_frame(frame, model_name):
         [clip.tokenize(f"a photo of a {c}") for c in ["word"]]
     )
     
-    pil_image = V(centre_crop(pil_image).unsqueeze(0))
+    pil_image = V(transforms(pil_image).unsqueeze(0))
     
     if device == torch.device('cuda'):  # send to cuda
         pil_image = pil_image.cuda()
