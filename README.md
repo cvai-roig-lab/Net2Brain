@@ -1,6 +1,6 @@
 
 
-# Net2Brain
+# Net2Brain 🧠
 
 **Net2Brain** is an easy-to-use framework that allows neuroscientists to
 compare human brain activity patterns in response to stimuli with the
@@ -44,7 +44,6 @@ You can use the following command in your terminal:
 
 ## Installing VISSL and Detectron2
 Installing VISSL and Detectron2 can present issues on non-Linux systems. 
-# We recommend using the Google Colab Version of the Toolbox to avoid having to manage the installs. 
 Click here for installation help for [VISSL](https://github.com/facebookresearch/vissl) and [Detectron2](https://github.com/facebookresearch/detectron2).
 
 <!-- ## Google Colab Playground
