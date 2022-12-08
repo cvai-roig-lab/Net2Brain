@@ -1,10 +1,10 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name = 'net2brain',
     version = '0.1.0',
     author = 'Roig Lab',
-    packages=['net2brain'],
+    packages=find_packages(),
     install_requires=[
         'flake8',
         'h5py',

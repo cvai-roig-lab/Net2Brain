@@ -2,10 +2,7 @@
 
 # Net2Brain 🧠
 
-**Net2Brain** is an easy-to-use framework that allows neuroscientists to
-compare human brain activity patterns in response to stimuli with the
-activation patterns of over 600 Deep Neural Networks (DNNs) processing the same
-stimuli.
+**Net2Brain** is an easy-to-use framework that allows neuroscientists to compare human brain activity patterns in response to visual stimuli with the activation patterns of over 600 Deep Neural Networks (DNNs) processing the same stimuli.
 
 Any dataset composed of either image or video files can be fed into the program
 and passed through a collection of DNNs performing different visual tasks. 
@@ -16,12 +13,12 @@ Analysis (RSA) ([Kriegeskorte et al., 2008](https://www.ncbi.nlm.nih.gov/pmc/art
 
 # Installation
 
-To install Net2Brain, follow these steps (or use our [Colab-Environment](#google-colab-playground) for faster usage):
+To install Net2Brain, follow these steps:
 
 1. Clone this github repository in your local machine.
 You can use the following command in your terminal:
     ```bash
-    git clone https://github.com/ToastyDom/Net2Brain.git
+    git clone https://github.com/cvai-roig-lab/Net2Brain.git
     ```
 2. Step into the directory of your local copy of Net2Brain:
     ```bash
@@ -44,7 +41,7 @@ You can use the following command in your terminal:
 
 ## Installing VISSL and Detectron2
 Installing VISSL and Detectron2 can present issues on non-Linux systems. 
-Click here for installation help for [VISSL](https://github.com/facebookresearch/vissl) and [Detectron2](https://github.com/facebookresearch/detectron2).
+Here is some installation help for [VISSL](https://github.com/facebookresearch/vissl) and [Detectron2](https://github.com/facebookresearch/detectron2).
 
 <!-- ## Google Colab Playground
 You can run net2brain in Google Colab for a quick demo, with the following steps:
@@ -52,7 +49,14 @@ You can run net2brain in Google Colab for a quick demo, with the following steps
 2. Open this file in [Google Colab](https://colab.research.google.com/).
 3. Read and execute the cells within the notebook. -->
 
-# Usage
+# Usage 
+
+## Feature extraction
+The feature extraction module allows you to select one of many different DNNs to generate feature representations (i.e. activations) of a dataset composed of either .jpg, .png or .mp4 files.
+
+These will be saved and will be accessed by the RDM-creation functionality of the toolbox.
+
+<!-- # Usage
 
 You can use Net2Brain in your command line terminal by running:
 
@@ -128,7 +132,7 @@ python toolbox_cli.py --task eval --dataset 78images --dnn standard-AlexNet --dn
 Displaying all layers of AlexNet that could potentially be extracted (if added to file - see [here](#how-to-change-layers-for-extraction))
 ```bash
 python toolbox_cli.py --layers show --dnn standard-AlexNet
-```
+``` -->
 
 
 # Evaluations
@@ -185,7 +189,7 @@ __Shape of Searchlight RDMs__: For **Searchlight** RDMs, the data must be in for
 data has to come in form of an RDM or a list of RDMs
 
 
-# How to change layers for extraction
+<!-- # How to change layers for extraction
 Each netset has its own file within [./architectures](net2brain/architectures/). They are composed of three parts:
 1. _MODELS_: A dictionary of the model to load
 2. _MODEL_NODES_: A dictionary of the layers to extract
@@ -201,7 +205,7 @@ python toolbox_cli.py --layers show --dnn <DNN of your choice>
 For example:
 ```bash
 python toolbox_cli.py --layers show --dnn standard-AlexNet
-```
+``` -->
 
 
 
