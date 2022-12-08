@@ -1,4 +1,6 @@
+from pathlib import Path
 import pytest
+import shutil
 
 from net2brain.feature_extraction import FeatureExtractor
 
@@ -14,115 +16,50 @@ from net2brain.feature_extraction import FeatureExtractor
 )
 def test_load_netset_model(netset, model):
     fe = FeatureExtractor(model, netset)
-    assert fe.model == model
-    pass
+    assert fe.model == model, "loaded model different than the one requested"
+    assert fe.transforms is not None, "transforms not loaded"
+    assert fe.preprocess is not None, "preprocess not loaded"
+    assert fe._extractor is not None, "extractor not loaded"
+    assert fe._feature_cleaner is not None, "feature cleaner not loaded"
+    return
 
 
-def test_extractor():
-    pass
+@pytest.mark.parametrize(
+    "netset,model", [
+        ("standard","AlexNet"), ("timm", "vit_base_patch32_224_in21k"), 
+        ("pytorch", "deeplabv3_resnet101"), ("unet", "unet"),
+        ("taskonomy", "autoencoding"), ("pyvideo", "slowfast_r50"),
+        ('clip', 'RN50'), ("cornet", "cornet_z")
 
+    ]
+)
+@pytest.mark.parametrize(
+    "save_format,output_type", [
+        ("dataset",dict), ("pt", None), ("np", None)
+    ]
+)
+def test_extractor_outputs(netset, model, save_format, output_type):
+    # Define paths
+    imgs_path = Path('./net2brain/tests/images')
+    save_path = Path('./net2brain/tests/images/tmp')
+    save_path.mkdir(parents=True, exist_ok=True)
 
-# def test_alexnet():
+    # Extract features
+    fx = FeatureExtractor(model, netset)
+    feats = fx.extract(imgs_path, save_format=save_format, save_path=save_path)
+    output_files = [d for d in save_path.iterdir()]
+
+    # Assert return type is as expected
+    assert type(feats) == output_type
     
-#     """Write down all relevant paths"""
-#     PATH_COLLECTION = get_paths()
-#     CURRENT_DIR = PATH_COLLECTION["CURRENT_DIR"]
+    # Assert output files are as expected
+    if save_format == 'dataset':
+        assert len(output_files) == len(fx.layers_to_extract)
+    else:
+        assert len(output_files) == 2
 
-#     # Set path for saving activations    
-#     path = op.join(CURRENT_DIR, "net2brain/tests/compare_files/to_be_tested_feats")
-#     path_truth = op.join(CURRENT_DIR, "net2brain/tests/compare_files/correct_data_feats")
-    
-#     # Create folder if it does not exists
-#     if not os.path.exists(path):
-#         os.makedirs(path)
+    # Remove temporary files
+    shutil.rmtree(save_path)
 
-#     # Start extraction
-#     extract = FeatureExtraction("AlexNet", "78images", "standard")
-#     extract.feats_path = path
-#     extract.start_extraction()
-    
-#     # Compare extractions with ground truth
-#     to_test = glob.glob(op.join(path, "*"))
-#     to_compare = glob.glob(op.join(path_truth, "*"))
-    
-#     for i, truth in enumerate(to_compare):
-#         status = filecmp.cmp(truth, to_test[i])
-#         print(truth.split(os.sep)[-1], to_test[i].split(os.sep)[-1], status)
-#         if status == False:
-#             return status
-    
-#     return status
-
-
-
-# def test_only_cornet_generation():
-#     """Write down all relevant paths"""
-#     PATH_COLLECTION = get_paths()
-#     CURRENT_DIR = PATH_COLLECTION["CURRENT_DIR"]
-
-#     # Set path for saving activations    
-#     path = op.join(CURRENT_DIR, "net2brain/tests/compare_files/to_be_tested_feats")
-    
-#     # Create folder if it does not exists
-#     if not os.path.exists(path):
-#         os.makedirs(path)
-
-#     # Start extraction
-#     extract = FeatureExtraction("cornet_z", "78images", "cornet")
-#     extract.feats_path = path
-
-#     try:
-#         extract.start_extraction()
-#         return True
-#     except:
-#         return False
-    
-
-# def test_only_taskonomy_generation():
-#     """Write down all relevant paths"""
-#     PATH_COLLECTION = get_paths()
-#     CURRENT_DIR = PATH_COLLECTION["CURRENT_DIR"]
-
-#     # Set path for saving activations
-#     path = op.join(
-#         CURRENT_DIR, "net2brain/tests/compare_files/to_be_tested_feats")
-
-#     # Create folder if it does not exists
-#     if not os.path.exists(path):
-#         os.makedirs(path)
-
-#     # Start extraction
-#     extract = FeatureExtraction("autoencoding", "78images", "taskonomy")
-#     extract.feats_path = path
-    
-#     try:
-#         extract.start_extraction()
-#         return True
-#     except:
-#         return False
-    
-    
-# def test_only_timm_generation():
-#     """Write down all relevant paths"""
-#     PATH_COLLECTION = get_paths()
-#     CURRENT_DIR = PATH_COLLECTION["CURRENT_DIR"]
-
-#     # Set path for saving activations
-#     path = op.join(
-#         CURRENT_DIR, "net2brain/tests/compare_files/to_be_tested_feats")
-
-#     # Create folder if it does not exists
-#     if not os.path.exists(path):
-#         os.makedirs(path)
-
-#     # Start extraction
-#     extract = FeatureExtraction("adv_inception_v3", "78images", "timm")
-#     extract.feats_path = path
-    
-#     try:
-#         extract.start_extraction()
-#         return True
-#     except:
-#         return False
-    
+    return
     
