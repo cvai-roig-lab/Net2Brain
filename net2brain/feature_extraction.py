@@ -1,10 +1,12 @@
+from collections import defaultdict
 from datetime import datetime
-import glob
 import os.path as op
 import os
+from pathlib import Path
 from PIL import Image
 
 import numpy as np
+from rsatoolbox.data.dataset import Dataset
 import torch
 from torch.autograd import Variable as V
 import torchextractor as tx
@@ -20,6 +22,53 @@ import net2brain.architectures.unet_models as unet
 import net2brain.architectures.yolo_models as yolo
 
 
+## Get available networks
+AVAILABLE_NETWORKS = {
+    'standard': list(pymodule.MODELS.keys()),
+    'timm': list(timm.MODELS.keys()),
+    'pytorch': list(torchmodule.MODELS.keys()),
+    'unet': list(unet.MODELS.keys()),
+    'taskonomy': list(taskonomy.MODELS.keys()),
+    'pyvideo': list(pyvideo.MODELS.keys())
+}
+
+## TODO: don't import unless needed
+
+try:
+    #import clip
+    import net2brain.architectures.clip_models as clip_models
+    AVAILABLE_NETWORKS.update({'clip': list(clip_models.MODELS.keys())})
+except ModuleNotFoundError:
+    print("Clip models are not installed.")
+    clip_exist = False
+
+try:
+    #import cornet
+    import net2brain.architectures.cornet_models as cornet_models
+    AVAILABLE_NETWORKS.update({'cornet': list(cornet_models.MODELS.keys())})
+except ModuleNotFoundError:
+    print("CORnet models are not installed.")
+    cornet_exist = False
+
+try:
+    #import vissl
+    import net2brain.architectures.vissl_models as vissl_models
+    AVAILABLE_NETWORKS.update({'vissl': list(vissl_models.MODELS.keys())})
+except ModuleNotFoundError:
+    print("Vissl models are not installed")
+    vissl_exist = False
+
+try:
+    import detectron2
+    import net2brain.architectures.detectron2_models as detectron2_models
+    AVAILABLE_NETWORKS.update(
+        {'detectron2': list(detectron2_models.MODELS.keys())}
+    )
+except ModuleNotFoundError:
+    print("Detectron2 is not installed.")
+    detectron_exist = False
+
+
 ## Define relevant paths
 CURRENT_DIR = op.abspath(os.curdir)
 BASE_DIR = op.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,50 +80,6 @@ STIMULI_DIR = op.join(INPUTS_DIR, 'stimuli_data')
 RDMS_DIR = op.join(PARENT_DIR, 'rdms')
 BRAIN_DIR = op.join(INPUTS_DIR, 'brain_data')
 
-## Get available networks
-AVAILABLE_NETWORKS = {
-    'standard': list(pymodule.MODELS.keys()),
-    'timm': list(timm.MODELS.keys()),
-    'pytorch': list(torchmodule.MODELS.keys()),
-    'unet': list(unet.MODELS.keys()),
-    'taskonomy': list(taskonomy.MODELS.keys()),
-    'pyvideo': list(pyvideo.MODELS.keys())
-}
-
-try:
-    import clip
-    import architectures.clip_models as clip_models
-    AVAILABLE_NETWORKS.update({'clip': list(clip_models.MODELS.keys())})
-except ModuleNotFoundError:
-    print("Clip models are not installed.")
-    clip_exist = False
-
-try:
-    import cornet
-    import architectures.cornet_models as cornet_models
-    AVAILABLE_NETWORKS.update({'cornet': list(cornet_models.MODELS.keys())})
-except ModuleNotFoundError:
-    print("CORnet models are not installed.")
-    cornet_exist = False
-
-try:
-    import vissl
-    import architectures.vissl_models as vissl_models
-    AVAILABLE_NETWORKS.update({'vissl': list(vissl_models.MODELS.keys())})
-except ModuleNotFoundError:
-    print("Vissl models are not installed")
-    vissl_exist = False
-
-try:
-    import detectron2
-    import architectures.detectron2_models as detectron2_models
-    AVAILABLE_NETWORKS.update(
-        {'detectron2': list(detectron2_models.MODELS.keys())}
-    )
-except ModuleNotFoundError:
-    print("Detectron2 is not installed.")
-    detectron_exist = False
-
 
 def print_all_models():
     """Returns available models.
@@ -84,7 +89,12 @@ def print_all_models():
     dict
         Available models by netset.
     """
-    return AVAILABLE_NETWORKS
+    print("\n")
+    for key, values in AVAILABLE_NETWORKS.items():
+        print(f"NetSet: {key}")
+        print(f"Models: {[v for v in values]}")
+        print("\n")
+    return
 
 
 def print_all_netsets():
@@ -141,19 +151,10 @@ def find_model_like(name):
 
 
 class FeatureExtractor:
-    # self.model = The actual model
-    # self.model_name = Model name as string
-    # self.device = GPU or CUDA
-    # self.save_path = Location to save features
-    # self.module = Where is our network-data located?
     # self.layers_to_extract= The layers we want to extract
-    # self._extractor = If we want to use torchextractor or anything else
-    # self._features_cleaner = Some extractions return the arrays in a weird format,
-    #                        which is why some networks require a cleanup
-    # self.transforms = Some images may need to be transformed/preprocessed before entering the network
-    # self.preprocess = Function for preprocessing the images
+    ## TODO: define this here for all types or dont
 
-    def __init__(self, model, device, netset=None, transforms=None):
+    def __init__(self, model, netset=None, device='cpu', transforms=None):
         """Initializes feature extractor.
 
         Parameters
@@ -168,11 +169,13 @@ class FeatureExtractor:
         transforms : Pytorch Transforms, optional
             The transforms to be applied to the inputs, by default None.
         """
-        # Set device
+        # Set model and device
         self.device = device
         
         # Load model from netset or load custom model
         if type(model) == str:
+            if netset == None:
+                raise NameError("netset must be specified")
             self.load_netset_model(model, netset)
         else: 
             self.load_model(model, transforms)
@@ -431,7 +434,8 @@ class FeatureExtractor:
         return {key: value.data.cpu() for key, value in features.items()}
 
     def _torch_clean(self, features):
-        """Cleanup function after feature extraction: This one contains subdictionaries which need to be eliminated
+        """Cleanup function after feature extraction: 
+        This one contains subdictionaries which need to be eliminated.
 
         Args:
             features (dict:tensors): dictionary of tensors
@@ -448,7 +452,8 @@ class FeatureExtractor:
         return new_features
 
     def _detectron_clean(self, features):
-        """Cleanup function after feature extraction: This one contains subdictionaries which need to be eliminated
+        """Cleanup function after feature extraction.
+        Detectron models contain subdictionaries which need to be eliminated.
 
         Args:
             features (dict:tensors): dictionary of tensors
@@ -464,7 +469,8 @@ class FeatureExtractor:
         return clean_dict
 
     def _CORnet_RT_clean(self, features):
-        """Cleanup function after feature extraction: The RT-Model contains subdirectories
+        """Cleanup function after feature extraction.
+        The RT-Model contains subdirectories.
 
         Args:
             features (dict:tensors): dictionary of tensors
@@ -485,7 +491,8 @@ class FeatureExtractor:
             return {key: value.cpu() for key, value in features.items()}
 
     def _slowfast_clean(self, features):
-        """Cleanup function after feature extraction: Some features have two values (list)
+        """Cleanup function after feature extraction.
+        Some features have two values (list).
 
         Args:
             features (dict:tensors): dictionary of tensors
@@ -506,65 +513,103 @@ class FeatureExtractor:
 
         return clean_dict
 
-    def extract_from_images(self, image_list):
-        """Function to loop over all our images, extract features and save them as .npz
 
-        Args:
-            image_list (list:str): List of paths to images
+    def extract(
+        self, dataset_path, save_format='npz', save_path=None, 
+        layers_to_extract=None
+    ):
+        """Compute feature extraction from image dataset.
+
+        Parameters
+        ----------
+        dataset_path : str or pathlib.Path
+            Path to the images to extract the features from. Images cneed to be
+            .jpg or .png.
+        save_format : str, optional
+            Format to save the features in. Can be 'npz', 'pt' or 'datasaet',
+            by default 'npz'. If 'dataset', the features are saved in the
+            Dataset class format of the rsa toolbox.
+        save_path : str or pathlib.Path, optional
+            Path to save the features to. If None, the folder where the
+            features are saved is named after the current date in the 
+            format "{year}_{month}_{day}_{hour}_{minute}".
+        layers_to_extract : list, optional
+            List of layers to extract the features from. If None, use default
+            layers.       
+        
         """
-
-        for image in tqdm(image_list):
-
-            filename = op.split(image)[-1].split(".")[0]  # get filename
-
-            # preprocess image
-            processsed_image = self.preprocess(image, self.model_name)
-
-            # extract features
-            features = self.extractor(processsed_image)  # extract features
-
-            # create save_path for file
-            save_path = op.join(self.save_path, filename + ".npz")  # create safe-path
-
-            # turn tensor into numpy array
-            features = {key: value.detach().numpy() for key, value in features.items()}
-
-            np.savez(save_path, **features)  # safe data
-
-    def extract(self, dataset_path, save_path=None, layers_to_extract=None):
-        """Function to start the feature extraction
-
-        Args:
-            layers (list): list of layers to extract
-            dataset_path (path): path to dataset
-            save_path (path): Path where to save features. Defaults to None.
-        """
-
-        # Create save path and ensure save path exists
+        # Define save parameters
+        self.save_format = save_format
         if save_path is None:
-            self.save_path = _create_save_folder()
+            self.save_path = create_save_path()
         else:
-            _ensure_directory(save_path)
-            self.save_path = save_path
+            self.save_path = Path(save_path)
+            self.save_path.mkdir(parents=True, exist_ok=True)
 
-        # Store layers in class
-        if layers_to_extract is None:
-            pass
-        else:
+        # Define layers to extract
+        if layers_to_extract != None:
             self.layers_to_extract = layers_to_extract
 
         # Find all input files
-        image_list = glob.glob(op.join(dataset_path, "*"))
-        image_list.sort()
+        image_files = [
+            i for i in Path(dataset_path).iterdir() 
+            if i.suffix in ['.jpg', '.png']
+        ]
+        image_files.sort()
 
-        # get filetype
-        filetype = op.split(image_list[0])[-1].split(".")[1]
-
-        # If images are jpg, trigger the function
-        if filetype == "jpg":
-            self.extract_from_images(image_list)
+        # Extract features from images
+        if image_files != []:
+            fts = self._extract_from_images(image_files)
         else:
-            raise TypeError("Can only handle .jpg images for now")  # TODO: Add .png and .mp4 video data
+            raise ValueError(
+                "Could not find any .jpg or .png images in the given folder."
+            )
+
+        return fts
+
+
+    def _extract_from_images(self, image_files):
+        ## TODO: check no weird network names for saving
+        
+        if self.save_format == 'dataset':
+            all_fts = defaultdict(list)
+
+        for img in tqdm(image_files):
+            
+            # Preprocess image and extract features
+            processsed_img = self.preprocess(img, self.model_name)
+            fts = self._extractor(processsed_img)
+
+            # Save features if npz or pt
+            if self.save_format == 'npz':
+                fts = {k: v.detach().numpy() for k, v in fts.items()}
+                filename = self.save_path / f'{self.model_name}_{img.stem}.npz'
+                np.savez(filename, **fts)
+            elif self.save_format == 'pt':
+                filename = self.save_path / f'{self.model_name}_{img.stem}.pt'
+                torch.save(fts, filename)
+            # Add features to dictionary if dataset
+            elif self.save_format == 'dataset':
+                for l in fts.keys():
+                    all_fts[l].append(fts[l])
+
+        # Save and return features per layer in rsa toolbox format 
+        if self.save_format == 'dataset':
+            obs_imgs = {'images': np.array([i.stem for i in image_files])}
+            fts_datasets = {}
+            for l in all_fts.keys():
+                d = torch.flatten(torch.stack(all_fts[l]), start_dim=1)
+                fts_datasets[l] = Dataset(
+                    measurements=d.detach().numpy(),
+                    descriptors = {'dnn': self.model_name, 'layer': l},
+                    obs_descriptors = obs_imgs
+                )
+                filename = self.save_path / f'{self.model_name}_{l}.hdf5'
+                fts_datasets[l].save(filename)
+            return fts_datasets
+        else:
+            return
+
 
     def get_all_layers(self):
         """Helping function to extract all possible layers from a model
@@ -576,33 +621,21 @@ class FeatureExtractor:
         return layers
 
 
-def _ensure_directory(path):
-    """Ensure directory exists.
+def create_save_path():
+    """ Creates folder to save the image features.
 
-    Args:
-        path (str): Path to folder that will be created.
+    Returns
+    -------
+    pathlib Path
+        Path to directory of features. Named after the current date in the
+        format "{year}_{month}_{day}_{hour}_{minute}"
     """
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-
-def _create_save_folder():
-    """Creates folder to save the features in. They are structured after daytime
-
-    Returns:
-        save_path(str): Path to save folder
-    """
-    # Get current time
+    # Get current time and format string accordingly
     now = datetime.now()
-    now_formatted = now.strftime("%d.%m.%y %H:%M:%S")
-
-    # Replace : through -
-    log_time = now_formatted.replace(":", "-")
-
-    # Combine to path
-    save_path = f"features/{log_time}"
+    now_formatted = f'{now.year}_{now.month}_{now.day}_{now.hour}_{now.minute}'
 
     # Create directory
-    _ensure_directory(f"features/{log_time}")
+    save_path = Path(f"features/{now_formatted}")
+    save_path.mkdir(parents=True, exist_ok=True)
 
     return save_path

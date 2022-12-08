@@ -1,7 +1,7 @@
-import sys
-sys.path.append(r'net2brain')
+# import sys
+# sys.path.append(r'net2brain')
 
-from helper.helper import get_paths
+# from helper.helper import get_paths
 
 
 

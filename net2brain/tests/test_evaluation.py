@@ -1,15 +1,15 @@
 
-from prettytable import PrettyTable
-import sys
-sys.path.append(r'net2brain')
-import os
-from os import path as op
-from helper.helper import get_paths
-from evaluation import Evaluation
-from evaluations.rsa import RSA
-from toolbox_ui import create_json
-import filecmp
-import glob
+# from prettytable import PrettyTable
+# import sys
+# sys.path.append(r'net2brain')
+# import os
+# from os import path as op
+# from helper.helper import get_paths
+# from evaluation import Evaluation
+# from evaluations.rsa import RSA
+# from toolbox_ui import create_json
+# import filecmp
+# import glob
 
 
 # def create_table(dict_of_each_scan, save_path, kind="total"):

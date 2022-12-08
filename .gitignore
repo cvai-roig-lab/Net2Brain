@@ -13,28 +13,58 @@ var/
 .installed.cfg
 *.egg
 
-# Misc
-*.pth
-*.pth.tar
-*.pyc
-*.mp4
+# Jupyter Notebook
+.ipynb_checkpoints
 
-*.mat
-/__pycache___
-*.dat
-.idea
-.git
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# VSCODE
+.vscode/
+
+# OS generated files
+.DS_Store
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
 
 # Output folders
 /rdms
 /feats
 /output_data
 /outputs
-
-
-
-#/net2brain/tests/compare_files/to_be_tested_eval/
-#/net2brain/tests/compare_files/to_be_tested_eval/*.json
 /net2brain/tests/compare_files/to_be_tested_feats/
 /net2brain/tests/compare_files/to_be_tested_rdm/
 input_data/brain_data/78images/log.json
+
+# Misc
+*.pth
+*.pth.tar
+*.pyc
+*.mp4
+*.mat
+*.dat
+.idea
+.git
