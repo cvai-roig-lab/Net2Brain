@@ -2,6 +2,9 @@ from pathlib import Path
 import pytest
 import shutil
 
+from torchvision import models
+from torchvision import transforms as T
+
 from net2brain.feature_extraction import FeatureExtractor
 
 
@@ -56,12 +59,10 @@ def test_extractor_outputs(netset, model, save_format, output_type):
         assert type(feats) == output_type
     
     # Assert output files are as expected
-    print(fx.layers_to_extract)
     if save_format == 'dataset':
         if "slowfast" in model:
             assert len(output_files) == len(fx.layers_to_extract) * 2
         else:
-            print(fx.layers_to_extract)
             assert len(output_files) == len(fx.layers_to_extract)
             assert feats[list(feats.keys())[0]].measurements.shape[0] == 2
     else:
@@ -81,4 +82,41 @@ def test_extractor_outputs(netset, model, save_format, output_type):
 def test_feature_extraction_layers(input_layers, output_layers):
     fx = FeatureExtractor('ResNet50', 'standard', layers_to_extract=input_layers)
     assert fx.layers_to_extract == output_layers
+    return
+
+
+def test_feature_extraction_custom():
+
+    # Define paths
+    imgs_path = Path('./net2brain/tests/images')
+    save_path = Path(f'./net2brain/tests/images/tmp/custom/')
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    # Define model and transforms
+    model = models.alexnet(pretrained=True)
+    #model = models.alexnet(weights=models.AlexNet_Weights.DEFAULT)
+    transforms = T.Compose([
+        T.Resize((224, 224)),  # transform images if needed
+        T.ToTensor(),
+        T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+
+    # Define extractor
+    layers = ['features.0', 'features.1']
+    fx = FeatureExtractor(
+        model, transforms=transforms, layers_to_extract=layers, device='cpu'
+    )
+
+    # Run extractor
+    fx.extract(
+        dataset_path=imgs_path, save_format='pt', save_path=save_path
+    )
+
+    # Test files got created
+    output_files = [d for d in save_path.iterdir()]
+    assert len(output_files) == 2
+
+    # Remove temporary files
+    shutil.rmtree(save_path)
+
     return

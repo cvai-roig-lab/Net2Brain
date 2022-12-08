@@ -335,7 +335,7 @@ class FeatureExtractor:
         # Define layers to extract
         if (layers_to_extract == None) and (netset != "timm"):
             self.layers_to_extract = self.module.MODEL_NODES[model_name]
-        else:
+        elif netset!= "timm":
             self.layers_to_extract = layers_to_extract
 
         # Send model to device
@@ -344,7 +344,7 @@ class FeatureExtractor:
         # Define standard preprocessing
         self.preprocess = self.module.preprocess
 
-    def preprocess_image(self, image):
+    def preprocess_image(self, image, model_name):
         """Default preprocessing based on ImageNet standard training.
 
         Parameters
@@ -363,8 +363,8 @@ class FeatureExtractor:
                 T.ToTensor(),
                 T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
             ])
-        image = Image.open(image)
-        image = V(self.transforms(image).convert('RGB').unsqueeze(0))
+        image = Image.open(image).convert('RGB')
+        image = V(self.transforms(image).unsqueeze(0))
         image = image.to(self.device)
         return image
 
