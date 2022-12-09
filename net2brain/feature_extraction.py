@@ -55,7 +55,7 @@ try:
     import net2brain.architectures.vissl_models as vissl_models
     AVAILABLE_NETWORKS.update({'vissl': list(vissl_models.MODELS.keys())})
 except ModuleNotFoundError:
-    print("Vissl models are not installed")
+    print("vissl models are not installed")
     vissl_exist = False
 
 try:
@@ -65,7 +65,7 @@ try:
         {'detectron2': list(detectron2_models.MODELS.keys())}
     )
 except ModuleNotFoundError:
-    print("Detectron2 is not installed.")
+    print("detectron2 is not installed.")
     detectron_exist = False
 
 
