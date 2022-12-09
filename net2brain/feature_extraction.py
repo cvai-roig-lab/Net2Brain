@@ -222,6 +222,9 @@ class FeatureExtractor:
         """
         self.model_name = model_name
 
+        # Some Torchversion return a download error on MacOS, this is a fix
+        torch.hub._validate_not_a_forked_repo=lambda a,b,c: True
+
         if netset == "standard":
             self.module = pymodule
             self.model = self.module.MODELS[model_name](pretrained=True)
