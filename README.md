@@ -36,9 +36,18 @@ You can use the following command in your terminal:
     virtualenv --python . venv
     .\venv\Scripts\activate
     ``` -->
-3. Install Net2Brain by running:
+3. Conda Environment:
+    ```bash
+    conda create -n N2B python=3.8
+    conda activate N2B
+    ```
+4. Install Net2Brain by running:
     ```bash
     pip install .
+    ```
+5. (If needed) Find N2B Kernel in VSCode:
+    ```bash
+    conda install -n N2B ipykernel --update-deps --force-reinstall
     ```
 
 
