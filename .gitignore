@@ -66,5 +66,13 @@ input_data/brain_data/78images/log.json
 *.mp4
 *.mat
 *.dat
+*.json
 .idea
 .git
+
+
+#Folders and Files
+notebooks/*/*.npz
+notebooks/*/*.hdf5
+notebooks/*/*/*.npz
+notebooks/*/*/*.hdf5
