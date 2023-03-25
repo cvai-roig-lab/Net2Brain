@@ -6,13 +6,14 @@ import rsatoolbox
 from .noiseceiling import NoiseCeiling
 from .eval_helper import *
 from sklearn.model_selection import KFold
+import pandas as pd
 
 
 class WRSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, datatype="None", save_path="./", distance_metric="Euclidian"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, datatype="None", save_path="./", distance_metric="Euclidian"):
         """Initiate RSA
 
         Args:
@@ -32,6 +33,7 @@ class WRSA():
         self.save_path = save_path
         self.datatype = datatype
         self.distance_metric = distance_metric
+        self.model_name = model_name
 
     def get_uppertriangular(self, rdm):
         """Get upper triangle of a RDM
@@ -154,8 +156,13 @@ class WRSA():
         """ Percentage of NC """
         area_percentNC = (r2 / self.this_nc["lnc"]) * 100.
 
-        output_dict = {"Results": [r2, area_percentNC, significance, sem, [self.this_nc["lnc"], self.this_nc["unc"]]]}
-
+        output_dict = {"Layer": ["All"],
+                       "R2": [r2],
+                       "%R2": [area_percentNC],
+                       "Significance": [significance],
+                       "SEM": [sem],
+                       "LNC": [self.this_nc["lnc"]],
+                       "UNC": [self.this_nc["unc"]]}
         return output_dict
 
     def evaluate(self):
@@ -165,7 +172,7 @@ class WRSA():
             dict: final dict containing all results
         """
 
-        all_rois_dict = {}
+        all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R2', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
 
         for counter, roi in enumerate(self.brain_rdms):
 
@@ -173,11 +180,13 @@ class WRSA():
             self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
-            results_roi = self.create_weighted_model(roi)
+            layer_dict = self.create_weighted_model(roi)
 
             # Create dict with these results
             scan_key = "(" + str(counter) + ") " + roi[:-4]
-            scan_dict = {scan_key: results_roi}
-            all_rois_dict.update(scan_dict)
+            layer_dict["ROI"] = scan_key
+            layer_dict["Model"] = self.model_name
+            layer_df = pd.DataFrame.from_dict(layer_dict)
+            all_rois_df = pd.concat([all_rois_df, layer_df], ignore_index=True)
 
-        return all_rois_dict
+        return all_rois_df

@@ -219,7 +219,9 @@ class Searchlight():
 
         amount_rois = len(r2)
 
-        net_key = "(" + str(self.network_counter) + ") " + self.current_network
+        # TODO: Netkey is not used anymore. As soon as this is tested it can be removed along with the additon of
+        # Pandas code down below
+        net_key = "(-) " + "-"
         layer_key = "(" + str(self.layer_counter) + ") " + self.current_layer
 
 
@@ -236,6 +238,11 @@ class Searchlight():
 
             # Turn into output dictionary
             output_dict = {layer_key: [this_r2, None, this_sig, this_sem, [lnc, unc]]}
+
+            # TODO: Since there is no LNC & UNC calculation yet, areapercent_NC cannot be caluclated yet
+            # This needs to be added
+            # Also what we have down below should be rewritten into pandas datframe like the other modules
+
 
             if roi_name in self.final_dict['searchlight']:
                 if net_key in self.final_dict['searchlight'][roi_name]:

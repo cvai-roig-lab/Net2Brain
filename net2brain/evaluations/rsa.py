@@ -4,13 +4,13 @@ from scipy import stats
 import os.path as op
 from .noiseceiling import NoiseCeiling
 from .eval_helper import *
-
+import pandas as pd
 
 class RSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, datatype="None", save_path="./", distance_metric="spearman"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, datatype="None", save_path="./", distance_metric="spearman"):
         """Initiate RSA
 
         Args:
@@ -29,6 +29,7 @@ class RSA():
         # Other parameters
         self.save_path = save_path
         self.datatype = datatype
+        self.model_name = model_name
 
         if distance_metric.lower() == "spearman":
             self.distance = self.model_spearman
@@ -155,7 +156,7 @@ class RSA():
             dict: dictionary of all results to the current layer
         """
 
-        all_layers_dict = {}
+        all_layers_dicts = []
 
         # For each layer to RSA with the current ROI
         for counter, layer in enumerate(self.model_rdms):
@@ -174,12 +175,18 @@ class RSA():
 
             # Create dictionary to save data
             layer_key = "(" + str(counter) + ") " + layer
-            output_dict = {layer_key: [r2, area_percentNC, significance, sem, [lnc, unc]]}
+            output_dict = {"Layer": [layer_key],
+                           "R2": [r2],
+                           "%R2": [area_percentNC],
+                           "Significance": [significance],
+                           "SEM": [sem],
+                           "LNC": [lnc],
+                           "UNC": [unc]}
 
             # Add this dict to the total dickt
-            all_layers_dict.update(output_dict)
+            all_layers_dicts.append(output_dict)
 
-        return all_layers_dict
+        return all_layers_dicts
 
     def evaluate(self):
         """Function to evaluate all DNN RDMs to all ROI RDMs
@@ -188,7 +195,7 @@ class RSA():
             dict: final dict containing all results
         """
 
-        all_rois_dict = {}
+        all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R2', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
 
         for counter, roi in enumerate(self.brain_rdms):
 
@@ -198,11 +205,15 @@ class RSA():
             self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
-            results_roi = self.evaluate_layer(roi)
+            all_layers_dict = self.evaluate_layer(roi)
 
             # Create dict with these results
             scan_key = "(" + str(counter) + ") " + roi[:-4]
-            scan_dict = {scan_key: results_roi}
-            all_rois_dict.update(scan_dict)
 
-        return all_rois_dict
+            for layer_dict in all_layers_dict:
+                layer_dict["ROI"] = scan_key
+                layer_dict["Model"] = self.model_name
+                layer_df = pd.DataFrame.from_dict(layer_dict)
+                all_rois_df = pd.concat([all_rois_df, layer_df], ignore_index=True)
+
+        return all_rois_df
