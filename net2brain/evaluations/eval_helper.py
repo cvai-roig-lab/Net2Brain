@@ -4,19 +4,6 @@ import os
 from scipy import io
 from scipy.spatial.distance import squareform
 import re
-from helper.helper import get_paths
-
-"""Write down all relevant paths"""
-PATH_COLLECTION = get_paths()
-CURRENT_DIR = PATH_COLLECTION["CURRENT_DIR"]
-BASE_DIR = PATH_COLLECTION["BASE_DIR"]
-GUI_DIR = PATH_COLLECTION["GUI_DIR"]
-PARENT_DIR = PATH_COLLECTION["PARENT_DIR"]
-INPUTS_DIR = PATH_COLLECTION["INPUTS_DIR"]
-FEATS_DIR = PATH_COLLECTION["FEATS_DIR"]
-RDMS_DIR = PATH_COLLECTION["RDMS_DIR"]
-STIMULI_DIR = PATH_COLLECTION["STIMULI_DIR"]
-BRAIN_DIR = PATH_COLLECTION["BRAIN_DIR"]
 
 """Human sorting:
 https://stackoverflow.com/questions/5967500/how-to-correctly-sort-a-string-with-a-number-inside"""
