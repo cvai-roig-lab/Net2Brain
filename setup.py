@@ -16,7 +16,6 @@ setup(
         'prettytable',
         'pytest',
         'pytorchvideo == 0.1.5',
-        'PyQt5',
         'scikit_learn',
         'scipy',
         'torch == 1.10.2',
