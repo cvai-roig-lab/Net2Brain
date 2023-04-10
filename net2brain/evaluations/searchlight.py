@@ -237,11 +237,7 @@ class Searchlight():
             # area_percentNC = (this_r2 / lnc) * 100.
 
             # Turn into output dictionary
-            output_dict = {layer_key: [this_r2, None, this_sig, this_sem, [lnc, unc]]}
-
-            # TODO: Since there is no LNC & UNC calculation yet, areapercent_NC cannot be caluclated yet
-            # This needs to be added
-            # Also what we have down below should be rewritten into pandas datframe like the other modules
+            output_dict = {layer_key: [this_r2, 0, this_sig, this_sem, [lnc, unc]]}
 
 
             if roi_name in self.final_dict['searchlight']:
@@ -266,7 +262,7 @@ class Searchlight():
         self.final_dict = {'searchlight': {}}
 
         # TODO: Add actual NoiseCeiling!
-        noise_ceiling = {'lnc': None, 'unc': None}
+        noise_ceiling = {'lnc': 0, 'unc': 0}
 
         for counter, layer in self.model_rdms:
             self.current_layer = layer

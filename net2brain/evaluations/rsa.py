@@ -95,8 +95,9 @@ class RSA():
             dict: {layername: [r2, significance, sem]}
         """
 
-        key = "arr_0"  # This is the standard key when saving npz files with savez
+        key = list(model_rdm.keys())[0]  # You need to access the keys to open a npy file
         model_rdm = model_rdm[key]
+        key = list(brain_rdm.keys())[0]  # You need to access the keys to open a npy file
         meg_rdm = brain_rdm[key]
 
         # returns list of corrcoefs, depending on amount of participants in brain rdm
@@ -128,9 +129,14 @@ class RSA():
             dict: {layername: [r2, significance, sem]}
         """
 
-        key = "arr_0"  # This is the standard key when saving npz files with savez
+    
+        key = list(model_rdm.keys())[0] # You need to access the keys to open a npy file
         model_rdm = model_rdm[key]
+        key = list(brain_rdm.keys())[0]  # You need to access the keys to open a npy file
         fmri_rdm = brain_rdm[key]
+   
+
+
 
         # returns list of corrcoefs, depending on amount of participants in brain rdm
         corr = self.distance(model_rdm, fmri_rdm)
@@ -164,6 +170,7 @@ class RSA():
             # Load RDMS
             roi_rdm = load(op.join(self.brain_rdms_path, roi))
             model_rdm = load(op.join(self.model_rdms_path, layer))
+    
 
             # Calculate Correlations
             r2, significance, sem = self.rsa(model_rdm, roi_rdm, layer)
