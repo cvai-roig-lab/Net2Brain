@@ -51,6 +51,7 @@ You can use the following command in your terminal:
     ```
 
 
+
 ### Installing VISSL and Detectron2
 Installing VISSL and Detectron2 can present issues on non-Linux systems. 
 Here is some installation help for [VISSL](https://github.com/facebookresearch/vissl) and [Detectron2](https://github.com/facebookresearch/detectron2).

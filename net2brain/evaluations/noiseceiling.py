@@ -3,19 +3,6 @@ from scipy.stats import spearmanr
 import json
 import os.path as op
 from .eval_helper import *
-from helper.helper import get_paths
-
-"""Write down all relevant paths"""
-PATH_COLLECTION = get_paths()
-CURRENT_DIR = PATH_COLLECTION["CURRENT_DIR"]
-BASE_DIR = PATH_COLLECTION["BASE_DIR"]
-GUI_DIR = PATH_COLLECTION["GUI_DIR"]
-PARENT_DIR = PATH_COLLECTION["PARENT_DIR"]
-INPUTS_DIR = PATH_COLLECTION["INPUTS_DIR"]
-FEATS_DIR = PATH_COLLECTION["FEATS_DIR"]
-RDMS_DIR = PATH_COLLECTION["RDMS_DIR"]
-STIMULI_DIR = PATH_COLLECTION["STIMULI_DIR"]
-BRAIN_DIR = PATH_COLLECTION["BRAIN_DIR"]
 
 
 class NoiseCeiling():
@@ -177,7 +164,7 @@ class NoiseCeiling():
         
         # First find out if there is a json file that already contains these values
         json_path = op.dirname(self.roi_path)
-        json_file = op.join(json_path, "log.json")
+        json_file = op.join(json_path, "noise_ceilin_log.json")
         
         
         nc_exists = False 
