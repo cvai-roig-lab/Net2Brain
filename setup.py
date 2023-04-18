@@ -25,7 +25,6 @@ setup(
         'torchextractor == 0.3.0',
         'torchvision == 0.11.3',
         'rsatoolbox == 0.0.3',
-        'cornet @ git+https://github.com/dicarlolab/CORnet',
         'clip @ git+https://github.com/openai/CLIP.git'
     ]
 )
