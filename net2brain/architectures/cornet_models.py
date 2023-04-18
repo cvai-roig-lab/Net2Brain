@@ -3,12 +3,15 @@ from torch.autograd import Variable as V
 from torchvision import transforms as trn
 from PIL import Image
 import torch
-import cornet
+#import cornet
 
+from net2brain.architectures.implemented_models.cornet_z import cornet_z
+from net2brain.architectures.implemented_models.cornet_rt import cornet_rt
+from net2brain.architectures.implemented_models.cornet_s import cornet_s
 
-MODELS = {"cornet_z": cornet.CORnet_Z,
-          "cornet_rt": cornet.CORnet_RT,
-          "cornet_s": cornet.CORnet_S}
+MODELS = {"cornet_z": cornet_z,
+          "cornet_rt": cornet_rt,
+          "cornet_s": cornet_s}
 
 MODEL_NODES = {"cornet_z": ['module.V1', 'module.V2', 'module.V4', 'module.IT'],
                "cornet_rt": ['module.V1', 'module.V2', 'module.V4', 'module.IT'],

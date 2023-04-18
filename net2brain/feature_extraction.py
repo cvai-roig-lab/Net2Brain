@@ -21,12 +21,14 @@ import net2brain.architectures.torchhub_models as torchmodule
 import net2brain.architectures.unet_models as unet
 import net2brain.architectures.yolo_models as yolo
 import net2brain.architectures.toolbox_models as toolbox_models
+import net2brain.architectures.cornet_models as cornet_models
 
 ## Get available networks
 AVAILABLE_NETWORKS = {
     'standard': list(pymodule.MODELS.keys()),
     'toolbox': list(toolbox_models.MODELS.keys()),
     'timm': list(timm.MODELS.keys()),
+    'cornet': list(cornet_models.MODELS.keys()),
     'pytorch': list(torchmodule.MODELS.keys()),
     'unet': list(unet.MODELS.keys()),
     'taskonomy': list(taskonomy.MODELS.keys()),
@@ -43,13 +45,13 @@ except ModuleNotFoundError:
     print("Clip models are not installed.")
     clip_exist = False
 
-try:
-    #import cornet
-    import net2brain.architectures.cornet_models as cornet_models
-    AVAILABLE_NETWORKS.update({'cornet': list(cornet_models.MODELS.keys())})
-except ModuleNotFoundError:
-    print("CORnet models are not installed.")
-    cornet_exist = False
+# try:
+#     #import cornet
+#     import net2brain.architectures.cornet_models as cornet_models
+#     AVAILABLE_NETWORKS.update({'cornet': list(cornet_models.MODELS.keys())})
+# except ModuleNotFoundError:
+#     print("CORnet models are not installed.")
+#     cornet_exist = False
 
 try:
     #import vissl
@@ -280,12 +282,12 @@ class FeatureExtractor:
 
         elif netset == 'cornet':
             self.module = cornet_models
-            self.model = self.module.MODELS[model_name]()
+            self.model = self.module.MODELS[model_name](pretrained=True)
             self.model = torch.nn.DataParallel(self.model)
-            ckpt_data = torch.utils.model_zoo.load_url(
-                self.module.MODEL_WEIGHTS[model_name], map_location=self.device
-            ) # Load weights
-            self.model.load_state_dict(ckpt_data['state_dict'])
+            # ckpt_data = torch.utils.model_zoo.load_url(
+            #     self.module.MODEL_WEIGHTS[model_name], map_location=self.device
+            # ) # Load weights
+            # self.model.load_state_dict(ckpt_data['state_dict'])
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._CORnet_RT_clean
 
@@ -343,6 +345,9 @@ class FeatureExtractor:
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._slowfast_clean
+
+        else:
+            raise NotImplementedError(f"The netset '{netset}' does not appear to be implement. Perhaps check spelling!")
 
         # Define layers to extract
         if (layers_to_extract == None) and (netset != "timm"):
