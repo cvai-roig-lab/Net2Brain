@@ -20,11 +20,12 @@ import net2brain.architectures.timm_models as timm
 import net2brain.architectures.torchhub_models as torchmodule
 import net2brain.architectures.unet_models as unet
 import net2brain.architectures.yolo_models as yolo
-
+import net2brain.architectures.toolbox_models as toolbox_models
 
 ## Get available networks
 AVAILABLE_NETWORKS = {
     'standard': list(pymodule.MODELS.keys()),
+    'toolbox': list(toolbox_models.MODELS.keys()),
     'timm': list(timm.MODELS.keys()),
     'pytorch': list(torchmodule.MODELS.keys()),
     'unet': list(unet.MODELS.keys()),
@@ -236,6 +237,14 @@ class FeatureExtractor:
             self.model = self.module.MODELS[model_name](
                 'pytorch/vision:v0.10.0', self.model_name, pretrained=True
             )
+            self.model.eval()
+            self._extractor = self._extract_features_tx
+            self._features_cleaner = self._torch_clean
+
+
+        elif netset == 'toolbox':
+            self.module = toolbox_models
+            self.model = self.module.MODELS[model_name]
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._torch_clean
