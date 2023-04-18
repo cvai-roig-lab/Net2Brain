@@ -45,14 +45,6 @@ except ModuleNotFoundError:
     print("Clip models are not installed.")
     clip_exist = False
 
-# try:
-#     #import cornet
-#     import net2brain.architectures.cornet_models as cornet_models
-#     AVAILABLE_NETWORKS.update({'cornet': list(cornet_models.MODELS.keys())})
-# except ModuleNotFoundError:
-#     print("CORnet models are not installed.")
-#     cornet_exist = False
-
 try:
     #import vissl
     import net2brain.architectures.vissl_models as vissl_models
@@ -284,10 +276,6 @@ class FeatureExtractor:
             self.module = cornet_models
             self.model = self.module.MODELS[model_name](pretrained=True)
             self.model = torch.nn.DataParallel(self.model)
-            # ckpt_data = torch.utils.model_zoo.load_url(
-            #     self.module.MODEL_WEIGHTS[model_name], map_location=self.device
-            # ) # Load weights
-            # self.model.load_state_dict(ckpt_data['state_dict'])
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._CORnet_RT_clean
 

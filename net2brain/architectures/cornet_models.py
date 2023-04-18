@@ -16,11 +16,7 @@ MODELS = {"cornet_z": cornet_z,
 MODEL_NODES = {"cornet_z": ['module.V1', 'module.V2', 'module.V4', 'module.IT'],
                "cornet_rt": ['module.V1', 'module.V2', 'module.V4', 'module.IT'],
                "cornet_s": ['module.V1', 'module.V2', 'module.V4', 'module.IT']}
-
-MODEL_WEIGHTS = {"cornet_z": "https://s3.amazonaws.com/cornet-models/cornet_z-5c427c9c.pth",
-                 "cornet_rt": "https://s3.amazonaws.com/cornet-models/cornet_rt-933c001c.pth",
-                 "cornet_s": "https://s3.amazonaws.com/cornet-models/cornet_s-1d3f7974.pth"}
-
+               
 
 def preprocess(image, model_name):
     """Preprocesses image according to the networks needs
