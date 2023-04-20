@@ -12,7 +12,6 @@ class RSA():
 
     def __init__(self, model_rdms_path, brain_rdms_path, model_name, datatype="None", save_path="./", distance_metric="spearman"):
         """Initiate RSA
-
         Args:
             json_dir (str/path): Path to json dir
         """
@@ -30,13 +29,16 @@ class RSA():
         self.save_path = save_path
         self.datatype = datatype
         self.model_name = model_name
+        
+        # For comparison
+        self.other_rdms_path = None
+        self.other_rdms = None
 
         if distance_metric.lower() == "spearman":
             self.distance = self.model_spearman
 
     def find_datatype(self, roi):
         """Function to find out if we should apply MEG or FMRI algorithm to the data
-
         Args:
             roi (str): Name of ROI
         """
@@ -51,11 +53,9 @@ class RSA():
 
     def model_spearman(self, model_rdm, rdms):
         """Calculate Spearman for model
-
         Args:
             model_rdm (numpy array): RDM of model
             rdms (list of numpy arrays): RDMs of ROI
-
         Returns:
             float: Spearman correlation of model and roi
         """
@@ -65,10 +65,8 @@ class RSA():
 
     def folderlookup(self, path):
         """Looks at the available files and returns the chosen one
-
         Args:
             path (str/path): path to folder
-
         Returns:
             list: list of files in dir
         """
@@ -85,12 +83,10 @@ class RSA():
 
     def rsa_meg(self, model_rdm, brain_rdm, layername):
         """Creates the output dictionary for MEG scans. Returns {layername: R², Significance}
-
         Args:
             model_rdm (numpy array): DNN rdm
             brain_rdm (list of numpy arrays): Subjects RDMs
             layername ([type]): [description]
-
         Returns:
             dict: {layername: [r2, significance, sem]}
         """
@@ -115,16 +111,14 @@ class RSA():
         # standard error of mean
         sem = stats.sem(corr_squared)  # standard error of mean
 
-        return r2, significance, sem
+        return r2, significance, sem, corr_squared
 
     def rsa_fmri(self, model_rdm, brain_rdm, layername):
         """Creates the output dictionary for fMRI scans. Returns {layername: R², Significance}
-
         Args:
             model_rdm (numpy array): DNN rdm
             brain_rdm (list of numpy arrays): Subjects RDMs
             layername ([type]): [description]
-
         Returns:
             dict: {layername: [r2, significance, sem]}
         """
@@ -153,13 +147,12 @@ class RSA():
         # standard error of mean
         sem = stats.sem(corr_squared)
 
-        return r2, significance, sem
+        return r2, significance, sem, corr_squared
 
-    def evaluate_layer(self, roi):
-        """Functiion to evaulate the scans to the current layer , either fmri or meg
-
+    def evaluate_roi(self, roi):
+        """Functiion to evaulate the layers to the current roi , either fmri or meg
         Returns:
-            dict: dictionary of all results to the current layer
+            dict: dictionary of all results to the current roi
         """
 
         all_layers_dicts = []
@@ -173,7 +166,7 @@ class RSA():
     
 
             # Calculate Correlations
-            r2, significance, sem = self.rsa(model_rdm, roi_rdm, layer)
+            r2, significance, sem, corr_squared = self.rsa(model_rdm, roi_rdm, layer)
 
             # Add relationship to Noise Ceiling to this data
             lnc = self.this_nc["lnc"]
@@ -188,16 +181,16 @@ class RSA():
                            "Significance": [significance],
                            "SEM": [sem],
                            "LNC": [lnc],
-                           "UNC": [unc]}
+                           "UNC": [unc],
+                           "R2_array" : corr_squared}
 
             # Add this dict to the total dickt
             all_layers_dicts.append(output_dict)
 
         return all_layers_dicts
 
-    def evaluate(self):
+    def evaluate(self,correction=None):
         """Function to evaluate all DNN RDMs to all ROI RDMs
-
         Returns:
             dict: final dict containing all results
         """
@@ -212,7 +205,7 @@ class RSA():
             self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
-            all_layers_dict = self.evaluate_layer(roi)
+            all_layers_dict = self.evaluate_roi(roi)
 
             # Create dict with these results
             scan_key = "(" + str(counter) + ") " + roi[:-4]
@@ -220,7 +213,56 @@ class RSA():
             for layer_dict in all_layers_dict:
                 layer_dict["ROI"] = scan_key
                 layer_dict["Model"] = self.model_name
+                del layer_dict["R2_array"]
                 layer_df = pd.DataFrame.from_dict(layer_dict)
+                if correction == "bonferroni":
+                    layer_df['Significance'] = layer_df['Significance'] * len(all_layers_dict)
                 all_rois_df = pd.concat([all_rois_df, layer_df], ignore_index=True)
-
+            
         return all_rois_df
+        
+    def compare_model(self,other_rdms_path):
+        """Function to evaluate all DNN RDMs to all ROI RDMs
+        Returns:
+            dict: final dict containing all results
+        """
+        self.other_rdms_path = other_rdms_path
+        self.other_rdms = self.folderlookup(other_rdms_path)
+        self.other_rdms.sort(key=natural_keys)
+        
+        comp_dic = dict()
+	
+        for counter, roi in enumerate(self.brain_rdms):
+
+            self.find_datatype(roi)
+
+            # Calculate Noise Ceiing for this ROI
+            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
+
+            # Return Correlation Values for this ROI to all model layers
+            model_layers_dict = self.evaluate_roi(roi)
+            
+            #swicth
+            self.other_rdms,self.model_rdms = self.model_rdms,self.other_rdms
+            self.other_rdms_path,self.model_rdms_path = self.model_rdms_path,self.other_rdms_path 
+
+            # Calculate Noise Ceiing for this ROI
+            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
+
+            # Return Correlation Values for this ROI to all model layers
+            other_layers_dict = self.evaluate_roi(roi)
+            
+            #swicth
+            self.other_rdms,self.model_rdms = self.model_rdms,self.other_rdms
+            self.other_rdms_path,self.model_rdms_path = self.model_rdms_path,self.other_rdms_path
+            
+            model_ii = np.argmin([layer_dict["R2"] for layer_dict in model_layers_dict])            
+            other_ii = np.argmin([layer_dict["R2"] for layer_dict in other_layers_dict])
+            
+            tstat,p = stats.ttest_ind(other_layers_dict[other_ii]["R2_array"],model_layers_dict[model_ii]["R2_array"])
+            
+            scan_key = "(" + str(counter) + ") " + roi[:-4]
+               
+            comp_dic[scan_key] = (tstat,p)
+        
+        return comp_dic
