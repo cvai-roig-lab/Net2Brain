@@ -89,27 +89,22 @@ class Plotting:
         # Plot Grouped Bar-Plots
         x_values = np.arange(len(r2_values))  # the label locations
         width = 0.20  # the width of the bars
-        multiplier = 0
         colors = ['#F1404B', '#FF5E57', '#4A90E2', '#6FC3DF', '#F1404B', '#FF5E57', '#4A90E2', '#6FC3DF']
-        for attribute, measurement in iter_dict.items():
-            offset = width * multiplier
-            rects = ax.bar(x_values + offset, measurement[0], width, yerr=measurement[1], label=attribute, color=colors[multiplier])
-            multiplier += 1
-
-        # Plot Significance Asterix
-        multiplier = 0
-        for model, significances in significance_dict.items():
-            counter = 0
-            offset = width * multiplier
-            for sig in significances:
-                if sig < 0.05:
-                    ax.text(x_values[counter] + offset, iter_dict[model][0][counter], '*', horizontalalignment='center', verticalalignment='bottom', fontsize=15)
-                counter += 1
-            multiplier += 1
 
         # Plot Noise Ceiling
         for lnc, unc, x in zip(lnc, unc, x_values):
-            ax.fill_between((x - width * 0.5, x + width * (1 + (0.5 * len(models)))), lnc, unc, color='gray', label="Noise Ceiling", alpha=0.5)
+            ax.fill_between((x - width * 0.5, x + width * (1.5 + (0.5 * len(models)))), lnc, unc, color='gray', label="Noise Ceiling", alpha=0.5)        
+        
+        for counter,(attribute, measurement) in enumerate(iter_dict.items()):
+            offset = width * counter
+            rects = ax.bar(x_values + offset, measurement[0], width, yerr=measurement[1], label=attribute, color=colors[counter])
+
+        # Plot Significance Asterix
+        for multiplier, (model, significances) in enumerate(significance_dict.items()):
+            offset = width * multiplier
+            for counter, sig in enumerate(significances):
+                if sig < 0.05:
+                    ax.text(x_values[counter] + offset, iter_dict[model][0][counter], '*', horizontalalignment='center', verticalalignment='bottom', fontsize=15)
 
         # Make the plot pretty
         ax.set_title("Results of Evaluation", fontsize=10)
