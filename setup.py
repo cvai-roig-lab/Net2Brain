@@ -26,6 +26,7 @@ setup(
         'torchextractor == 0.3.0',
         'torchvision == 0.11.3',
         'rsatoolbox == 0.0.3',
-        'clip @ git+https://github.com/openai/CLIP.git'
+        'clip @ git+https://github.com/openai/CLIP.git',
+        'git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master'
     ]
 )

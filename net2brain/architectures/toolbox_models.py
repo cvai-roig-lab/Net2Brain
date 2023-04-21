@@ -7,10 +7,13 @@ import torch
 
 
 from net2brain.architectures.implemented_models.places365_net import get_resnet50_places365
+from net2brain.architectures.implemented_models.semseg_models import get_semseg_model
 
-MODELS = {"Places365": get_resnet50_places365}
+MODELS = {"Places365": get_resnet50_places365,
+          "SemSeg": get_semseg_model}
 
-MODEL_NODES = {"Places365": ["0", "1", "2", "3", "4", "6", "7", "8", "9", "10", "11", "12"]}
+MODEL_NODES = {"Places365": ["0", "1", "2", "3", "4", "6", "7", "8", "9", "10", "11", "12"],
+               "SemSeg": ['decoder.ppm_conv.0.2','decoder.ppm_conv.2.2','decoder.ppm_conv.3.2','decoder.ppm_last_conv.2','decoder.fpn_in.2.2','decoder.fpn_out.2.0.2','decoder.conv_last.1']}
 
 
 
