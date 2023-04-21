@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import os
+import requests
 
 from functools import reduce
 from torch.autograd import Variable
@@ -29,6 +31,7 @@ class LambdaMap(LambdaBase):
 class LambdaReduce(LambdaBase):
     def forward(self, input):
         return reduce(self.lambda_func,self.forward_prepare(input))
+
 
 
 resnet50_places365 = nn.Sequential( # Sequential,
@@ -328,3 +331,30 @@ resnet50_places365 = nn.Sequential( # Sequential,
     Lambda(lambda x: x.view(x.size(0),-1)), # View,
     nn.Sequential(Lambda(lambda x: x.view(1,-1) if 1==len(x.size()) else x ),nn.Linear(2048,365)), # Linear,
     )
+
+
+
+
+def get_resnet50_places365(pretrained=True):
+    model = resnet50_places365
+
+    if not os.path.exists(r"net2brain\architectures\implemented_models\checkpoints"):
+        os.makedirs(r"net2brain\architectures\implemented_models\checkpoints")
+
+    if pretrained:
+    
+        # Check if the file exists in the current directory
+        if not os.path.exists("net2brain\architectures\implemented_models\checkpoints\resnet50_places365.pth"):
+            # Download the file using requests
+            file_url = "https://drive.google.com/uc?id=1qO96TKv2zeLI8Poi2ISKVCcLrrUOMRaz"
+            r = requests.get(file_url)
+            print("~ Downloading weights")
+            with open(r"net2brain\architectures\implemented_models\checkpoints\resnet50_places365.pth", "wb") as f:
+                f.write(r.content)
+        
+        # Load the weights into the model
+        model.load_state_dict(torch.load(r"net2brain\architectures\implemented_models\checkpoints\resnet50_places365.pth"))
+        
+    return model
+
+

@@ -9,6 +9,7 @@ setup(
         'flake8',
         'h5py',
         'matplotlib',
+        'requests',
         'numpy',
         'opencv_python_headless',
         'pandas',
