@@ -338,22 +338,22 @@ resnet50_places365 = nn.Sequential( # Sequential,
 def get_resnet50_places365(pretrained=True):
     model = resnet50_places365
 
-    if not os.path.exists(r"net2brain\architectures\implemented_models\checkpoints"):
-        os.makedirs(r"net2brain\architectures\implemented_models\checkpoints")
+    if not os.path.exists(r"checkpoints"):
+        os.makedirs(r"checkpoints")
 
     if pretrained:
     
         # Check if the file exists in the current directory
-        if not os.path.exists("net2brain\architectures\implemented_models\checkpoints\resnet50_places365.pth"):
+        if not os.path.exists(r"checkpoints\resnet50_places365.pth"):
             # Download the file using requests
             file_url = "https://drive.google.com/uc?id=1qO96TKv2zeLI8Poi2ISKVCcLrrUOMRaz"
             r = requests.get(file_url)
             print("~ Downloading weights")
-            with open(r"net2brain\architectures\implemented_models\checkpoints\resnet50_places365.pth", "wb") as f:
+            with open(r"checkpoints\resnet50_places365.pth", "wb") as f:
                 f.write(r.content)
         
         # Load the weights into the model
-        model.load_state_dict(torch.load(r"net2brain\architectures\implemented_models\checkpoints\resnet50_places365.pth"))
+        model.load_state_dict(torch.load(r"checkpoints\resnet50_places365.pth"))
         
     return model
 

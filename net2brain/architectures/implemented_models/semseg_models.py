@@ -599,34 +599,37 @@ class UPerNet(nn.Module):
 
 def get_semseg_model(pretrained=True):
 
+    if not os.path.exists(r"checkpoints"):
+        os.makedirs(r"checkpoints")
+
 
     # Check if the file exists in the current directory
-    if not os.path.exists(r"net2brain\architectures\implemented_models\checkpoints\decoder_epoch_30.pth"):
+    if not os.path.exists(r"checkpoints\decoder_epoch_30.pth"):
         # Download the file using requests
         file_url = "http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50-upernet/decoder_epoch_30.pth"
         r = requests.get(file_url)
         print("~ Downloading weights")
-        with open(r"net2brain\architectures\implemented_models\checkpoints\decoder_epoch_30.pth", "wb") as f:
+        with open(r"checkpoints\decoder_epoch_30.pth", "wb") as f:
             f.write(r.content)
 
-    if not os.path.exists(r"net2brain\architectures\implemented_models\checkpoints\encoder_epoch_30.pth"):
+    if not os.path.exists(r"checkpoints\encoder_epoch_30.pth"):
         # Download the file using requests
         file_url = "http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50-upernet/encoder_epoch_30.pth"
         r = requests.get(file_url)
         print("~ Downloading weights")
-        with open(r"net2brain\architectures\implemented_models\checkpoints\encoder_epoch_30.pth", "wb") as f:
+        with open(r"checkpoints\encoder_epoch_30.pth", "wb") as f:
             f.write(r.content)
 
 
     net_encoder = ModelBuilder.build_encoder(
                     arch='resnet50',
                     fc_dim=2048,
-                    weights=r"net2brain\architectures\implemented_models\checkpoints\encoder_epoch_30.pth")
+                    weights=r"checkpoints\encoder_epoch_30.pth")
     net_decoder = ModelBuilder.build_decoder(
                     arch='upernet',
                     fc_dim=2048,
                     num_class=150,
-                    weights=r"net2brain\architectures\implemented_models\checkpoints\decoder_epoch_30.pth",
+                    weights=r"checkpoints\decoder_epoch_30.pth",
                     use_softmax=True)
 
     crit = torch.nn.NLLLoss(ignore_index=-1)
