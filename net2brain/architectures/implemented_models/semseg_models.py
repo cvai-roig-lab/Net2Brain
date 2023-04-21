@@ -621,12 +621,12 @@ def get_semseg_model(pretrained=True):
     net_encoder = ModelBuilder.build_encoder(
                     arch='resnet50',
                     fc_dim=2048,
-                    weights=r"net2brain\architectures\implemented_models\checkpoints\decoder_epoch_30.pth")
+                    weights=r"net2brain\architectures\implemented_models\checkpoints\encoder_epoch_30.pth")
     net_decoder = ModelBuilder.build_decoder(
                     arch='upernet',
                     fc_dim=2048,
                     num_class=150,
-                    weights=r"net2brain\architectures\implemented_models\checkpoints\encoder_epoch_30.pth",
+                    weights=r"net2brain\architectures\implemented_models\checkpoints\decoder_epoch_30.pth",
                     use_softmax=True)
 
     crit = torch.nn.NLLLoss(ignore_index=-1)
