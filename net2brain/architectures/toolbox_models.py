@@ -6,9 +6,9 @@ from PIL import Image
 import torch
 
 
-from net2brain.architectures.implemented_models.places365_net import resnet50_places365
+from net2brain.architectures.implemented_models.places365_net import get_resnet50_places365
 
-MODELS = {"Places365": resnet50_places365}
+MODELS = {"Places365": get_resnet50_places365}
 
 MODEL_NODES = {"Places365": ["0", "1", "2", "3", "4", "6", "7", "8", "9", "10", "11", "12"]}
 

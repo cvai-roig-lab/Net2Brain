@@ -238,7 +238,7 @@ class FeatureExtractor:
 
         elif netset == 'toolbox':
             self.module = toolbox_models
-            self.model = self.module.MODELS[model_name]
+            self.model = self.module.MODELS[model_name](pretrained=True)
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._torch_clean
