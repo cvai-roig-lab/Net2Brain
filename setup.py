@@ -10,6 +10,7 @@ setup(
         'h5py',
         'matplotlib',
         'requests',
+        'seaborn',
         'numpy',
         'opencv_python_headless',
         'pandas',
