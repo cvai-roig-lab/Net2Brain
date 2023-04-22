@@ -9,6 +9,7 @@ setup(
         'flake8',
         'h5py',
         'matplotlib',
+        'requests',
         'seaborn',
         'numpy',
         'opencv_python_headless',
@@ -26,6 +27,7 @@ setup(
         'torchextractor == 0.3.0',
         'torchvision == 0.11.3',
         'rsatoolbox == 0.0.3',
-        'clip @ git+https://github.com/openai/CLIP.git'
+        'clip @ git+https://github.com/openai/CLIP.git',
+        'mit_semseg @ git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master'
     ]
 )

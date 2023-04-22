@@ -2,8 +2,6 @@
 
 # Net2Brain 🧠
 
-> This is a Beta version of the toolbox. Expect many changes to the API!
-
 **Net2Brain** is an easy-to-use framework that allows neuroscientists to compare human brain activity patterns in response to visual stimuli with the activation patterns of over 600 Deep Neural Networks (DNNs) processing the same stimuli.
 
 Any dataset composed of either image or video files can be fed into the program
