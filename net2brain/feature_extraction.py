@@ -151,7 +151,7 @@ class FeatureExtractor:
 
     def __init__(
         self, model, netset=None, layers_to_extract=None, device='cpu', 
-        transforms=None
+        transforms=None, pretrained=True
     ):
         """Initializes feature extractor.
 
@@ -172,6 +172,7 @@ class FeatureExtractor:
         """
         # Set model and device
         self.device = device
+        self.pretrained = pretrained
         
         # Load model from netset or load custom model
         if type(model) == str:
@@ -222,14 +223,14 @@ class FeatureExtractor:
 
         if netset == "standard":
             self.module = pymodule
-            self.model = self.module.MODELS[model_name](pretrained=True)
+            self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
         elif netset == 'pytorch':
             self.module = torchmodule
             self.model = self.module.MODELS[model_name](
-                'pytorch/vision:v0.10.0', self.model_name, pretrained=True
+                'pytorch/vision:v0.10.0', self.model_name, pretrained=self.pretrained
             )
             self.model.eval()
             self._extractor = self._extract_features_tx
@@ -238,7 +239,7 @@ class FeatureExtractor:
 
         elif netset == 'toolbox':
             self.module = toolbox_models
-            self.model = self.module.MODELS[model_name](pretrained=True)
+            self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._torch_clean
@@ -246,10 +247,11 @@ class FeatureExtractor:
         elif netset == 'taskonomy':
             self.module = taskonomy
             self.model = self.module.MODELS[model_name](eval_only=True)
-            checkpoint = torch.utils.model_zoo.load_url(
-                self.module.MODEL_WEIGHTS[model_name]
-            ) # Load weights
-            self.model.load_state_dict(checkpoint['state_dict'])
+            if self.pretrained:
+                checkpoint = torch.utils.model_zoo.load_url(
+                    self.module.MODEL_WEIGHTS[model_name]
+                ) # Load weights
+                self.model.load_state_dict(checkpoint['state_dict'])
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
@@ -258,12 +260,14 @@ class FeatureExtractor:
             self.model = self.module.MODELS[model_name](
                 'mateuszbuda/brain-segmentation-pytorch', self.model_name, 
                 in_channels=3, out_channels=1, init_features=32, 
-                pretrained=True
+                pretrained=self.pretrained
             )
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
         elif netset == 'clip':
+            if not self.pretrained:
+                print("Random models not yet implemented. Will take pretrained model!")
             self.module = clip_models
             correct_model_name = self.model_name.replace("_-_", "/")
             self.model = self.module.MODELS[model_name](
@@ -274,7 +278,7 @@ class FeatureExtractor:
 
         elif netset == 'cornet':
             self.module = cornet_models
-            self.model = self.module.MODELS[model_name](pretrained=True)
+            self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
             self.model = torch.nn.DataParallel(self.model)
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._CORnet_RT_clean
@@ -283,7 +287,7 @@ class FeatureExtractor:
             # TODO: ONLY WORKS ON CUDA YET - NEEDS CLEANUP
             self.module = yolo
             self.model = self.module.MODELS[model_name](
-                'ultralytics/yolov5', 'yolov5l', pretrained=True, 
+                'ultralytics/yolov5', 'yolov5l', pretrained=self.pretrained, 
                 device=self.device
             )
             self._extractor = self._extract_features_tx
@@ -291,7 +295,7 @@ class FeatureExtractor:
 
         elif netset == 'detectron2':
             self.module = detectron2_models
-            config = self.module.configurator(self.model_name)
+            config = self.module.configurator(self.model_name, pretrained=self.pretrained)
             self.model = self.module.MODELS[model_name](config)
             self.model.eval()
             self._extractor = self._extract_features_tx
@@ -299,7 +303,7 @@ class FeatureExtractor:
 
         elif netset == 'vissl':
             self.module = vissl_models
-            config = self.module.configurator(self.model_name)
+            config = self.module.configurator(self.model_name, pretrained=self.pretrained)
             self.model = (
                 self.module.MODELS[model_name]
                 (config.MODEL, config.OPTIMIZER)
@@ -311,10 +315,10 @@ class FeatureExtractor:
             self.module = timm
             try:
                 self.model = self.module.MODELS[model_name](
-                    model_name, pretrained=True, features_only=True)
+                    model_name, pretrained=self.pretrained, features_only=True)
             except:
                 self.model = self.module.MODELS[model_name](
-                    model_name, pretrained=True)
+                    model_name, pretrained=self.pretrained)
             # Handle layers to extract differently
             if layers_to_extract == None:
                 self.layers_to_extract = self.module.MODEL_NODES[model_name]
@@ -328,7 +332,7 @@ class FeatureExtractor:
             self.module = pyvideo
             self.model = self.module.MODELS[model_name](
                 'facebookresearch/pytorchvideo', self.model_name, 
-                pretrained=True
+                pretrained=self.pretrained
             )
             self.model.eval()
             self._extractor = self._extract_features_tx
