@@ -221,16 +221,14 @@ class RSA():
             
         return all_rois_df
         
-    def compare_model(self,other_rdms_path):
+    def compare_model(self,other_RSA):
         """Function to evaluate all DNN RDMs to all ROI RDMs
         Returns:
             dict: final dict containing all results
         """
-        self.other_rdms_path = other_rdms_path
-        self.other_rdms = self.folderlookup(other_rdms_path)
-        self.other_rdms.sort(key=natural_keys)
         
         comp_dic = dict()
+        sig_pairs = []
 	
         for counter, roi in enumerate(self.brain_rdms):
 
@@ -242,19 +240,12 @@ class RSA():
             # Return Correlation Values for this ROI to all model layers
             model_layers_dict = self.evaluate_roi(roi)
             
-            #swicth
-            self.other_rdms,self.model_rdms = self.model_rdms,self.other_rdms
-            self.other_rdms_path,self.model_rdms_path = self.model_rdms_path,self.other_rdms_path 
 
             # Calculate Noise Ceiing for this ROI
-            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
+            other_RSA.this_nc = NoiseCeiling(roi, op.join(other_RSA.brain_rdms_path, roi)).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
-            other_layers_dict = self.evaluate_roi(roi)
-            
-            #swicth
-            self.other_rdms,self.model_rdms = self.model_rdms,self.other_rdms
-            self.other_rdms_path,self.model_rdms_path = self.model_rdms_path,self.other_rdms_path
+            other_layers_dict = other_RSA.evaluate_roi(roi)
             
             model_ii = np.argmin([layer_dict["R2"] for layer_dict in model_layers_dict])            
             other_ii = np.argmin([layer_dict["R2"] for layer_dict in other_layers_dict])
@@ -264,5 +255,7 @@ class RSA():
             scan_key = "(" + str(counter) + ") " + roi[:-4]
                
             comp_dic[scan_key] = (tstat,p)
-        
-        return comp_dic
+            if p < 0.5:
+                sig_pair = sorted(((scan_key,self.model_name),(scan_key,other_RSA.model_name)), key=lambda element: (element[1]))
+                sig_pairs.append(sig_pair)
+        return comp_dic,sig_pairs
