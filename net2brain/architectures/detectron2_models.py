@@ -114,7 +114,7 @@ MODEL_NODES = {'COCO-Detection_-_faster_rcnn_R_50_C4_1x.yaml': ['backbone'],
                'Detectron1-Comparisons_-_keypoint_rcnn_R_50_FPN_1x.yaml': ['backbone', 'backbone.bottom_up']}
          
 
-def configurator(model_name, pretrained):
+def configurator(model_name):
     """Detectron2 builds its model through configs. This function creates the config
 
     Args:
@@ -129,8 +129,7 @@ def configurator(model_name, pretrained):
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file(correct_model_name))
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-    if pretrained:
-        cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(correct_model_name)
+    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(correct_model_name)
     return cfg
 
 

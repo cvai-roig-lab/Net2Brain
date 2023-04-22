@@ -342,7 +342,7 @@ def get_resnet50_places365(pretrained=True):
         os.makedirs(r"checkpoints")
 
     if pretrained:
-    
+
         # Check if the file exists in the current directory
         if not os.path.exists(r"checkpoints\resnet50_places365.pth"):
             # Download the file using requests

@@ -209,29 +209,18 @@ def download_weights(model_name):
 def configurator(model_name, pretrained):
 
 
-    if pretrained:
-        
-        file_path = download_weights(model_name)
-        print("make config")
+    file_path = download_weights(model_name)
+    print("make config")
 
-        cfg = [
-            'config=' + cfg_yamls[model_name],
-            'config.MODEL.WEIGHTS_INIT.PARAMS_FILE=' + file_path,
-            'config.MODEL.FEATURE_EVAL_SETTINGS.EVAL_MODE_ON=True',
-            'config.MODEL.FEATURE_EVAL_SETTINGS.FREEZE_TRUNK_ONLY=True',
-            'config.MODEL.FEATURE_EVAL_SETTINGS.EXTRACT_TRUNK_FEATURES_ONLY=True',
-            'config.MODEL.FEATURE_EVAL_SETTINGS.SHOULD_FLATTEN_FEATS=False',
-            'config.MODEL.FEATURE_EVAL_SETTINGS.LINEAR_EVAL_FEAT_POOL_OPS_MAP=[["res5avg", ["Identity", []]]]'
-        ]
-    else:
-        cfg = [
-            'config=' + cfg_yamls[model_name],
-            'config.MODEL.FEATURE_EVAL_SETTINGS.EVAL_MODE_ON=True',
-            'config.MODEL.FEATURE_EVAL_SETTINGS.FREEZE_TRUNK_ONLY=True',
-            'config.MODEL.FEATURE_EVAL_SETTINGS.EXTRACT_TRUNK_FEATURES_ONLY=True',
-            'config.MODEL.FEATURE_EVAL_SETTINGS.SHOULD_FLATTEN_FEATS=False',
-            'config.MODEL.FEATURE_EVAL_SETTINGS.LINEAR_EVAL_FEAT_POOL_OPS_MAP=[["res5avg", ["Identity", []]]]'
-        ]
+    cfg = [
+        'config=' + cfg_yamls[model_name],
+        'config.MODEL.WEIGHTS_INIT.PARAMS_FILE=' + file_path,
+        'config.MODEL.FEATURE_EVAL_SETTINGS.EVAL_MODE_ON=True',
+        'config.MODEL.FEATURE_EVAL_SETTINGS.FREEZE_TRUNK_ONLY=True',
+        'config.MODEL.FEATURE_EVAL_SETTINGS.EXTRACT_TRUNK_FEATURES_ONLY=True',
+        'config.MODEL.FEATURE_EVAL_SETTINGS.SHOULD_FLATTEN_FEATS=False',
+        'config.MODEL.FEATURE_EVAL_SETTINGS.LINEAR_EVAL_FEAT_POOL_OPS_MAP=[["res5avg", ["Identity", []]]]'
+    ]
 
 
     cfg = compose_hydra_configuration(cfg)

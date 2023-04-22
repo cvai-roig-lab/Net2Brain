@@ -8,6 +8,7 @@ from PIL import Image
 import numpy as np
 from rsatoolbox.data.dataset import Dataset
 import torch
+import torch.nn as nn
 from torch.autograd import Variable as V
 import torchextractor as tx
 from torchvision import transforms as T
@@ -143,6 +144,16 @@ def find_model_like(name):
         for model_names in values:
             if name.lower() in model_names.lower():
                 print(f'{key}: {model_names}')
+                
+
+
+
+def randomoize_weights(m):
+    if isinstance(m, nn.Linear):
+        torch.nn.init.xavier_uniform(m.weight)
+        m.bias.data.fill_(0.01)
+    if isinstance(m, nn.Conv2d):
+        torch.nn.init.xavier_uniform(m.weight)
 
 
 class FeatureExtractor:
@@ -221,6 +232,9 @@ class FeatureExtractor:
         # Some Torchversion return a download error on MacOS, this is a fix
         torch.hub._validate_not_a_forked_repo=lambda a,b,c: True
 
+
+        print(self.pretrained)
+
         if netset == "standard":
             self.module = pymodule
             self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
@@ -232,6 +246,10 @@ class FeatureExtractor:
             self.model = self.module.MODELS[model_name](
                 'pytorch/vision:v0.10.0', self.model_name, pretrained=self.pretrained
             )
+
+            if not self.pretrained:
+                self.model.apply(randomoize_weights)
+
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._torch_clean
@@ -240,6 +258,8 @@ class FeatureExtractor:
         elif netset == 'toolbox':
             self.module = toolbox_models
             self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
+            if not self.pretrained:
+                self.model.apply(randomoize_weights)
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._torch_clean
@@ -262,17 +282,21 @@ class FeatureExtractor:
                 in_channels=3, out_channels=1, init_features=32, 
                 pretrained=self.pretrained
             )
+            if not self.pretrained:
+                self.model.apply(randomoize_weights)
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
         elif netset == 'clip':
-            if not self.pretrained:
-                print("Random models not yet implemented. Will take pretrained model!")
             self.module = clip_models
             correct_model_name = self.model_name.replace("_-_", "/")
             self.model = self.module.MODELS[model_name](
                 correct_model_name, device=self.device
             )[0]
+
+            if not self.pretrained:
+                self.model.apply(randomoize_weights)
+
             self._extractor = self._extract_features_tx_clip
             self._features_cleaner = self._no_clean
 
@@ -295,19 +319,24 @@ class FeatureExtractor:
 
         elif netset == 'detectron2':
             self.module = detectron2_models
-            config = self.module.configurator(self.model_name, pretrained=self.pretrained)
+            config = self.module.configurator(self.model_name)
             self.model = self.module.MODELS[model_name](config)
+            if not self.pretrained:
+                self.model.apply(randomoize_weights)
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._detectron_clean
 
         elif netset == 'vissl':
             self.module = vissl_models
-            config = self.module.configurator(self.model_name, pretrained=self.pretrained)
+            config = self.module.configurator(self.model_name)
             self.model = (
                 self.module.MODELS[model_name]
                 (config.MODEL, config.OPTIMIZER)
             )
+            if not self.pretrained:
+                self.model.apply(randomoize_weights)
+
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
@@ -334,6 +363,9 @@ class FeatureExtractor:
                 'facebookresearch/pytorchvideo', self.model_name, 
                 pretrained=self.pretrained
             )
+            if not self.pretrained:
+                self.model.apply(randomoize_weights)
+
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._slowfast_clean
