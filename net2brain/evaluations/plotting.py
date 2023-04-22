@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from pprint import pprint
+import seaborn as sns
 plt.style.use('ggplot')
 
 
@@ -89,27 +90,22 @@ class Plotting:
         # Plot Grouped Bar-Plots
         x_values = np.arange(len(r2_values))  # the label locations
         width = 0.20  # the width of the bars
-        multiplier = 0
         colors = ['#F1404B', '#FF5E57', '#4A90E2', '#6FC3DF', '#F1404B', '#FF5E57', '#4A90E2', '#6FC3DF']
-        for attribute, measurement in iter_dict.items():
-            offset = width * multiplier
-            rects = ax.bar(x_values + offset, measurement[0], width, yerr=measurement[1], label=attribute, color=colors[multiplier])
-            multiplier += 1
-
-        # Plot Significance Asterix
-        multiplier = 0
-        for model, significances in significance_dict.items():
-            counter = 0
-            offset = width * multiplier
-            for sig in significances:
-                if sig < 0.05:
-                    ax.text(x_values[counter] + offset, iter_dict[model][0][counter], '*', horizontalalignment='center', verticalalignment='bottom', fontsize=15)
-                counter += 1
-            multiplier += 1
 
         # Plot Noise Ceiling
         for lnc, unc, x in zip(lnc, unc, x_values):
-            ax.fill_between((x - width * 0.5, x + width * (1 + (0.5 * len(models)))), lnc, unc, color='gray', label="Noise Ceiling", alpha=0.5)
+            ax.fill_between((x - width * 0.5, x + width * (1.5 + (0.5 * len(models)))), lnc, unc, color='gray', label="Noise Ceiling", alpha=0.5)        
+        
+        for counter,(attribute, measurement) in enumerate(iter_dict.items()):
+            offset = width * counter
+            rects = ax.bar(x_values + offset, measurement[0], width, yerr=measurement[1], label=attribute, color=colors[counter])
+
+        # Plot Significance Asterix
+        for multiplier, (model, significances) in enumerate(significance_dict.items()):
+            offset = width * multiplier
+            for counter, sig in enumerate(significances):
+                if sig < 0.05:
+                    ax.text(x_values[counter] + offset, iter_dict[model][0][counter], '*', horizontalalignment='center', verticalalignment='bottom', fontsize=15)
 
         # Make the plot pretty
         ax.set_title("Results of Evaluation", fontsize=10)
@@ -124,7 +120,74 @@ class Plotting:
         ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
         return plotting_df
-
+    
+    def plot_with_sig(self,pairs):
+        # Only have the best performing layers per dataframe
+        max_dataframes = []
+        for dataframe in self.dataframes:
+            max_dataframes.append(dataframe.loc[dataframe.groupby('ROI')['R2'].idxmax(), :])
+        plotting_df = pd.concat(max_dataframes, ignore_index=True)
+        # Initialize plot
+        x = "ROI"
+        y = "R2"
+        g = sns.catplot(
+            data=plotting_df, kind="bar",
+            x="ROI", y="R2", hue="Model",
+            palette="dark", alpha=.6, height=6
+        )
+        max_err = max(plotting_df["SEM"])
+        # Get coordinates of patches, plot error bars
+        x_coords = [p.get_x() + 0.5 * p.get_width() for p in g.axes.flat[0].patches]
+        y_coords = [p.get_height() for p in g.axes.flat[0].patches]
+        g.axes.flat[0].errorbar(x=x_coords, y=y_coords, yerr=plotting_df["SEM"], fmt="none", c="#808080")
+        bar_width = g.axes.flat[0].patches[0].get_width()
+        # Build bar-color to Model name dictionary  
+        hue2name_dic = {p.get_fc(): g.legend.get_texts()[ii].get_text() for ii, p in enumerate(g.legend.get_patches())}
+        # Get all data points (bar) and sort them
+        name_x_y = [(hue2name_dic[p.get_fc()],p.get_x(),p.get_height()) for ii, p in enumerate(g.axes.flat[0].patches)]
+        name_x_y_sorted = sorted(name_x_y, key=lambda element: (element[0], element[1]))
+        # Get the names of the ROIs being plotted
+        ROI_lst = [ROI.get_text() for ROI in g.ax.get_xaxis().get_ticklabels()]
+        num_ROIs = len(ROI_lst)
+        # Given ROI and Model return xy cooridinates
+        pair2xy = {(ROI_lst[ii % num_ROIs],model) : (x,y) for ii,(model,x,y) in enumerate(name_x_y_sorted)}
+        # add model comparison significance
+        for pair in pairs:
+            x1,y1 = pair2xy[pair[0]]
+            x2,y2 = pair2xy[pair[1]]
+            bar_height = max(y1,y2) + max_err/2 + 0.0005
+            bar_tips = bar_height - 0.0002
+            plt.plot(
+                [x1+0.5*bar_width, x1+0.5*bar_width, x2+0.5*bar_width, x2+0.5*bar_width],
+                [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
+            )
+            plt.text((x1 + x2+bar_width) * 0.5, bar_height+0.001, '*', ha='center', va='bottom', c='k')
+        # Get a list of all significant R2 values compared to 0
+        sig_list = [(row['ROI'],row['Model']) for index,row in plotting_df.iterrows() if row['Significance'] < 0.05]
+        for sig in sig_list:
+            x,y = pair2xy[sig]
+            plt.text(x + bar_width* 0.5, 0.001, '*', ha='center', va='bottom', c='k')
+        num_models = len(g.legend.legend_handles)
+        lncl = [plotting_df[plotting_df['ROI']==ROI]['LNC'].iloc[0] for ROI in ROI_lst]
+        uncl = [plotting_df[plotting_df['ROI']==ROI]['UNC'].iloc[0] for ROI in ROI_lst]
+        label = 'Noise Ceiling'
+        for ii,(unc,lnc) in enumerate(zip(uncl,lncl)):
+            if unc == lnc:
+                continue
+            plt.axhline(y=unc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
+                linewidth = 1 , color='k', linestyle='dashed' , label = label)
+            label = ''
+            plt.axhline(y=lnc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
+                linewidth = 1 , color='k', linestyle='dashed' , label = label)
+        ##############
+        handles, labels = g.axes.flat[0].get_legend_handles_labels()
+        g.legend.remove()
+        plt.legend(handles[1:]+[handles[0]],labels[1:]+[labels[0]],loc='center left', bbox_to_anchor=(1, 0.5),title='Models')
+        g.despine(left=True)
+        g.set_axis_labels("ROI", "R2")
+        g.fig.suptitle("Results of Evaluation")
+        return plotting_df
+    
     def plot(self, variant="best_layer"):
         """Depending on the variant it will plot the data
 

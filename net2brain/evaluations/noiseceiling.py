@@ -61,9 +61,9 @@ class NoiseCeiling():
 
         num_subs = rdm.shape[0]
         unc = 0.0
+        mean_sub_rdm = np.mean(rdm, axis=0)  # take mean
         for i in range(num_subs):
             sub_rdm = rdm[i, :, :]
-            mean_sub_rdm = np.mean(rdm, axis=0)  # take mean
             # calculate spearman
             unc += self.noise_ceiling_spearman(sub_rdm, mean_sub_rdm)
 
