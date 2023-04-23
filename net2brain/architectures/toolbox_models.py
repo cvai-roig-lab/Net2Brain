@@ -42,7 +42,7 @@ def preprocess(image, model_name, device):
     img = Image.open(image).convert('RGB')
     img = V(transforms(img).unsqueeze(0))
 
-    if device == torch.device('cuda'):  # send to cuda
+    if device == 'cuda':  # send to cudaa
             img = img.cuda()
 
     return img
@@ -71,7 +71,7 @@ def preprocess_frame(frame, model_name, device):
     
     pil_image = V(centre_crop(pil_image).unsqueeze(0))
 
-    if device == torch.device('cuda'):  # send to cuda
+    if device == 'cuda':  # send to cudaa
             pil_image = pil_image.cuda()
             
     return pil_image

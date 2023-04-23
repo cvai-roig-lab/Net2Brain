@@ -111,7 +111,7 @@ def preprocess(image, model_name, device):
         image = V(centre_crop_grey(image).unsqueeze(0))
         
         # To Cuda
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cuda 
             image = image.cuda()
         
         return image
@@ -119,7 +119,7 @@ def preprocess(image, model_name, device):
         image = V(centre_crop(image).unsqueeze(0))
         
         # To Cuda
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cuda
             image = image.cuda()
             
         return image
@@ -156,14 +156,14 @@ def preprocess_frame(frame, model_name, device):
         pil_image = pil_image.convert('L')
         pil_image = V(centre_crop_grey(pil_image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cuda
             pil_image = pil_image.cuda()
             
         return pil_image
     else:
         pil_image = V(centre_crop(pil_image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cuda
             pil_image = pil_image.cuda()
             
         return pil_image

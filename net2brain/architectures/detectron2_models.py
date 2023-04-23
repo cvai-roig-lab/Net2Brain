@@ -155,7 +155,7 @@ def preprocess(image, model_name, device):
     
     final_image = V(centre_crop(image).unsqueeze(0))[0]
     
-    if device == torch.device('cuda'):  # send to cuda
+    if device == 'cuda':  # send to cuda
         final_image = final_image.cuda()
     
     image_dict = [{'image': final_image}]
@@ -187,7 +187,7 @@ def preprocess_frame(frame, model_name, device):
     final_image = V(centre_crop(pil_image).unsqueeze(0))[0]
     
     # Add to Cuda    
-    if device == torch.device('cuda'):  # send to cuda
+    if device == 'cuda':  # send to cuda
             final_image = final_image.cuda()
     
     image_dict = [{'image': final_image}]

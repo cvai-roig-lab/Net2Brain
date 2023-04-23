@@ -62,7 +62,7 @@ def preprocess(image, model_name, device):
     tokenized_text = torch.cat([clip.tokenize(f"a photo of a {c}") for c in ["word"]]).to("cpu") 
     
     # Add to Cuda
-    if device == torch.device('cuda'):  # send to cuda
+    if device == 'cuda':  # send to cuda
         img = img.cuda()
         tokenized_text = tokenized_text.cuda()
 
@@ -98,7 +98,7 @@ def preprocess_frame(frame, model_name, device):
     
     pil_image = V(transforms(pil_image).unsqueeze(0))
     
-    if device == torch.device('cuda'):  # send to cuda
+    if device == 'cuda':  # send to cuda
         pil_image = pil_image.cuda()
         tokenized_text = tokenized_text.cuda()
         

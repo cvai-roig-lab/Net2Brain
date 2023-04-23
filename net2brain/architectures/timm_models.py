@@ -932,7 +932,7 @@ def preprocess(image, model_name, device):
     if '384' in model_name:
         image = V(centre_crop_384(image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cudaa
             image = image.cuda()
             
         return image
@@ -940,14 +940,14 @@ def preprocess(image, model_name, device):
     elif '448' in model_name:
         image = V(centre_crop_448(image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cudaa
             image = image.cuda()
         return image
     
     else:
         image = V(centre_crop(image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cudaa
             image = image.cuda()
             
         return image
@@ -993,7 +993,7 @@ def preprocess_frame(frame, model_name, device):
     if '384' in model_name:
         pil_image = V(centre_crop_384(pil_image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cudaa
             pil_image = pil_image.cuda()
         
         return pil_image
@@ -1001,7 +1001,7 @@ def preprocess_frame(frame, model_name, device):
     elif '448' in model_name:
         pil_image = V(centre_crop_448(pil_image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cudaa
             pil_image = pil_image.cuda()
             
         return pil_image
@@ -1009,7 +1009,7 @@ def preprocess_frame(frame, model_name, device):
     else:
         pil_image = V(centre_crop(pil_image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cudaa
             pil_image = pil_image.cuda()
             
         return pil_image
