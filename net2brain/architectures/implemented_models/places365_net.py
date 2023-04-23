@@ -374,9 +374,6 @@ def get_resnet50_places365(pretrained=True):
                 f.write(r.content)
         
         # Load the weights into the model
-        print("model loaded")
-
-
         state_dict = torch.load(r"checkpoints\resnet50_places365.pth")
         model = load_state_dict_compatibly(model, state_dict)
 
