@@ -188,7 +188,7 @@ class Plotting:
         g.fig.suptitle("Results of Evaluation")
         return plotting_df
     
-    def plot(self, variant="best_layer"):
+    def plot(self, variant="best_layer", pairs="None"):
         """Depending on the variant it will plot the data
 
         Args:
@@ -200,6 +200,8 @@ class Plotting:
 
         if variant == "best_layer":
             plotting_df = self.plot_best_layer()
+        elif variant == "significance":
+            plotting_df = self.plot_with_sig(pairs=pairs)
         else:
             raise NotImplementedError(f"Variant {variant} is not available. For now choose 'best_layer'.")
         return plotting_df

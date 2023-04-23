@@ -23,6 +23,10 @@ import net2brain.architectures.unet_models as unet
 import net2brain.architectures.yolo_models as yolo
 import net2brain.architectures.toolbox_models as toolbox_models
 import net2brain.architectures.cornet_models as cornet_models
+import random
+
+
+
 
 ## Get available networks
 AVAILABLE_NETWORKS = {
@@ -146,7 +150,19 @@ def find_model_like(name):
                 print(f'{key}: {model_names}')
                 
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
 
+# Usage: set a seed value for reproducibility
+seed = 42
+set_seed(seed)
 
 
 
