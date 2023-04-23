@@ -397,7 +397,7 @@ class FeatureExtractor:
         # Define standard preprocessing
         self.preprocess = self.module.preprocess
 
-    def preprocess_image(self, image, model_name):
+    def preprocess_image(self, image, model_name, device):
         """Default preprocessing based on ImageNet standard training.
 
         Parameters
@@ -418,7 +418,7 @@ class FeatureExtractor:
             ])
         image = Image.open(image).convert('RGB')
         image = V(self.transforms(image).unsqueeze(0))
-        image = image.to(self.device)
+        image = image.to(device)
         return image
 
     def _extract_features_tx(self, image):
