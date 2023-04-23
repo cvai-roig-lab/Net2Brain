@@ -148,12 +148,17 @@ def find_model_like(name):
 
 
 
-def randomoize_weights(m):
+
+
+def randomize_weights(m):
     if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform(m.weight)
         m.bias.data.fill_(0.01)
     if isinstance(m, nn.Conv2d):
         torch.nn.init.xavier_uniform(m.weight)
+
+
+
 
 
 class FeatureExtractor:
@@ -248,7 +253,8 @@ class FeatureExtractor:
             )
 
             if not self.pretrained:
-                self.model.apply(randomoize_weights)
+                self.model.to(self.device)
+                self.model.apply(randomize_weights)
 
             self.model.eval()
             self._extractor = self._extract_features_tx
@@ -259,7 +265,8 @@ class FeatureExtractor:
             self.module = toolbox_models
             self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
             if not self.pretrained:
-                self.model.apply(randomoize_weights)
+                self.model.to(self.device)
+                self.model.apply(randomize_weights)
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._torch_clean
@@ -283,7 +290,8 @@ class FeatureExtractor:
                 pretrained=self.pretrained
             )
             if not self.pretrained:
-                self.model.apply(randomoize_weights)
+                self.model.to(self.device)
+                self.model.apply(randomize_weights)
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
 
@@ -295,7 +303,8 @@ class FeatureExtractor:
             )[0]
 
             if not self.pretrained:
-                self.model.apply(randomoize_weights)
+                self.model.to(self.device)
+                self.model.apply(randomize_weights)
 
             self._extractor = self._extract_features_tx_clip
             self._features_cleaner = self._no_clean
@@ -322,7 +331,8 @@ class FeatureExtractor:
             config = self.module.configurator(self.model_name)
             self.model = self.module.MODELS[model_name](config)
             if not self.pretrained:
-                self.model.apply(randomoize_weights)
+                self.model.to(self.device)
+                self.model.apply(randomize_weights)
             self.model.eval()
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._detectron_clean
@@ -335,7 +345,8 @@ class FeatureExtractor:
                 (config.MODEL, config.OPTIMIZER)
             )
             if not self.pretrained:
-                self.model.apply(randomoize_weights)
+                self.model.to(self.device)
+                self.model.apply(randomize_weights)
 
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
@@ -364,7 +375,8 @@ class FeatureExtractor:
                 pretrained=self.pretrained
             )
             if not self.pretrained:
-                self.model.apply(randomoize_weights)
+                self.model.to(self.device)
+                self.model.apply(randomize_weights)
 
             self.model.eval()
             self._extractor = self._extract_features_tx
