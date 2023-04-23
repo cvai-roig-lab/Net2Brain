@@ -13,9 +13,9 @@ MODELS = {"cornet_z": cornet_z,
           "cornet_rt": cornet_rt,
           "cornet_s": cornet_s}
 
-MODEL_NODES = {"cornet_z": ['module.V1', 'module.V2', 'module.V4', 'module.IT'],
-               "cornet_rt": ['module.V1', 'module.V2', 'module.V4', 'module.IT'],
-               "cornet_s": ['module.V1', 'module.V2', 'module.V4', 'module.IT']}
+MODEL_NODES = {"cornet_z": ['V1', 'V2', 'V4', 'IT'],
+               "cornet_rt": ['V1', 'V2', 'V4', 'IT'],
+               "cornet_s": ['V1', 'V2', 'V4', 'IT']}
                
 
 def preprocess(image, model_name, device):

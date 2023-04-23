@@ -188,7 +188,7 @@ class FeatureExtractor:
         """
         # Set model and device
         if device == None:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         else:
             self.device = device
         self.pretrained = pretrained
