@@ -575,8 +575,7 @@ class FeatureExtractor:
 
 
     def extract(
-        self, dataset_path, save_format='npz', save_path=None, 
-    ):
+        self, dataset_path, save_format='npz', save_path=None, layers_to_extract=None):
         """Compute feature extraction from image dataset.
 
         Parameters
@@ -601,6 +600,11 @@ class FeatureExtractor:
         else:
             self.save_path = Path(save_path)
             self.save_path.mkdir(parents=True, exist_ok=True)
+
+
+        # Exchange extration layers
+        if layers_to_extract is not None:
+            self.layers_to_extract = layers_to_extract
 
         # Find all input files
         image_files = [
