@@ -166,7 +166,7 @@ class FeatureExtractor:
     ## TODO: define this here for all types or dont
 
     def __init__(
-        self, model, netset=None, layers_to_extract=None, device='cpu', 
+        self, model, netset=None, layers_to_extract=None, device=None, 
         transforms=None, pretrained=True
     ):
         """Initializes feature extractor.
@@ -187,7 +187,10 @@ class FeatureExtractor:
             The transforms to be applied to the inputs, by default None.
         """
         # Set model and device
-        self.device = device
+        if device == None:
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = device
         self.pretrained = pretrained
         
         # Load model from netset or load custom model
@@ -300,8 +303,7 @@ class FeatureExtractor:
             )[0]
 
             if not self.pretrained:
-                self.model.to(self.device)
-                self.model.apply(randomize_weights)
+                print("Clip randomizer not yet implemented, will use pretrained model")
 
             self._extractor = self._extract_features_tx_clip
             self._features_cleaner = self._no_clean
@@ -626,7 +628,7 @@ class FeatureExtractor:
         for img in tqdm(image_files):
             
             # Preprocess image and extract features
-            processsed_img = self.preprocess(img, self.model_name)
+            processsed_img = self.preprocess(img, self.model_name, self.device)
             fts = self._extractor(processsed_img)
 
             # Save features if npz or pt

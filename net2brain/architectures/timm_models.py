@@ -895,7 +895,7 @@ MODEL_NODES = {'adv_inception_v3': [],
          'xception71': []}
 
 
-def preprocess(image, model_name):
+def preprocess(image, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -928,8 +928,6 @@ def preprocess(image, model_name):
     ])
     
     image = Image.open(image).convert('RGB')
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     if '384' in model_name:
         image = V(centre_crop_384(image).unsqueeze(0))
@@ -955,7 +953,7 @@ def preprocess(image, model_name):
         return image
 
 
-def preprocess_frame(frame, model_name):
+def preprocess_frame(frame, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -990,8 +988,6 @@ def preprocess_frame(frame, model_name):
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     pil_image = Image.fromarray(frame)
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     
     if '384' in model_name:

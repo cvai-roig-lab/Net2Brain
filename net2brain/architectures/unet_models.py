@@ -8,7 +8,7 @@ MODELS = {'unet': torch.hub.load}
 
 MODEL_NODES = {'unet': ['encoder1', 'encoder2', 'encoder3', 'encoder4', 'decoder4', 'decoder3', 'decoder2', 'decoder1', 'conv']}
 
-def preprocess(image, model_name):
+def preprocess(image, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -29,15 +29,14 @@ def preprocess(image, model_name):
     image = Image.open(image).convert('RGB')
     
     image = V(centre_crop(image).unsqueeze(0))
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     if device == torch.device('cuda'):  # send to cuda
         image = image.cuda()
 
     return image
 
 
-def preprocess_frame(frame, model_name):
+def preprocess_frame(frame, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -60,7 +59,6 @@ def preprocess_frame(frame, model_name):
     
     pil_image = V(centre_crop(pil_image).unsqueeze(0))
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda'):  # send to cuda
             pil_image = pil_image.cuda()
             

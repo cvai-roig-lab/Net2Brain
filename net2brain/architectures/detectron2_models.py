@@ -133,7 +133,7 @@ def configurator(model_name):
     return cfg
 
 
-def preprocess(image, model_name):
+def preprocess(image, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -155,7 +155,6 @@ def preprocess(image, model_name):
     
     final_image = V(centre_crop(image).unsqueeze(0))[0]
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda'):  # send to cuda
         final_image = final_image.cuda()
     
@@ -164,7 +163,7 @@ def preprocess(image, model_name):
     return image_dict
 
 
-def preprocess_frame(frame, model_name):
+def preprocess_frame(frame, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -188,7 +187,6 @@ def preprocess_frame(frame, model_name):
     final_image = V(centre_crop(pil_image).unsqueeze(0))[0]
     
     # Add to Cuda    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda'):  # send to cuda
             final_image = final_image.cuda()
     

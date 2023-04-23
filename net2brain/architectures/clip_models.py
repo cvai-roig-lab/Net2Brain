@@ -36,7 +36,7 @@ MODEL_NODES = {'RN50': ['visual.layer1', 'visual.layer2', 'visual.layer3', 'visu
                             'visual.transformer.resblocks.21', 'visual.transformer.resblocks.22', 'visual.transformer.resblocks.23']}
 
 
-def preprocess(image, model_name):
+def preprocess(image, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -62,7 +62,6 @@ def preprocess(image, model_name):
     tokenized_text = torch.cat([clip.tokenize(f"a photo of a {c}") for c in ["word"]]).to("cpu") 
     
     # Add to Cuda
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda'):  # send to cuda
         img = img.cuda()
         tokenized_text = tokenized_text.cuda()
@@ -70,7 +69,7 @@ def preprocess(image, model_name):
     return [img, tokenized_text]
 
 
-def preprocess_frame(frame, model_name):
+def preprocess_frame(frame, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -91,7 +90,6 @@ def preprocess_frame(frame, model_name):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     pil_image = Image.fromarray(frame)
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # For clip we need to add text embedding
     tokenized_text = torch.cat(
