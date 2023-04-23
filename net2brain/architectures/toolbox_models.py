@@ -10,7 +10,7 @@ from net2brain.architectures.implemented_models.places365_net import get_resnet5
 from net2brain.architectures.implemented_models.semseg_models import get_semseg_model
 
 MODELS = {"Places365": get_resnet50_places365,
-          "SemSeg": get_semseg_model}
+          "SceneParsing": get_semseg_model}
 
 MODEL_NODES = {"Places365": ["model.6", "model.7", "model.9"],
                "SceneParsing": ['decoder.ppm_conv.3.2','decoder.ppm_last_conv.2','decoder.fpn_in.2.2']}
