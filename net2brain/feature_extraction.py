@@ -311,7 +311,8 @@ class FeatureExtractor:
         elif netset == 'cornet':
             self.module = cornet_models
             self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
-            self.model = torch.nn.DataParallel(self.model)
+            #self.model.to(self.device)
+            #self.model = torch.nn.DataParallel(self.model)
             self._extractor = self._extract_features_tx
             self._features_cleaner = self._CORnet_RT_clean
 
