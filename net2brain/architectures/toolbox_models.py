@@ -12,13 +12,13 @@ from net2brain.architectures.implemented_models.semseg_models import get_semseg_
 MODELS = {"Places365": get_resnet50_places365,
           "SemSeg": get_semseg_model}
 
-MODEL_NODES = {"Places365": ["0", "1", "2", "3", "4", "6", "7", "8", "9", "10", "11", "12"],
+MODEL_NODES = {"Places365": ["model.4", "model.5", "model.6", "model.7", "model.9"],
                "SemSeg": ['decoder.ppm_conv.0.2','decoder.ppm_conv.2.2','decoder.ppm_conv.3.2','decoder.ppm_last_conv.2','decoder.fpn_in.2.2','decoder.fpn_out.2.0.2','decoder.conv_last.1']}
 
 
 
 
-def preprocess(image, model_name):
+def preprocess(image, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -41,15 +41,14 @@ def preprocess(image, model_name):
 
     img = Image.open(image).convert('RGB')
     img = V(transforms(img).unsqueeze(0))
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == torch.device('cuda'):  # send to cuda
+
+    if device == 'cuda':  # send to cudaa
             img = img.cuda()
 
     return img
 
 
-def preprocess_frame(frame, model_name):
+def preprocess_frame(frame, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -71,9 +70,8 @@ def preprocess_frame(frame, model_name):
     pil_image = Image.fromarray(frame)
     
     pil_image = V(centre_crop(pil_image).unsqueeze(0))
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == torch.device('cuda'):  # send to cuda
+
+    if device == 'cuda':  # send to cudaa
             pil_image = pil_image.cuda()
             
     return pil_image

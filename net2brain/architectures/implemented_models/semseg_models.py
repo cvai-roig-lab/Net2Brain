@@ -603,34 +603,48 @@ def get_semseg_model(pretrained=True):
         os.makedirs(r"checkpoints")
 
 
-    # Check if the file exists in the current directory
-    if not os.path.exists(r"checkpoints\decoder_epoch_30.pth"):
-        # Download the file using requests
-        file_url = "http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50-upernet/decoder_epoch_30.pth"
-        r = requests.get(file_url)
-        print("~ Downloading weights")
-        with open(r"checkpoints\decoder_epoch_30.pth", "wb") as f:
-            f.write(r.content)
-
-    if not os.path.exists(r"checkpoints\encoder_epoch_30.pth"):
-        # Download the file using requests
-        file_url = "http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50-upernet/encoder_epoch_30.pth"
-        r = requests.get(file_url)
-        print("~ Downloading weights")
-        with open(r"checkpoints\encoder_epoch_30.pth", "wb") as f:
-            f.write(r.content)
 
 
-    net_encoder = ModelBuilder.build_encoder(
-                    arch='resnet50',
-                    fc_dim=2048,
-                    weights=r"checkpoints\encoder_epoch_30.pth")
-    net_decoder = ModelBuilder.build_decoder(
-                    arch='upernet',
-                    fc_dim=2048,
-                    num_class=150,
-                    weights=r"checkpoints\decoder_epoch_30.pth",
-                    use_softmax=True)
+    if pretrained:
+
+        # Check if the file exists in the current directory
+        if not os.path.exists(r"checkpoints\decoder_epoch_30.pth"):
+            # Download the file using requests
+            file_url = "http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50-upernet/decoder_epoch_30.pth"
+            r = requests.get(file_url)
+            print("~ Downloading weights")
+            with open(r"checkpoints\decoder_epoch_30.pth", "wb") as f:
+                f.write(r.content)
+
+        if not os.path.exists(r"checkpoints\encoder_epoch_30.pth"):
+            # Download the file using requests
+            file_url = "http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50-upernet/encoder_epoch_30.pth"
+            r = requests.get(file_url)
+            print("~ Downloading weights")
+            with open(r"checkpoints\encoder_epoch_30.pth", "wb") as f:
+                f.write(r.content)
+
+
+        net_encoder = ModelBuilder.build_encoder(
+                        arch='resnet50',
+                        fc_dim=2048,
+                        weights=r"checkpoints\encoder_epoch_30.pth")
+        net_decoder = ModelBuilder.build_decoder(
+                        arch='upernet',
+                        fc_dim=2048,
+                        num_class=150,
+                        weights=r"checkpoints\decoder_epoch_30.pth",
+                        use_softmax=True)
+        
+    else:
+        net_encoder = ModelBuilder.build_encoder(
+                        arch='resnet50',
+                        fc_dim=2048)
+        net_decoder = ModelBuilder.build_decoder(
+                        arch='upernet',
+                        fc_dim=2048,
+                        num_class=150,
+                        use_softmax=True)
 
     crit = torch.nn.NLLLoss(ignore_index=-1)
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit,segSize=torch.Size([224,224]))

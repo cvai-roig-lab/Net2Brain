@@ -64,7 +64,7 @@ class PackPathway(torch.nn.Module):
 
 
 
-def preprocess_slowfast(video_path):
+def preprocess_slowfast(video_path, device):
     """Preprocessing according to slowfast video model
 
     Args:
@@ -114,9 +114,6 @@ def preprocess_slowfast(video_path):
 
     # Apply a transform to normalize the video input
     video_data = transform(video_data)
-    
-    # Is Cuda available?
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Move the inputs to the desired device
     inputs = video_data["video"]
@@ -125,7 +122,7 @@ def preprocess_slowfast(video_path):
     return inputs
     
 
-def preprocess_slow(video_path):
+def preprocess_slow(video_path, device):
     """Preprocessing according to slow video model
 
     Args:
@@ -176,8 +173,6 @@ def preprocess_slow(video_path):
     # Apply a transform to normalize the video input
     video_data = transform(video_data)
     
-    # Is Cuda Available?
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Move the inputs to the desired device
     inputs = video_data["video"]
@@ -186,7 +181,7 @@ def preprocess_slow(video_path):
     return inputs[None, ...]
 
 
-def preprocess_x3d(video_path, model_name):
+def preprocess_x3d(video_path, model_name, device):
     """Preprocessing according to x3d video model
 
     Args:
@@ -257,8 +252,6 @@ def preprocess_x3d(video_path, model_name):
     # Apply a transform to normalize the video input
     video_data = transform(video_data)
     
-    # Is Cuda Available?
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Move the inputs to the desired device
     inputs = video_data["video"]
@@ -267,7 +260,7 @@ def preprocess_x3d(video_path, model_name):
     return inputs[None, ...]
 
 
-def preprocess(video_path, model_name):
+def preprocess(video_path, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -287,13 +280,13 @@ def preprocess(video_path, model_name):
     
     
     if model_name in slowfast_models:
-        inputs = preprocess_slowfast(video_path)
+        inputs = preprocess_slowfast(video_path, device)
         
     elif model_name in slow_models:
-        inputs = preprocess_slow(video_path)
+        inputs = preprocess_slow(video_path, device)
         
     elif model_name in x3d_models:
-        inputs = preprocess_x3d(video_path, model_name)
+        inputs = preprocess_x3d(video_path, model_name, device)
     
     return inputs
 
