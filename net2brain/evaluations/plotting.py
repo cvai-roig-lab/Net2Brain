@@ -174,10 +174,10 @@ class Plotting:
         for ii,(unc,lnc) in enumerate(zip(uncl,lncl)):
             if unc == lnc:
                 continue
-            plt.axhline(y=unc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
+            plt.hline(y=unc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
                 linewidth = 1 , color='k', linestyle='dashed' , label = label)
             label = ''
-            plt.axhline(y=lnc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
+            plt.hline(y=lnc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
                 linewidth = 1 , color='k', linestyle='dashed' , label = label)
         ##############
         handles, labels = g.axes.flat[0].get_legend_handles_labels()
