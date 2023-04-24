@@ -184,7 +184,7 @@ class Plotting:
         g.legend.remove()
         plt.legend(handles[1:]+[handles[0]],labels[1:]+[labels[0]],loc='center left', bbox_to_anchor=(1, 0.5),title='Models')
         g.despine(left=True)
-        g.set_axis_labels("ROI", "R2")
+        g.set_axis_labels("ROI", "$R^2$")
         g.fig.suptitle("Results of Evaluation")
         return plotting_df
     
