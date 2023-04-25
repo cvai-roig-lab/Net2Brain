@@ -167,17 +167,21 @@ class Plotting:
         for sig in sig_list:
             x,y = pair2xy[sig]
             plt.text(x + bar_width* 0.5, 0.001, '*', ha='center', va='bottom', c='k')
-        num_models = len(g.legend.legend_handles)
+        
+        #num_models = len(g.legend.legend_handles)
+        handles, labels = g.axes.flat[0].get_legend_handles_labels()
+        num_models = len(handles)
+
         lncl = [plotting_df[plotting_df['ROI']==ROI]['LNC'].iloc[0] for ROI in ROI_lst]
         uncl = [plotting_df[plotting_df['ROI']==ROI]['UNC'].iloc[0] for ROI in ROI_lst]
         label = 'Noise Ceiling'
         for ii,(unc,lnc) in enumerate(zip(uncl,lncl)):
             if unc == lnc:
                 continue
-            plt.hline(y=unc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
+            plt.hlines(y=unc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
                 linewidth = 1 , color='k', linestyle='dashed' , label = label)
             label = ''
-            plt.hline(y=lnc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
+            plt.hlines(y=lnc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
                 linewidth = 1 , color='k', linestyle='dashed' , label = label)
         ##############
         handles, labels = g.axes.flat[0].get_legend_handles_labels()
