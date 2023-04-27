@@ -5,6 +5,9 @@ setup(
     version = '0.1.0',
     author = 'Roig Lab',
     packages=find_packages(),
+    package_data={
+        'net2brain.architectures': ['taxonomy.csv']
+    },
     install_requires=[
         'flake8',
         'h5py',
