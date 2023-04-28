@@ -62,7 +62,7 @@ class WRSA():
         file_sets = []
 
         for f in files:
-            if not ".json" and ".DS_Store" not in f:
+            if ".json" not in f and ".DS_Store" not in f:
                 if f != ".ipynb_checkpoints":
                     file_sets.append(f)
 
