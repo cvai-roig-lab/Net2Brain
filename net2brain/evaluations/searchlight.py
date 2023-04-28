@@ -45,7 +45,7 @@ class Searchlight():
         file_sets = []
 
         for f in files:
-            if f != "args.json":
+            if ".json" and ".DS_Store" not in f:
                 if f != ".ipynb_checkpoints":
                     file_sets.append(f)
 
