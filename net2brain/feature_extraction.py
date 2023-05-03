@@ -85,15 +85,10 @@ BRAIN_DIR = op.join(INPUTS_DIR, 'brain_data')
 
 def open_taxonomy():
 
-
-
     file_path = os.path.abspath(__file__)
     directory_path = os.path.dirname(file_path)
 
-    print(directory_path)
-    
     taxonomy_path = os.path.join(directory_path, "architectures/taxonomy.csv")
-    
 
     # Read the CSV file
     df = pd.read_csv(taxonomy_path)
@@ -101,7 +96,12 @@ def open_taxonomy():
     # Replace "x" with 1 and empty cells with 0
     df = df.replace({'x': 1, '': 0, pd.NA: 0})
 
+    # Drop the 'Unnamed: 34' column if it exists
+    if 'Unnamed: 34' in df.columns:
+        df = df.drop(columns=['Unnamed: 34'])
+
     return df
+
 
 
 
@@ -189,12 +189,18 @@ def find_model_like_name(model_name, df=None):
 def find_model_by_custom(category, model_name=None):
     df = open_taxonomy()
 
-    if isinstance(category, list):
-        # Filter the DataFrame based on whether any of the category columns have a 1
-        filtered_df = df[df[category].eq(1).any(axis=1)]
-    else:
-        # Filter the DataFrame based on whether the category column has a 1
-        filtered_df = df[df[category] == 1]
+    try:
+        if isinstance(category, list):
+            # Filter the DataFrame based on whether any of the category columns have a 1
+            filtered_df = df[df[category].eq(1).any(axis=1)]
+        else:
+            # Filter the DataFrame based on whether the category column has a 1
+            filtered_df = df[df[category] == 1]
+    except KeyError:
+        print(f"Column '{category}' not found in the DataFrame.")
+        print("Available columns are:")
+        print(df.columns.tolist())
+        return None
 
     if model_name != None:
         # Apply the find_model_like_name functionality to the filtered DataFrame
@@ -202,7 +208,12 @@ def find_model_by_custom(category, model_name=None):
     else:
         result = filtered_df
 
+    # Drop columns that do not contain a "1" in any row, except for "Model" and "Netset"
+    columns_to_drop = [col for col in result.columns if col not in ['Model', 'Netset'] and not (result[col] == 1).any()]
+    result = result.drop(columns=columns_to_drop)
+
     return result
+
 
 
 def show_taxonomy():
