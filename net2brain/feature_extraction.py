@@ -85,9 +85,14 @@ BRAIN_DIR = op.join(INPUTS_DIR, 'brain_data')
 
 def open_taxonomy():
 
-    # Set path
-    current_path = os.getcwd()
-    taxonomy_path = os.path.join(current_path, "/architectures/taxonomy.csv")
+
+
+    file_path = os.path.abspath(__file__)
+    directory_path = os.path.dirname(file_path)
+
+    print(directory_path)
+    
+    taxonomy_path = os.path.join(directory_path, "architectures/taxonomy.csv")
     
 
     # Read the CSV file
