@@ -86,7 +86,7 @@ BRAIN_DIR = op.join(INPUTS_DIR, 'brain_data')
 def open_taxonomy():
 
     # Set path
-    taxonomy_path = r"net2brain\architectures\taxonomy.csv"
+    taxonomy_path = r"/architectures/taxonomy.csv"
 
     # Read the CSV file
     df = pd.read_csv(taxonomy_path)
