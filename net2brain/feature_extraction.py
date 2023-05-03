@@ -191,8 +191,8 @@ def find_model_by_custom(category, model_name=None):
 
     try:
         if isinstance(category, list):
-            # Filter the DataFrame based on whether any of the category columns have a 1
-            filtered_df = df[df[category].eq(1).any(axis=1)]
+            # Filter the DataFrame based on whether all of the category columns have a 1
+            filtered_df = df[df[category].eq(1).all(axis=1)]
         else:
             # Filter the DataFrame based on whether the category column has a 1
             filtered_df = df[df[category] == 1]
@@ -213,6 +213,7 @@ def find_model_by_custom(category, model_name=None):
     result = result.drop(columns=columns_to_drop)
 
     return result
+
 
 
 
