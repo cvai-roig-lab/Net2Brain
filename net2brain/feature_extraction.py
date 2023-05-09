@@ -2,9 +2,6 @@ from collections import defaultdict
 from datetime import datetime
 import os.path as op
 import os
-import fnmatch
-import re
-from typing import Optional, Union, List, Dict
 from pathlib import Path
 from PIL import Image
 
@@ -138,42 +135,19 @@ def print_netset_models(netset):
         )
 
 
-def _natural_key(string_: str) -> List[Union[int, str]]:
-    """See https://blog.codinghorror.com/sorting-for-humans-natural-sort-order/"""
-    return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', string_.lower())]
-
-
-def find_model_like(name: str,
-                    netsets: Optional[Union[str, List[str]]] = None
-                    ) -> Dict[str, List[str]]:
+def find_model_like(name):
     """Find models containing the given string. Way of finding a model within \
         the model zoo.
 
     Parameters
     ----------
     name : str
-        Name of the models using unix-like wildcards. See https://docs.python.org/3/library/fnmatch.html.
-        For example, to find all models containing "vit" and "patch16", use "*vit*patch16*".
-    netsets : Union[str, List[str]], optional
-        Network sets to search in. If None, all available networks are searched, by default None
-
-    Returns
-    -------
-    Dict[str, List[str]]
-        Dictionary with the network sets as keys and the list of alphabetical sorted models as values.
+        Name models.
     """
-    netsets = [netsets] if isinstance(netsets, str) else netsets
-    netsets = netsets or list(AVAILABLE_NETWORKS.keys())
-
-    models = {}
-    for ns in netsets:
-        match = fnmatch.filter(map(lambda s: s.lower(), AVAILABLE_NETWORKS[ns]), name.lower())
-        if match:
-            models[ns] = sorted(match, key=_natural_key)
-            s = f"{ns}: " + f"\n{ns}: ".join(models[ns])
-            print(s)
-
-    return dict(models)
+    for key, values in AVAILABLE_NETWORKS.items():
+        for model_names in values:
+            if name.lower() in model_names.lower():
+                print(f'{key}: {model_names}')
                 
 
 def set_seed(seed):
