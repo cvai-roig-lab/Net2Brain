@@ -226,10 +226,12 @@ def show_taxonomy():
     # Get unique values from the filtered DataFrame
     unique_values = list(set(filtered_df.values.flatten()))
     unique_values = [str(x) for x in unique_values]
-    unique_values.remove('Header Category')
-    unique_values.remove('nan')
-    unique_values.remove('Model')
-    unique_values.remove('Netset')
+
+    # Remove columns if they exist in the unique_values list
+    columns_to_remove = ['Header Category', 'nan', 'Model', 'Netset']
+    for column in columns_to_remove:
+        if column in unique_values:
+            unique_values.remove(column)
 
     # Create a dictionary with unique values as keys and corresponding column names as values
     result = {}
@@ -238,6 +240,7 @@ def show_taxonomy():
         result[value] = columns_with_value
 
     pprint(result)
+
 
 
 
