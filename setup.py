@@ -17,6 +17,7 @@ setup(
         'numpy',
         'Pillow',
         'prettytable',
+        'gdown',
         'pytest',
         'pytorchvideo == 0.1.5',
         'scikit_learn',
