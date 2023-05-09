@@ -319,7 +319,7 @@ class FeatureExtractor:
             )[0]
 
             if not self.pretrained:
-                print("Clip randomizer not yet implemented, will use pretrained model")
+                self.model.initialize_parameters()
 
             self._extractor = self._extract_features_tx_clip
             self._features_cleaner = self._no_clean
