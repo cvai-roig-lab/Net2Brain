@@ -7,11 +7,6 @@ from torchvision import transforms as T
 from net2brain.feature_extraction import FeatureExtractor, AVAILABLE_NETWORKS
 
 
-@pytest.fixture(scope="module")
-def root_path() -> Path:
-    return Path(__file__).parent
-
-
 @pytest.mark.parametrize(
     "netset,model",
     [
