@@ -32,7 +32,7 @@ The toolbox encompasses several key functions to support comprehensive neural re
 
 __Net2Brain__ provides a comprehensive model taxonomy system to assist users in selecting the most suitable models for their studies. This taxonomy system classifies models based on attributes such as dataset, training method, and visual task. Let's take a look at an example that showcases the usage of the taxonomy system:
 
-```
+```python
 from net2brain.feature_extraction import show_taxonomy
 from net2brain.feature_extraction import find_model_by_dataset
 from net2brain.feature_extraction import find_model_by_training_method
@@ -94,7 +94,7 @@ Net2Brain allows you to extract features from a variety of pretrained models or 
 
 To extract features using Net2Brain, follow these steps:
 
-```
+```python
 from net2brain.feature_extraction import FeatureExtractor
 
 # Initialize the FeatureExtractor with a pretrained model
@@ -115,7 +115,7 @@ After feature extraction, the next step is to create Representational Dissimilar
 
 To generate RDMs, follow these steps:
 
-```
+```python
 from net2brain.rdm_creation import RDMCreator
 
 # Define the paths
@@ -144,7 +144,7 @@ RSA Evaluation
 
 To perform RSA evaluation, follow these steps:
 
-```
+```python
 from net2brain.evaluations.rsa import RSA
 from net2brain.utils.download_datasets import load_dataset
 
@@ -169,7 +169,7 @@ display(dataframe1)
 
 The integrated plotting functionality of Net2Brain allows you to easily visualize the RSA evaluation results. To plot the data using a single DataFrame, use the following code:
 
-```
+```python
 from net2brain.evaluations.plotting import Plotting
 
 # Initialize the plotter with the DataFrame
