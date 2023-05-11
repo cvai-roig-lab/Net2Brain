@@ -21,7 +21,7 @@ The toolbox encompasses several key functions to support comprehensive neural re
 
 1. __Feature Extraction__: Net2Brain enables the extraction of features from a vast collection of pretrained and random models, catering to a wide range of visual tasks. It also provides the flexibility to extract features from your own custom models, allowing you to tailor the analysis to your specific research needs.
 
-2. __Creation of Representational Dissimilarity Matrices (RDMs)__: Users can generate RDMs to analyze the similarity or dissimilarity between neural representations.
+2. __Creation of Representational Dissimilarity Matrices (RDMs)__: Users can generate RDMs to analyze the dissimilarity between neural representations.
 
 3. __Evaluation__: Net2Brain incorporates Representational Similarity Analysis (RSA) ([Kriegeskorte et al., 2008](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2605405/)) techniques, including weighted RSA and Searchlight evaluation, to compare neural representations with brain activity patterns.
 
