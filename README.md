@@ -19,7 +19,7 @@ One of the primary objectives of Net2Brain is to facilitate the collaboration be
 
 The toolbox encompasses several key functions to support comprehensive neural research:
 
-1. __Feature Extraction__: Net2Brain enables the extraction of features from a vast collection of pretrained and random models, catering to a wide range of visual tasks.
+1. __Feature Extraction__: Net2Brain enables the extraction of features from a vast collection of pretrained and random models, catering to a wide range of visual tasks. It also provides the flexibility to extract features from your own custom models, allowing you to tailor the analysis to your specific research needs.
 
 2. __Creation of Representational Dissimilarity Matrices (RDMs)__: Users can generate RDMs to analyze the similarity or dissimilarity between neural representations.
 
