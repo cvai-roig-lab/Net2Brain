@@ -193,9 +193,13 @@ We hope Net2Brain proves to be a valuable resource in your neuroscientific inves
 
 
 ## Contributors of Net2Brain
-```bash
-B.Sc. Domenic Bersch, Dr. Sari Saba-Sadiya, M. Sc. Martina Vilas, M. Sc. Timothy Schaumlöffel Dr. Kshitij Dwivedi, Dr. Radoslaw Martin Cichy, Prof. Dr. Gemma Roig
-```
+
+- B.Sc. Domenic Bersch
+- Dr. Sari Saba-Sadiya
+- M. Sc. Martina Vilas
+- M. Sc. Timothy Schaumlöffel
+- Dr. Kshitij Dwivedi
+- Dr. Radoslaw Martin Cichy
 
 
 ## Citing Net2Brain
