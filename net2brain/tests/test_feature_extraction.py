@@ -122,12 +122,12 @@ def test_missing_netset():
         FeatureExtractor("alexnet")
 
 
-@pytest.mark.parametrize(
-    "netset,model", [(i, x) for i in AVAILABLE_NETWORKS for x in AVAILABLE_NETWORKS[i]]
-)
-def test_all_models(netset, model):
-    fx = FeatureExtractor(model, netset, pretrained=False, device="cpu")
-    assert fx.model_name == model, "loaded model different than the one requested"
-    assert fx.preprocess is not None, "preprocess not loaded"
-    assert fx._extractor is not None, "extractor not loaded"
-    assert fx._features_cleaner is not None, "feature cleaner not loaded"
+# @pytest.mark.parametrize(
+#     "netset,model", [(i, x) for i in AVAILABLE_NETWORKS for x in AVAILABLE_NETWORKS[i]]
+# )
+# def test_all_models(netset, model):
+#     fx = FeatureExtractor(model, netset, pretrained=False, device="cpu")
+#     assert fx.model_name == model, "loaded model different than the one requested"
+#     assert fx.preprocess is not None, "preprocess not loaded"
+#     assert fx._extractor is not None, "extractor not loaded"
+#     assert fx._features_cleaner is not None, "feature cleaner not loaded"

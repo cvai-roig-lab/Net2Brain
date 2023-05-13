@@ -10,7 +10,7 @@ from net2brain.evaluations.rsa import RSA
     "case,model_name",
     [
         ("case1", "ResNet18"),
-        ("case3", "RN50"),
+        ("case2", "RN50"),
     ],
 )
 def test_rsa(root_path, case, model_name):
