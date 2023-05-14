@@ -184,8 +184,7 @@ Refer to the provided notebooks and documentation for detailed instructions on c
 
 ## Linear Encoding
 
-Another integrated analysis pipeline is a linear encoder. Given a npy file with voxel values, and extracted features. The encoder performs an X-fold regression
-where the training data is used to train a PCA embedding and a linear regression to predict voxel values. The output is the testing split X-fold average pearson correlation
+Another integrated analysis pipeline is a linear encoder. Given a npy file with voxel values, and extracted features, the encoder performs an X-fold regression where the training data is used to train a PCA embedding and a linear regression to predict voxel values. The output is the testing split X-fold average pearson correlation.
 
 ```python
 from net2brain.evaluations.encoding import linear_encoding
