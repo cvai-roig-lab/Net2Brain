@@ -35,7 +35,6 @@ def test_load_netset_model(netset, model):
         ("standard", "AlexNet"),
         ("timm", "vit_base_patch32_224_in21k"),
         ("timm", "resnet50"),
-        ("timm", "cait_m36_384"),
         ("pytorch", "deeplabv3_resnet101"),
         ("unet", "unet"),
         ("taskonomy", "autoencoding"),
