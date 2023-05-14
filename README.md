@@ -176,11 +176,26 @@ from net2brain.evaluations.plotting import Plotting
 plotter = Plotting([dataframe1])
 
 # Plot the results
-results_dataframe = plotter.plot(variant="best_layer")
+# Optionally, pass metrix='R' if you do not want to lot with R2
+results_dataframe = plotter.plot()
 ```
 
 Refer to the provided notebooks and documentation for detailed instructions on customizing RSA evaluation and exploring additional options offered by Net2Brain
 
+## Linear Encoding
+
+Another integrated analysis pipeline is a linear encoder. Given a npy file with voxel values, and extracted features. The encoder performs an X-fold regression
+where the training data is used to train a PCA embedding and a linear regression to predict voxel values. The output is the testing split X-fold average pearson correlation
+
+```python
+from net2brain.evaluations.encoding import linear_encoding
+
+# n_folds: number of folds
+# trn_tst_split: how to split training and testing data at each fold
+# n_components: number of PCA components
+# batch_size: size of batch of updating the incremental pca
+results_dataframe = linear_encoding(feature_path, roi_path, model_name, n_folds=3, trn_tst_split=0.8, n_components=100, batch_size=100)
+```
 
 # Contribution and Support
 
