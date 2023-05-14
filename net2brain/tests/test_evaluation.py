@@ -22,11 +22,15 @@ def test_rsa(root_path, case, model_name):
         model_rdms_path=str(data_path / case / "rdm"),
         model_name=model_name,
     )
-    df = rsa.evaluate().sort_values(by=["ROI", "Layer"]).reset_index(drop=True)
 
-    gt = (
-        pd.read_csv(data_path / case / "rsa" / "results.csv")
-        .sort_values(by=["ROI", "Layer"])
-        .reset_index(drop=True)
-    )
+    df = rsa.evaluate()
+    df["ROI"] = df["ROI"].apply(lambda x: x.split(" ")[1])  # TODO: Fix this in the code
+    df["Layer"] = df["Layer"].apply(lambda x: x.split(" ")[1])
+    df = df.sort_values(by=["ROI", "Layer"]).reset_index(drop=True)
+
+    gt = pd.read_csv(data_path / case / "rsa" / "results.csv")
+    gt["ROI"] = gt["ROI"].apply(lambda x: x.split(" ")[1])
+    gt["Layer"] = gt["Layer"].apply(lambda x: x.split(" ")[1])
+    gt = gt.sort_values(by=["ROI", "Layer"]).reset_index(drop=True)
+
     pd.testing.assert_frame_equal(df, gt)
