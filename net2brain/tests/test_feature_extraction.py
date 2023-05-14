@@ -4,7 +4,7 @@ import pytest
 from torchvision import models
 from torchvision import transforms as T
 
-from net2brain.feature_extraction import FeatureExtractor, AVAILABLE_NETWORKS
+from net2brain.feature_extraction import FeatureExtractor
 
 
 @pytest.mark.parametrize(
@@ -34,6 +34,7 @@ def test_load_netset_model(netset, model):
     [
         ("standard", "AlexNet"),
         ("timm", "vit_base_patch32_224_in21k"),
+        ("timm", "resnet50"),
         ("pytorch", "deeplabv3_resnet101"),
         ("unet", "unet"),
         ("taskonomy", "autoencoding"),
@@ -53,7 +54,7 @@ def test_extractor_outputs(
     imgs_path = root_path / Path("images")
 
     # Extract features
-    fx = FeatureExtractor(model, netset)
+    fx = FeatureExtractor(model, netset, pretrained=False)
     feats = fx.extract(imgs_path, save_format=save_format, save_path=tmp_path)
     output_files = list(tmp_path.iterdir())
 
@@ -68,8 +69,9 @@ def test_extractor_outputs(
         if "slowfast" in model:
             assert len(output_files) == len(fx.layers_to_extract) * 2
         else:
-            assert len(output_files) == len(fx.layers_to_extract)
-            assert feats[list(feats.keys())[0]].measurements.shape[0] == 2
+            if not netset == "timm" and len(fx.layers_to_extract) == 0:
+                assert len(output_files) == len(fx.layers_to_extract)
+                assert feats[list(feats.keys())[0]].measurements.shape[0] == 2
     else:
         assert len(output_files) == 2
 

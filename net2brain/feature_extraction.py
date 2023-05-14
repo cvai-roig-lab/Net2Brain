@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 import os.path as op
 import os
+from functools import partial
 from pathlib import Path
 from pprint import pprint
 from PIL import Image
@@ -489,6 +490,7 @@ class FeatureExtractor:
                 else:
                     self._extractor = self._extract_features_tx
             self._features_cleaner = self._no_clean
+            self.module.preprocess = self.module.create_preprocess(self.model)
 
         elif netset == 'pyvideo':
             self.module = pyvideo
