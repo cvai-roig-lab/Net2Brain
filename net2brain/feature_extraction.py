@@ -268,7 +268,7 @@ def set_seed(seed):
         torch.backends.cudnn.deterministic = True
 
 # Usage: set a seed value for reproducibility
-seed = 42
+seed = 10
 set_seed(seed)
 
 
