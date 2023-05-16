@@ -76,3 +76,5 @@ notebooks/*/*.npz
 notebooks/*/*.hdf5
 notebooks/*/*/*.npz
 notebooks/*/*/*.hdf5
+*.npz
+demo_1_feature_extraction.ipynb

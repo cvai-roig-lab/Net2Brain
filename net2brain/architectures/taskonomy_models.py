@@ -81,7 +81,7 @@ MODEL_WEIGHTS = {'autoencoding': 'https://github.com/alexsax/visual-prior/raw/ne
                  'vanishing_point': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/vanishing_point_encoder-afd2ae9b71d46a54efc5231b3e38ebc3e35bfab78cb0a78d9b75863a240b19a8.pth'}
 
 
-def preprocess(image, model_name):
+def preprocess(image, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -106,14 +106,12 @@ def preprocess(image, model_name):
 
     image = Image.open(image).convert('RGB')
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
     if model_name == 'colorization':
         image = image.convert('L')
         image = V(centre_crop_grey(image).unsqueeze(0))
         
         # To Cuda
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cuda 
             image = image.cuda()
         
         return image
@@ -121,13 +119,13 @@ def preprocess(image, model_name):
         image = V(centre_crop(image).unsqueeze(0))
         
         # To Cuda
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cuda
             image = image.cuda()
             
         return image
 
 
-def preprocess_frame(frame, model_name):
+def preprocess_frame(frame, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -152,22 +150,20 @@ def preprocess_frame(frame, model_name):
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     pil_image = Image.fromarray(frame)
-        
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     
     if model_name == 'colorization':
         pil_image = pil_image.convert('L')
         pil_image = V(centre_crop_grey(pil_image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cuda
             pil_image = pil_image.cuda()
             
         return pil_image
     else:
         pil_image = V(centre_crop(pil_image).unsqueeze(0))
         
-        if device == torch.device('cuda'):  # send to cuda
+        if device == 'cuda':  # send to cuda
             pil_image = pil_image.cuda()
             
         return pil_image

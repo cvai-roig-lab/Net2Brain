@@ -13,12 +13,12 @@ MODELS = {"cornet_z": cornet_z,
           "cornet_rt": cornet_rt,
           "cornet_s": cornet_s}
 
-MODEL_NODES = {"cornet_z": ['module.V1', 'module.V2', 'module.V4', 'module.IT'],
-               "cornet_rt": ['module.V1', 'module.V2', 'module.V4', 'module.IT'],
-               "cornet_s": ['module.V1', 'module.V2', 'module.V4', 'module.IT']}
+MODEL_NODES = {"cornet_z": ['V1', 'V2', 'V4', 'IT'],
+               "cornet_rt": ['V1', 'V2', 'V4', 'IT'],
+               "cornet_s": ['V1', 'V2', 'V4', 'IT']}
                
 
-def preprocess(image, model_name):
+def preprocess(image, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -40,14 +40,13 @@ def preprocess(image, model_name):
     img = Image.open(image).convert('RGB')
     img = V(transforms(img).unsqueeze(0))
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == torch.device('cuda'):  # send to cuda
-        img = image.cuda()
+    if device == 'cuda':  # send to cuda
+        img = img.cuda()
 
     return img
 
 
-def preprocess_frame(frame, model_name):
+def preprocess_frame(frame, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -70,8 +69,7 @@ def preprocess_frame(frame, model_name):
     
     pil_image = V(transforms(pil_image).unsqueeze(0))
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == torch.device('cuda'):  # send to cuda
+    if device == 'cuda':  # send to cuda
             pil_image = pil_image.cuda()
             
     return pil_image

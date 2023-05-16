@@ -1,43 +1,24 @@
+import numpy as np
+import pytest
+from net2brain.rdm_creation import RDMCreator
 
-# import glob
-# import filecmp
-# import os
-# import sys
-# sys.path.append(r'net2brain')
-# from rdm_generation import RDM
-# from helper.helper import get_paths
-# from os import path as op
 
-# def test_rdm():
-#     """Write down all relevant paths"""
-#     PATH_COLLECTION = get_paths()
-#     CURRENT_DIR = PATH_COLLECTION["CURRENT_DIR"]
+@pytest.fixture(params=["case1", "case2"])
+def case(request):
+    return request.param
 
-#     # Set path for saving activations
-#     path = op.join(CURRENT_DIR, "net2brain/tests/compare_files/to_be_tested_rdm")
-#     path_feats = op.join(CURRENT_DIR, "net2brain/tests/compare_files/correct_data_feats")
-#     path_truth = op.join(CURRENT_DIR, "net2brain/tests/compare_files/correct_data_rdm")
 
-#     # Create folder if it does not exists
-#     if not os.path.exists(path):
-#         os.makedirs(path)
+def test_rdm_creator(root_path, tmp_path, case):
+    data_path = root_path / "test_cases" / case
 
-#     # Start RDM Generation
-#     save_path = path
-#     feats_data_path = path_feats
+    rdm = RDMCreator(feat_path=str(data_path / "features"), save_path=str(tmp_path))
+    rdm.create_rdms()
 
-#     rdm = RDM(save_path, feats_data_path)
-#     rdm.create_rdms()
-    
-#     # Compare extractions with ground truth
-#     to_test = glob.glob(op.join(path, "*.npz"))
-#     to_compare = glob.glob(op.join(path_truth, "*.npz"))
-    
-#     for i, truth in enumerate(to_compare):
-#         status = filecmp.cmp(truth, to_test[i])
-#         print(truth.split(os.sep)[-1], to_test[i].split(os.sep)[-1], status)
-#         if status == False:
-#             return status
+    # Compare extractions with ground truth
+    gt_path = data_path / "rdm"
 
-#     return status
-
+    for gt_file in gt_path.glob("*.npz"):
+        test_file = tmp_path / gt_file.name
+        gt = np.load(gt_file)["arr_0"]
+        test = np.load(test_file)["arr_0"]
+        assert np.allclose(gt, test)

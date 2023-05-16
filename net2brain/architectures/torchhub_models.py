@@ -29,7 +29,7 @@ MODEL_NODES = {'deeplabv3_mobilenet_v3_large': ['backbone.1', 'backbone.2', 'bac
                                                 'backbone.16',]}
 
 
-def preprocess(image, model_name):
+def preprocess(image, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -50,15 +50,14 @@ def preprocess(image, model_name):
     image = Image.open(image).convert('RGB')
     
     image = V(centre_crop(image).unsqueeze(0))
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == torch.device('cuda'):  # send to cuda
+
+    if device == 'cuda':  # send to cudaa
         image = image.cuda()
 
     return image
 
 
-def preprocess_frame(frame, model_name):
+def preprocess_frame(frame, model_name, device):
     """Preprocesses image according to the networks needs
 
     Args:
@@ -81,8 +80,7 @@ def preprocess_frame(frame, model_name):
     
     pil_image = V(centre_crop(pil_image).unsqueeze(0))
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == torch.device('cuda'):  # send to cuda
+    if device == 'cuda':  # send to cuda
             pil_image = pil_image.cuda()
             
     return pil_image
