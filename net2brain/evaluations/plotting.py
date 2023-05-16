@@ -90,17 +90,21 @@ class Plotting:
         for ii,(unc,lnc) in enumerate(zip(uncl,lncl)):
             if unc == lnc:
                 continue
+
             plt.hlines(y=unc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
                 linewidth = 1 , color='k', linestyle='dashed' , label = label)
             label = ''
             plt.hlines(y=lnc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
+
                 linewidth = 1 , color='k', linestyle='dashed' , label = label)
         ##############
         handles, labels = g.axes.flat[0].get_legend_handles_labels()
         g.legend.remove()
         plt.legend(handles[1:]+[handles[0]],labels[1:]+[labels[0]],loc='center left', bbox_to_anchor=(1, 0.5),title='Models')
         g.despine(left=True)
+
         g.set_axis_labels("ROI", metric)
         g.fig.suptitle("Results of Evaluation",y=1.01)
         plt.show()
+      
         return plotting_df
