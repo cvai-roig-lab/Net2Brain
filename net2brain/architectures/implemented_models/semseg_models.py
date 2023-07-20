@@ -1,11 +1,13 @@
-import torch
-import torch.nn as nn
 import os
 import requests
+
+import torch
+import torch.nn as nn
 from mit_semseg.models import resnet #resnext, mobilenet, hrnet
 from mit_semseg.lib.nn import SynchronizedBatchNorm2d
-BatchNorm2d = SynchronizedBatchNorm2d
 
+
+BatchNorm2d = SynchronizedBatchNorm2d
 
 
 class SegmentationModuleBase(nn.Module):
@@ -595,15 +597,10 @@ class UPerNet(nn.Module):
         return x
     
 
-
-
 def get_semseg_model(pretrained=True):
 
     if not os.path.exists(r"checkpoints"):
         os.makedirs(r"checkpoints")
-
-
-
 
     if pretrained:
 
@@ -650,4 +647,3 @@ def get_semseg_model(pretrained=True):
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit,segSize=torch.Size([224,224]))
 
     return segmentation_module
-

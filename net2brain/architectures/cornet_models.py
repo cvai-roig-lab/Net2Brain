@@ -2,7 +2,6 @@ import cv2
 from torch.autograd import Variable as V
 from torchvision import transforms as trn
 from PIL import Image
-import torch
 #import cornet
 
 from net2brain.architectures.implemented_models.cornet_z import cornet_z

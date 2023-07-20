@@ -1,9 +1,10 @@
 import cv2
+from PIL import Image
+
 from torch.autograd import Variable as V
 from torchvision import transforms as trn
-from PIL import Image
 import visualpriors
-import torch
+
 
 # Colorization is missing, because the model architecture needs to change to load the state dict...
 #         'colorization': visualpriors.taskonomy_network.TaskonomyEncoder,

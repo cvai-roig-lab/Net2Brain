@@ -8,6 +8,7 @@ from sklearn.decomposition import IncrementalPCA
 from sklearn.linear_model import LinearRegression
 from scipy.stats import pearsonr, ttest_1samp
 
+
 def get_layers_ncondns(feat_path):
     """Function to return facts about the npz-file
 
@@ -31,9 +32,10 @@ def get_layers_ncondns(feat_path):
             num_layers += 1
             layer_list.append(key)  # collect all layer names
 
-    # Liste: ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'fc6', 'fc7', 'fc8']
+    # List: ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'fc6', 'fc7', 'fc8']
 
     return num_layers, layer_list, num_condns
+
 
 def encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path):
 	activations = []
@@ -103,10 +105,3 @@ def linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
 			layer_df = pd.DataFrame.from_dict(output_dict)
 			all_rois_df = pd.concat([all_rois_df, layer_df], ignore_index=True)
 	return all_rois_df
-
-
-
-
-
-
-

@@ -1,19 +1,10 @@
 import torch
-import cv2
-from torch.autograd import Variable as V
-from torchvision import transforms as trn
-from PIL import Image
-from typing import Dict
-import json
-import urllib
 from torchvision.transforms import Compose, Lambda
-
 from pytorchvideo.data.encoded_video import EncodedVideo
 from pytorchvideo.transforms import (
     ApplyTransformToKey,
     ShortSideScale,
     UniformTemporalSubsample,
-    UniformCropVideo
 )
 
 import warnings
@@ -289,6 +280,3 @@ def preprocess(video_path, model_name, device):
         inputs = preprocess_x3d(video_path, model_name, device)
     
     return inputs
-
-
-

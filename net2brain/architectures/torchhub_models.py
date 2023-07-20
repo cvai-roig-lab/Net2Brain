@@ -1,9 +1,10 @@
-import torch
 import cv2
+from PIL import Image
+
+import torch
 from torch.autograd import Variable as V
 from torchvision import transforms as trn
-from PIL import Image
-import torch
+
 
 MODELS = {'deeplabv3_mobilenet_v3_large': torch.hub.load,
           'deeplabv3_resnet101': torch.hub.load,
