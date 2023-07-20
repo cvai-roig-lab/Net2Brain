@@ -1,12 +1,14 @@
 import os
-import zipfile
 import gdown
+import zipfile
+
 
 DATASET_URLS = {
     "78images": "https://drive.google.com/uc?id=1b1SWkkISwzqFl0URE8iNDBGui1vbww6u",
     "92images": "https://drive.google.com/uc?id=1dpbo5NYD6z7yQUfdpQcg3Y59AKoZD_b-",
     "bonner_pnas2017": "https://drive.google.com/uc?id=1gW4otwb7yPqyAbP3YUiFO08Wnw_HnS8t"
 }
+
 
 def download_and_extract_zip(url, folder):
     zip_file_path = os.path.join(folder, "temp.zip")
@@ -16,6 +18,7 @@ def download_and_extract_zip(url, folder):
         zip_file.extractall(folder)
     
     os.remove(zip_file_path)
+
 
 def load_dataset(dataset_name, path=None):
     if dataset_name not in DATASET_URLS:
