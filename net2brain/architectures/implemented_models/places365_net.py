@@ -367,5 +367,3 @@ def get_resnet50_places365(pretrained=True):
 
         
     return model
-
-

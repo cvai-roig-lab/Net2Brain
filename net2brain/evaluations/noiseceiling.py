@@ -216,4 +216,3 @@ class NoiseCeiling():
                     json.dump(args, fp, sort_keys=True, indent=4)
             
         return noise_ceiling
-

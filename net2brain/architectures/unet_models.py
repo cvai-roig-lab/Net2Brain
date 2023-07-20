@@ -65,5 +65,3 @@ def preprocess_frame(frame, model_name, device):
             pil_image = pil_image.cuda()
             
     return pil_image
-
-

@@ -280,6 +280,3 @@ def preprocess(video_path, model_name, device):
         inputs = preprocess_x3d(video_path, model_name, device)
     
     return inputs
-
-
-
