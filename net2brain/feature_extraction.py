@@ -2,7 +2,6 @@ from collections import defaultdict
 from datetime import datetime
 import os.path as op
 import os
-from functools import partial
 from pathlib import Path
 from pprint import pprint
 from PIL import Image
@@ -27,8 +26,6 @@ import net2brain.architectures.yolo_models as yolo
 import net2brain.architectures.toolbox_models as toolbox_models
 import net2brain.architectures.cornet_models as cornet_models
 import random
-
-
 
 
 ## Get available networks
@@ -62,7 +59,7 @@ except ModuleNotFoundError:
     vissl_exist = False
 
 try:
-    import detectron2
+    #import detectron2
     import net2brain.architectures.detectron2_models as detectron2_models
     AVAILABLE_NETWORKS.update(
         {'detectron2': list(detectron2_models.MODELS.keys())}

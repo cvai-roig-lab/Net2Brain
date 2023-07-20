@@ -1,13 +1,9 @@
-import torch
-import torch.nn as nn
-import os
+from functools import reduce
+import os  
 import requests
 
-from functools import reduce
-from torch.autograd import Variable
-
-import torchvision
-from torchvision import transforms as T
+import torch
+import torch.nn as nn
 
 class LambdaBase(nn.Sequential):
     def __init__(self, fn, *args):
@@ -31,10 +27,7 @@ class LambdaMap(LambdaBase):
 class LambdaReduce(LambdaBase):
     def forward(self, input):
         return reduce(self.lambda_func,self.forward_prepare(input))
-
-
-
-
+    
 
 class ResNet50Places365(nn.Module):
     def __init__(self):
@@ -341,10 +334,6 @@ class ResNet50Places365(nn.Module):
         return self.model(x)
         
 
-
-
-
-
 def load_state_dict_compatibly(model, state_dict):
     new_state_dict = {}
     for key, value in state_dict.items():
@@ -353,7 +342,6 @@ def load_state_dict_compatibly(model, state_dict):
     model.load_state_dict(new_state_dict)
 
     return model
-
 
 
 def get_resnet50_places365(pretrained=True):

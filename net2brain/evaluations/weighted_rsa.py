@@ -1,12 +1,14 @@
-import numpy as np
 import os
-from scipy import stats
 import os.path as op
+
+import numpy as np
+from scipy import stats
+from sklearn.model_selection import KFold
 import rsatoolbox
+import pandas as pd
+
 from .noiseceiling import NoiseCeiling
 from .eval_helper import *
-from sklearn.model_selection import KFold
-import pandas as pd
 
 
 class WRSA():

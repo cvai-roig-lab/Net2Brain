@@ -1,7 +1,7 @@
-# Library
 import torch
 import torch.optim
 from torch import nn
+
 
 class Flatten(nn.Module):
     """

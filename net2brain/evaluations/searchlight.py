@@ -1,8 +1,10 @@
-import numpy as np
 import os
+import os.path as op
+
+import numpy as np
 from scipy import stats
 import torch
-import os.path as op
+
 from .eval_helper import *
 
 

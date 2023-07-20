@@ -1,10 +1,10 @@
 from pathlib import Path
+from PIL import Image
 from typing import Union, Callable
 
 import timm
 import torch
 import torch.nn as nn
-from PIL import Image
 from timm.data import resolve_data_config
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data.transforms_factory import create_transform as timm_create_transform

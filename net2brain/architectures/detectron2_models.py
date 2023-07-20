@@ -2,10 +2,11 @@
 
 
 import cv2
+from PIL import Image
+
 from torch.autograd import Variable as V
 from torchvision import transforms as trn
-from PIL import Image
-import torch
+
 from detectron2.config import get_cfg
 from detectron2 import model_zoo
 from detectron2.modeling import build_model

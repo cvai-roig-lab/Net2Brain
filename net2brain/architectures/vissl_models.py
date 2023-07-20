@@ -1,15 +1,15 @@
 import cv2
-from torch.autograd import Variable as V
-from torchvision import transforms as trn
 import os.path as op
 import os
 from PIL import Image
-import torch
 
-import vissl
+from torch.autograd import Variable as V
+from torchvision import transforms as trn
+
 from vissl.models import build_model
 from vissl.utils.hydra_config import compose_hydra_configuration, convert_to_attrdict
 import urllib.request
+
 
 MODELS = {'rn50_in1k_perm100_jigsaw': build_model,
           'rn50_in1k_perm10k_jigsaw': build_model,

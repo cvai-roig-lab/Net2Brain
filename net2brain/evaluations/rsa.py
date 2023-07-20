@@ -1,10 +1,13 @@
-import numpy as np
 import os
-from scipy import stats
 import os.path as op
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+
 from .noiseceiling import NoiseCeiling
 from .eval_helper import *
-import pandas as pd
+
 
 class RSA():
     """Evaluation with RSA

@@ -1,11 +1,13 @@
-import torch
-import torch.nn as nn
 import os
 import requests
+
+import torch
+import torch.nn as nn
 from mit_semseg.models import resnet #resnext, mobilenet, hrnet
 from mit_semseg.lib.nn import SynchronizedBatchNorm2d
-BatchNorm2d = SynchronizedBatchNorm2d
 
+
+BatchNorm2d = SynchronizedBatchNorm2d
 
 
 class SegmentationModuleBase(nn.Module):

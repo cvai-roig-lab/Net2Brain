@@ -1,12 +1,14 @@
-import torch
 import cv2
-from torch.autograd import Variable as V
-from torchvision import transforms as trn
 from PIL import Image
 
-MODELS = {'unet': torch.hub.load}
+import torch
+from torch.autograd import Variable as V
+from torchvision import transforms as trn
 
+
+MODELS = {'unet': torch.hub.load}
 MODEL_NODES = {'unet': ['encoder1', 'encoder2', 'encoder3', 'encoder4', 'decoder4', 'decoder3', 'decoder2', 'decoder1', 'conv']}
+
 
 def preprocess(image, model_name, device):
     """Preprocesses image according to the networks needs

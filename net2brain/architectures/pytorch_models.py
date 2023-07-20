@@ -1,9 +1,10 @@
-import torchvision.models as models
 import cv2
+from PIL import Image
+
+import torchvision.models as models
 from torch.autograd import Variable as V
 from torchvision import transforms as trn
-from PIL import Image
-import torch
+
 
 MODELS = {"AlexNet": models.alexnet,
           "ResNet18": models.resnet18,

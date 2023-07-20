@@ -1,8 +1,9 @@
-import torch
 import cv2
+from PIL import Image
+
+import torch
 from torch.autograd import Variable as V
 from torchvision import transforms as trn
-from PIL import Image
 
 MODELS = {'yolov5l': torch.hub.load,
           'yolov5l6': torch.hub.load,
