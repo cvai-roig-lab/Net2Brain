@@ -46,11 +46,13 @@ class Plotting:
             palette="dark", alpha=.6, height=6
         )
         g.set_xticklabels(rotation=30) 
-        max_err = max(plotting_df["SEM"])
+        max_err = 0
         # Get coordinates of patches, plot error bars
-        x_coords = [p.get_x() + 0.5 * p.get_width() for p in g.axes.flat[0].patches]
-        y_coords = [p.get_height() for p in g.axes.flat[0].patches]
-        g.axes.flat[0].errorbar(x=x_coords, y=y_coords, yerr=plotting_df["SEM"], fmt="none", c="#808080")
+        if not plotting_df["SEM"].isnull().values.any():
+            max_err = max(plotting_df["SEM"])
+            x_coords = [p.get_x() + 0.5 * p.get_width() for p in g.axes.flat[0].patches]
+            y_coords = [p.get_height() for p in g.axes.flat[0].patches]
+            g.axes.flat[0].errorbar(x=x_coords, y=y_coords, yerr=plotting_df["SEM"], fmt="none", c="#808080")
         bar_width = g.axes.flat[0].patches[0].get_width()
         # Build bar-color to Model name dictionary  
         hue2name_dic = {p.get_fc(): g.legend.get_texts()[ii].get_text() for ii, p in enumerate(g.legend.get_patches())}
@@ -87,7 +89,7 @@ class Plotting:
         uncl = [plotting_df[plotting_df['ROI']==ROI]['UNC'].iloc[0] for ROI in ROI_lst]
         label = 'Noise Ceiling'
         for ii,(unc,lnc) in enumerate(zip(uncl,lncl)):
-            if unc == lnc:
+            if (unc == lnc) or np.isnan(lnc).any():
                 continue
 
             plt.hlines(y=unc,xmin=ii-0.5*bar_width*num_models,xmax=ii+0.5*bar_width*num_models,
