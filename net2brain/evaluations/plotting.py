@@ -6,21 +6,37 @@ plt.style.use('ggplot')
 
 
 class Plotting:
-    """Class for plotting the results generated in the evaulation module
-    """
+    """Class for plotting the results generated in the evaluation module."""
+    
     def __init__(self, dataframes):
         """Initialization
 
         Args:
-            dataframes (list): list of pandas dataframes. Need to have the same ROIs
+            dataframes (list or DataFrame): List of pandas dataframes or a single dataframe. 
+                                            If single, it needs to have columns 'Name', 'Values', 'Significance', and 'Color'.
+                                            If list, all dataframes need to have the same ROIs.
         """
-        # Check if dataframes is a list
-        if not isinstance(dataframes, list):
-            raise TypeError("The 'dataframes' argument must be a list.")
+        
+        # Check if dataframes is a single dataframe with the required columns
+        if isinstance(dataframes, pd.DataFrame):
+            required_columns = ['Name', 'Values', 'Significance', 'Color']
+            if all(col in dataframes.columns for col in required_columns):
+                self.dataframes = dataframes
+                return
+            else:
+                raise ValueError("The dataframe provided doesn't have all the required columns: 'Name', 'Values', 'Significance', 'Color'.")
+        
+        # Check if dataframes is a list of dataframes
+        elif isinstance(dataframes, list):
+            self.dataframes = []
+            for dataframe in dataframes:
+                if not isinstance(dataframe, pd.DataFrame):
+                    raise TypeError(f"Expected all elements in the 'dataframes' list to be of type DataFrame. Found {type(dataframe)} instead.")
+                self.dataframes.append(dataframe.copy())
+        
+        else:
+            raise TypeError("The 'dataframes' argument must be either a list of pandas dataframes or a single pandas dataframe with the required columns.")
 
-        self.dataframes = []
-        for dataframe in dataframes:
-            self.dataframes.append(dataframe.copy())
 
     def plot(self,pairs=[],metric='R2'):
         for dataframe in self.dataframes:
@@ -117,7 +133,10 @@ class Plotting:
     def is_2d_array(self, value):
         return isinstance(value, np.ndarray) and len(value.shape) == 2
 
-    def plotting_over_time(self, dataframe):
+    def plotting_over_time(self):
+
+        dataframe = self.dataframes
+
         # If the values in the "Values" column are 2D, average along axis 0
         dataframe["Values"] = dataframe["Values"].apply(lambda x: np.mean(x, axis=0) if self.is_2d_array(x) else x)
 
