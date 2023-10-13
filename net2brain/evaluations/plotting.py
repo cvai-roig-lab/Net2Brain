@@ -9,16 +9,19 @@ class Plotting:
     """Class for plotting the results generated in the evaulation module
     """
     def __init__(self, dataframes):
-        """Initation
+        """Initialization
 
         Args:
             dataframes (list): list of pandas dataframes. Need to have the same ROIs
         """
+        # Check if dataframes is a list
+        if not isinstance(dataframes, list):
+            raise TypeError("The 'dataframes' argument must be a list.")
+
         self.dataframes = []
         for dataframe in dataframes:
             self.dataframes.append(dataframe.copy())
-        pass
-    
+
     def plot(self,pairs=[],metric='R2'):
         for dataframe in self.dataframes:
             if metric not in dataframe.columns:
@@ -109,3 +112,68 @@ class Plotting:
         plt.show()
       
         return plotting_df
+    
+
+    def is_2d_array(self, value):
+        return isinstance(value, np.ndarray) and len(value.shape) == 2
+
+    def plotting_over_time(self, dataframe):
+        # If the values in the "Values" column are 2D, average along axis 0
+        dataframe["Values"] = dataframe["Values"].apply(lambda x: np.mean(x, axis=0) if self.is_2d_array(x) else x)
+
+        # Extract time points
+        sample_value = dataframe.iloc[0]["Values"]
+        time_points = range(len(sample_value))
+
+        # Define a color palette
+        palette = sns.color_palette("husl", n_colors=len(dataframe))  # You can choose a different palette
+
+        # Initialize the plot
+        plt.figure(figsize=(10, 6))
+        sns.set(style="whitegrid")
+        plt.style.use('ggplot')
+
+        # Determine the data range based on the flattened values
+        flat_values = np.concatenate(dataframe["Values"].to_numpy())
+        data_min = np.min(flat_values)
+        data_max = np.max(flat_values)
+        
+        # Calculate the range-dependent marker spacing
+        marker_spacing = 0.02 * (data_max - data_min)  # Adjust the 0.02 factor as needed
+
+        # Plot lines for each model
+        for index, row in dataframe.iterrows():
+            name = row["Name"]
+            model_values = row["Values"]
+            model_significance = row["Significance"]
+            color = row.get("Color") or palette[index]  # Get color from dataframe or palette
+
+            # Plot values
+            plt.plot(time_points, model_values, label=name, color=color, linewidth=2)  # Adjust the linewidth as needed
+
+            # Calculate the y-coordinate for significant markers
+            start_x = -0.005  # Adjust as needed
+            significance_positions = [start_x - (index * marker_spacing) for sig in model_significance if sig < 0.01]
+            
+            # Plot significant time points with connected line segments below the x-axis
+            sig_indices = [t for t, sig in enumerate(model_significance) if sig < 0.01]
+            if sig_indices:
+                x_points = [time_points[t] for t in sig_indices]
+                y_points = [significance_positions.pop(0) for _ in sig_indices]
+                plt.scatter(x_points, y_points, c=color, s=100)  # Adjust the size and color as needed
+
+        # Add dashed lines for x and y axes at 0
+        plt.axhline(0, color="black", linestyle="--")
+        plt.axvline(0, color="black", linestyle="--")
+
+        # Set axis labels and title
+        plt.xlabel("Time (ms)")
+        plt.ylabel("Unique Variances")
+        plt.title("Variance Partitioning Analysis Results")
+
+        # Add legend
+        plt.legend()
+
+        # Show the plot
+        plt.show()
+
