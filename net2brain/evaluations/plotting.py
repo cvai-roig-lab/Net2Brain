@@ -131,9 +131,19 @@ class Plotting:
     
 
     def is_2d_array(self, value):
+        """Function to figure out if the plotting data is 2D or not
+
+        Args:
+            value (array or list): Plotting Data
+
+        Returns:
+            Bool: True or false
+        """
         return isinstance(value, np.ndarray) and len(value.shape) == 2
 
     def plotting_over_time(self):
+        """Plotting lineplots over time
+        """
 
         dataframe = self.dataframes
 

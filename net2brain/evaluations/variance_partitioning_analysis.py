@@ -14,11 +14,16 @@ from scipy.stats import ttest_1samp
 import statsmodels.stats.multitest
 
 class VPA():
-    """Evaluation with RSA"""
+    """Class for Variance Partitioning Analysis
+    """
 
-    def __init__(self, dependent_variable, independent_variables, variable_names, save_path="./"):
-        """Initiate RSA
+    def __init__(self, dependent_variable, independent_variables, variable_names):
+        """Initiating VPA
+
         Args:
+            dependent_variable (list): Variable that the VPA depends on
+            independent_variables (list): List of Lists of independent variables. Must have same # of features as dependent var
+            variable_names (list): Names for the independent variables for plotting 
         """
         # Check if the lengths of independent_variables and variable_names match
         if len(independent_variables) != len(variable_names):
@@ -40,7 +45,6 @@ class VPA():
 
         # Other attributes
         self.variable_names = variable_names
-        self.save_path = save_path
 
         # Declare function 
         function_map = {
@@ -55,6 +59,14 @@ class VPA():
 
 
     def dim_fitter(self, ind_var):
+        """Function to fit dimensions for VPA depending on its dimension
+
+        Args:
+            ind_var (array): Independent variable
+
+        Returns:
+            ind_var (array): Reshaped
+        """
         if ind_var.ndim==1:
             return ind_var.reshape(-1, 1)
         else:
@@ -132,13 +144,28 @@ class VPA():
         
 
     def get_uppertriangular(self, rdm):
+        """Get the upper triangular of the square RDM
+
+        Args:
+            rdm (array): RDM in question
+
+        Returns:
+            rdm (array): Returns the upper triangular
+        """
         num_conditions = rdm.shape[0]
         return rdm[np.triu_indices(num_conditions,1)]
     
 
 
     def load_rdms(self, rdm_paths):
-        """ Function to load RDMs"""
+        """Function to load the RDMs for VPA depending on the type of RDM
+
+        Args:
+            rdm_paths (list of string): Path to the actual RDMs
+
+        Returns:
+            rdm_list: List of opened RDMs
+        """
 
         # EEG Data Flag
         is_eeg = False
@@ -202,6 +229,16 @@ class VPA():
 
 
     def VPA_2(self, dep_var):
+        """VPA for 2 independent variables
+
+        Args:
+            dep_var (array): Dependent variable
+
+        Returns:
+            y12: Total variance
+            y1: Unique Variance 1
+            y2: Unique variance 2
+        """
 
         # Open RDMs
         dep_var = self.load_rdms(self.dependent_variable)
@@ -234,6 +271,17 @@ class VPA():
 
 
     def VPA_3(self, dep_var):
+        """VPA for 3 independent variables
+
+        Args:
+            dep_var (array): Dependent variable
+
+        Returns:
+            y123: Total variance
+            y1: Unique Variance 1
+            y2: Unique variance 2
+            y3: Unique variance 3
+        """
 
         # Open RDMs
         ind_var_1 = self.load_rdms(self.independent_1)
@@ -276,6 +324,18 @@ class VPA():
 
 
     def VPA_4(self, dep_var):
+        """VPA for 4 independent variables
+
+        Args:
+            dep_var (array): Dependent variable
+
+        Returns:
+            y123: Total variance
+            y1: Unique Variance 1
+            y2: Unique variance 2
+            y3: Unique variance 3
+            y4: Unique variance 4
+        """
         
         # Open RDMs
         ind_var_1 = self.load_rdms(self.independent_1)
@@ -337,6 +397,16 @@ class VPA():
 
 
     def evaluate_2(self, dep_var, num_subjects, eeg_time):
+        """Evaluation function for VPA with 2 variables
+
+        Args:
+            dep_var (array): Dependent variable
+            num_subjects (int): Number of Subjects in independent variable
+            eeg_time (int): Number of ms captured in EEG data
+
+        Returns:
+            all_variances_df: Pandas dataframe with results
+        """
 
         all_variances_df = pd.DataFrame(columns=['Name', 'Values', 'Significance', 'Color'])
 
@@ -381,6 +451,16 @@ class VPA():
 
 
     def evaluate_3(self, dep_var, num_subjects, eeg_time):
+        """Evaluation function for VPA with 3 variables
+
+        Args:
+            dep_var (array): Dependent variable
+            num_subjects (int): Number of Subjects in independent variable
+            eeg_time (int): Number of ms captured in EEG data
+
+        Returns:
+            all_variances_df: Pandas dataframe with results
+        """
 
         all_variances_df = pd.DataFrame(columns=['Name', 'Values', 'Significance', 'Color'])
 
@@ -430,6 +510,16 @@ class VPA():
 
 
     def evaluate_4(self, dep_var, num_subjects, eeg_time):
+        """Evaluation function for VPA with 4 variables
+
+        Args:
+            dep_var (array): Dependent variable
+            num_subjects (int): Number of Subjects in independent variable
+            eeg_time (int): Number of ms captured in EEG data
+
+        Returns:
+            all_variances_df: Pandas dataframe with results
+        """
 
         all_variances_df = pd.DataFrame(columns=['Name', 'Values', 'Significance', 'Color'])
 
@@ -480,6 +570,14 @@ class VPA():
 
 
     def evaluate(self, average_models=False):
+        """Function wrapper for the entire VPA evaluation
+
+        Args:
+            average_models (bool, optional): Bool if independent variables should be averaged within. Defaults to False.
+
+        Returns:
+            all_variances_df: Pandas dataframe with results
+        """
 
         self.average_models=average_models
 
