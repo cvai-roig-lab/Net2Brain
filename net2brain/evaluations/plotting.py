@@ -141,17 +141,24 @@ class Plotting:
         """
         return isinstance(value, np.ndarray) and len(value.shape) == 2
 
-    def plotting_over_time(self):
+    def add_std_deviation(self, dataframe):
+        # If the value is a 2D array, calculate its standard deviation
+        dataframe['Std'] = dataframe["Values"].apply(lambda x: np.std(x, axis=0) if self.is_2d_array(x) else None)
+        return dataframe
+
+    def plotting_over_time(self ,add_std=False):
         """Plotting lineplots over time
         """
 
         dataframe = self.dataframes
 
+        dataframe = self.add_std_deviation(dataframe)
+
         # If the values in the "Values" column are 2D, average along axis 0
-        dataframe["Values"] = dataframe["Values"].apply(lambda x: np.mean(x, axis=0) if self.is_2d_array(x) else x)
+        dataframe["Values_plotting"] = dataframe["Values"].apply(lambda x: np.mean(x, axis=0) if self.is_2d_array(x) else x)
 
         # Extract time points
-        sample_value = dataframe.iloc[0]["Values"]
+        sample_value = dataframe.iloc[0]["Values_plotting"]
         time_points = range(len(sample_value))
 
         # Define a color palette
@@ -165,12 +172,18 @@ class Plotting:
         # Plot lines for each model
         for index, row in dataframe.iterrows():
             name = row["Name"]
-            model_values = row["Values"]
+            model_values = row["Values_plotting"]
             model_significance = row["Significance"]
+            model_std = row["Std"]
             color = row.get("Color") or palette[index]
 
             # Plot values
             plt.plot(time_points, model_values, label=name, color=color, linewidth=2)
+
+            # Plot the shaded region representing standard deviation
+            if add_std:
+                if model_std is not None:
+                    plt.fill_between(time_points, model_values - model_std, model_values + model_std, color=color, alpha=0.2)
 
             # Calculate the y-coordinate for significant markers; reducing spacing
             y_line_position = -0.001 * (index + 1)
