@@ -10,6 +10,7 @@ setup(
         'flake8',
         'h5py',
         'matplotlib',
+        'statsmodels',
         'requests',
         'seaborn',
         'opencv_python_headless',

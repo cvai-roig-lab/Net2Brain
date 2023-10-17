@@ -6,19 +6,38 @@ plt.style.use('ggplot')
 
 
 class Plotting:
-    """Class for plotting the results generated in the evaulation module
-    """
+    """Class for plotting the results generated in the evaluation module."""
+    
     def __init__(self, dataframes):
-        """Initation
+        """Initialization
 
         Args:
-            dataframes (list): list of pandas dataframes. Need to have the same ROIs
+            dataframes (list or DataFrame): List of pandas dataframes or a single dataframe. 
+                                            If single, it needs to have columns 'Name', 'Values', 'Significance', and 'Color'.
+                                            If list, all dataframes need to have the same ROIs.
         """
-        self.dataframes = []
-        for dataframe in dataframes:
-            self.dataframes.append(dataframe.copy())
-        pass
-    
+        
+        # Check if dataframes is a single dataframe with the required columns
+        if isinstance(dataframes, pd.DataFrame):
+            required_columns = ['Name', 'Values', 'Significance', 'Color']
+            if all(col in dataframes.columns for col in required_columns):
+                self.dataframes = dataframes
+                return
+            else:
+                raise ValueError("The dataframe provided doesn't have all the required columns: 'Name', 'Values', 'Significance', 'Color'.")
+        
+        # Check if dataframes is a list of dataframes
+        elif isinstance(dataframes, list):
+            self.dataframes = []
+            for dataframe in dataframes:
+                if not isinstance(dataframe, pd.DataFrame):
+                    raise TypeError(f"Expected all elements in the 'dataframes' list to be of type DataFrame. Found {type(dataframe)} instead.")
+                self.dataframes.append(dataframe.copy())
+        
+        else:
+            raise TypeError("The 'dataframes' argument must be either a list of pandas dataframes or a single pandas dataframe with the required columns.")
+
+
     def plot(self,pairs=[],metric='R2'):
         for dataframe in self.dataframes:
             if metric not in dataframe.columns:
@@ -109,3 +128,84 @@ class Plotting:
         plt.show()
       
         return plotting_df
+    
+
+    def is_2d_array(self, value):
+        """Function to figure out if the plotting data is 2D or not
+
+        Args:
+            value (array or list): Plotting Data
+
+        Returns:
+            Bool: True or false
+        """
+        return isinstance(value, np.ndarray) and len(value.shape) == 2
+
+    def add_std_deviation(self, dataframe):
+        # If the value is a 2D array, calculate its standard deviation
+        dataframe['Std'] = dataframe["Values"].apply(lambda x: np.std(x, axis=0) if self.is_2d_array(x) else None)
+        return dataframe
+
+    def plotting_over_time(self ,add_std=False):
+        """Plotting lineplots over time
+        """
+
+        dataframe = self.dataframes
+
+        dataframe = self.add_std_deviation(dataframe)
+
+        # If the values in the "Values" column are 2D, average along axis 0
+        dataframe["Values_plotting"] = dataframe["Values"].apply(lambda x: np.mean(x, axis=0) if self.is_2d_array(x) else x)
+
+        # Extract time points
+        sample_value = dataframe.iloc[0]["Values_plotting"]
+        time_points = range(len(sample_value))
+
+        # Define a color palette
+        palette = sns.color_palette("husl", n_colors=len(dataframe))
+
+        # Initialize the plot
+        plt.figure(figsize=(10, 6))
+        sns.set(style="whitegrid")
+        plt.style.use('ggplot')
+
+        # Plot lines for each model
+        for index, row in dataframe.iterrows():
+            name = row["Name"]
+            model_values = row["Values_plotting"]
+            model_significance = row["Significance"]
+            model_std = row["Std"]
+            color = row.get("Color") or palette[index]
+
+            # Plot values
+            plt.plot(time_points, model_values, label=name, color=color, linewidth=2)
+
+            # Plot the shaded region representing standard deviation
+            if add_std:
+                if model_std is not None:
+                    plt.fill_between(time_points, model_values - model_std, model_values + model_std, color=color, alpha=0.2)
+
+            # Calculate the y-coordinate for significant markers; reducing spacing
+            y_line_position = -0.001 * (index + 1)
+
+            # Plot significant time points with connected line segments below the x-axis
+            sig_indices = [t for t, sig in enumerate(model_significance) if sig < 0.01]
+            for i in sig_indices:
+                plt.hlines(y=y_line_position, xmin=time_points[i], xmax=time_points[i]+1, colors=color, linewidth=2)
+
+        # Add dashed lines for x and y axes at 0
+        plt.axhline(0, color="black", linestyle="--")
+        plt.axvline(0, color="black", linestyle="--")
+
+        # Set axis labels and title
+        plt.xlabel("Time (ms)")
+        plt.ylabel("Unique Variances")
+        plt.title("Variance Partitioning Analysis Results")
+
+        # Add legend
+        plt.legend()
+
+        # Show the plot
+        plt.show()
+
+

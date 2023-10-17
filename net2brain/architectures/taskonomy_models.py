@@ -4,16 +4,19 @@ from PIL import Image
 from torch.autograd import Variable as V
 from torchvision import transforms as trn
 import visualpriors
+from .implemented_models import taskonomy_colorization
 
 
 # Colorization is missing, because the model architecture needs to change to load the state dict...
 #         'colorization': visualpriors.taskonomy_network.TaskonomyEncoder,
 MODELS = {'autoencoding': visualpriors.taskonomy_network.TaskonomyEncoder,
           'curvature': visualpriors.taskonomy_network.TaskonomyEncoder,
+          'colorization': taskonomy_colorization.TaskonomyEncoder,
           'class_object': visualpriors.taskonomy_network.TaskonomyEncoder,
           'class_scene': visualpriors.taskonomy_network.TaskonomyEncoder,
           'denoising': visualpriors.taskonomy_network.TaskonomyEncoder,
-          'depth_euclidean': visualpriors.taskonomy_network.TaskonomyEncoder,
+          'euclidean': visualpriors.taskonomy_network.TaskonomyEncoder,
+          'depth': visualpriors.taskonomy_network.TaskonomyEncoder,
           'edge_occlusion': visualpriors.taskonomy_network.TaskonomyEncoder,
           'edge_texture': visualpriors.taskonomy_network.TaskonomyEncoder,
           'egomotion': visualpriors.taskonomy_network.TaskonomyEncoder,
@@ -36,8 +39,10 @@ MODEL_NODES = {'autoencoding': ['layer1', 'layer2', 'layer3', 'layer4'],
                'curvature': ['layer1', 'layer2', 'layer3', 'layer4'],
                'class_object': ['layer1', 'layer2', 'layer3', 'layer4'],
                'class_scene': ['layer1', 'layer2', 'layer3', 'layer4'],
+               'colorization': ['layer1', 'layer2', 'layer3', 'layer4'],
                'denoising': ['layer1', 'layer2', 'layer3', 'layer4'],
-               'depth_euclidean': ['layer1', 'layer2', 'layer3', 'layer4'],
+               'euclidean': ['layer1', 'layer2', 'layer3', 'layer4'],
+               'depth': ['layer1', 'layer2', 'layer3', 'layer4'],
                'edge_occlusion': ['layer1', 'layer2', 'layer3', 'layer4'],
                'edge_texture': ['layer1', 'layer2', 'layer3', 'layer4'],
                'egomotion': ['layer1', 'layer2', 'layer3', 'layer4'],
@@ -62,7 +67,8 @@ MODEL_WEIGHTS = {'autoencoding': 'https://github.com/alexsax/visual-prior/raw/ne
                  'class_object': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/class_object_encoder-4a4e42dad58066039a0d2f9d128bb32e93a7e4aa52edb2d2a07bcdd1a6536c18.pth',
                  'class_scene': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/class_scene_encoder-ad85764467cddafd98211313ceddebb98adf2a6bee2cedfe0b922a37ae65eaf8.pth',
                  'denoising': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/denoising_encoder-b64cab95af4a2c565066a7e8effaf37d6586c3b9389b47fff9376478d849db38.pth',
-                 'depth_euclidean': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/depth_euclidean_encoder-88f18d41313de7dbc88314a7f0feec3023047303d94d73eb8622dc40334ef149.pth',
+                 'euclidean': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/depth_euclidean_encoder-88f18d41313de7dbc88314a7f0feec3023047303d94d73eb8622dc40334ef149.pth',
+                 'depth': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/depth_zbuffer_encoder-cc343a8ed622fd7ee3ce54398be8682bbbbfb5d11fa80e8d03a56a5ae4e11b09.pth',
                  'edge_occlusion': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/edge_occlusion_encoder-5ac3f3e918131f61e01fe95e49f462ae2fc56aa463f8d353ca84cd4e248b9c08.pth',
                  'edge_texture': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/edge_texture_encoder-be2d686a6a4dfebe968d16146a17176eba37e29f736d5cd9a714317c93718810.pth',
                  'egomotion': 'https://github.com/alexsax/visual-prior/raw/networks/assets/pytorch/egomotion_encoder-9aa647c34bf98f9e491e0b37890d77566f6ae35ccf41d9375c674511318d571c.pth',
