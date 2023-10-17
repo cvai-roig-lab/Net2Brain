@@ -196,6 +196,44 @@ from net2brain.evaluations.encoding import linear_encoding
 results_dataframe = linear_encoding(feature_path, roi_path, model_name, n_folds=3, trn_tst_split=0.8, n_components=100, batch_size=100)
 ```
 
+
+## Variance Partitioning Analysis
+
+Variance Partitioning Analysis (VPA) is a statistical method used to dissect the contributions of different independent variables or factors to the variance observed in a dependent variable. In the context of neural data analysis, VPA is employed to understand how different neural models or factors contribute to the variance observed in neural responses.
+
+The main steps involved in performing VPA are as follows:
+
+- Define the independent variables or factors of interest. These could be different neural models, stimulus conditions, or any other factors you want to study.
+- Collect neural data, typically in the form of response patterns (RDMs - Representational Dissimilarity Matrices).
+- Perform the VPA analysis to quantify the unique variances attributed to each independent variable and their interactions.
+
+```python
+from net2brain.evaluations.variance_partitioning_analysis import VPA
+
+# Independent variables for VPA
+independent_variables = [paths_2D, paths_3D, paths_Sm, paths_nv]
+
+# Variable names for plotting
+variable_names = ["2D", "3D", "SM", "NV"]
+
+# Dependent varaible for VPA
+dependent_variable = "path_to_RDM"
+
+# VPA
+VPA_eval = VPA(dependent_variable, independent_variables, variable_names)
+
+# average_models=True would average all data within each independent variable
+dataframe = VPA_eval.evaluate(average_models=False)
+
+# For plotting:
+from net2brain.evaluations.plotting import Plotting
+
+plotter = Plotting(dataframe)
+plotter.plotting_over_time(add_std=True)
+```
+
+
+
 # Contribution and Support
 
 Net2Brain is an open-source project, and we welcome contributions from the community. If you encounter any issues, have suggestions for improvements, or would like to contribute to the project, feel free to write an issue or submit pull requests yourself.
