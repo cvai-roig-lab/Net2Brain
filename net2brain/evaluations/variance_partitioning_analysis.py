@@ -191,7 +191,15 @@ class VPA():
         else:
             # Iterate through paths and open the RDMs
             for model in rdm_paths:
-                this_rdm = load(model)['rdm']
+                this_rdm = load(model)
+
+                if 'rdm' in this_rdm:
+                    this_rdm = this_rdm['rdm']
+                elif 'arr_0' in this_rdm:
+                    this_rdm = this_rdm['arr_0']
+                else:
+                    raise ValueError(f"The RDM file does not contain 'rdm' or 'arr_0' keys.")
+        
                 rdm_list.append(self.get_uppertriangular(this_rdm))
 
             # Turn into numpy array
