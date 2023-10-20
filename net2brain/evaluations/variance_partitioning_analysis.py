@@ -447,13 +447,18 @@ class VPA():
         values = [R_ind_1, R_ind_2, R_all]
         significances = [sig_ind_1, sig_ind_2, sig_r_all]
 
+
+        data_to_append = []
+
         for name, val, sig in zip(names, values, significances):
-            all_variances_df = all_variances_df.append({
+            data_to_append.append({
                 'Name': name,
                 'Values': val,
                 'Significance': sig,
                 'Color': None
-            }, ignore_index=True)
+            })
+
+        all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
 
         return all_variances_df
 
@@ -504,13 +509,17 @@ class VPA():
         values = [R_ind_1, R_ind_2, R_ind_3, R_all]
         significances = [sig_ind_1, sig_ind_2, sig_ind_3, sig_r_all]
 
+        data_to_append = []
+
         for name, val, sig in zip(names, values, significances):
-            all_variances_df = all_variances_df.append({
+            data_to_append.append({
                 'Name': name,
                 'Values': val,
                 'Significance': sig,
                 'Color': None
-            }, ignore_index=True)
+            })
+
+        all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
 
         return all_variances_df
 
@@ -565,13 +574,17 @@ class VPA():
         values = [R_ind_1, R_ind_2, R_ind_3, R_ind_4, R_all]
         significances = [sig_ind_1, sig_ind_2, sig_ind_3, sig_ind_4, sig_r_all]
 
+        data_to_append = []
+
         for name, val, sig in zip(names, values, significances):
-            all_variances_df = all_variances_df.append({
+            data_to_append.append({
                 'Name': name,
                 'Values': val,
                 'Significance': sig,
                 'Color': None
-            }, ignore_index=True)
+            })
+
+        all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
 
         return all_variances_df
 
