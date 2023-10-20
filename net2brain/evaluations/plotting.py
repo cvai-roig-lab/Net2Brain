@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 plt.style.use('ggplot')
 
 
@@ -66,6 +68,7 @@ class Plotting:
         )
         g.set_xticklabels(rotation=30) 
         max_err = 0
+        
         # Get coordinates of patches, plot error bars
         if not plotting_df["SEM"].isnull().values.any():
             max_err = max(plotting_df["SEM"])

@@ -12,7 +12,7 @@ setup(
         'matplotlib',
         'statsmodels',
         'requests',
-        'seaborn',
+        'seaborn==0.12.2',
         'opencv_python_headless',
         'pandas==1.3.4',
         'numpy',

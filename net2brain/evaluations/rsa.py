@@ -8,6 +8,9 @@ from scipy import stats
 from .noiseceiling import NoiseCeiling
 from .eval_helper import *
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 
 class RSA():
     """Evaluation with RSA
