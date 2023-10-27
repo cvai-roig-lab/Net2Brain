@@ -8,6 +8,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'flake8',
+        'librosa',
         'h5py',
         'matplotlib',
         'statsmodels',

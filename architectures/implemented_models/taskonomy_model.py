@@ -283,7 +283,7 @@ class TaskonomyEncoder(nn.Module):
     def __init__(self, normalize_outputs=True, eval_only=True, train_penultimate=False, train=False):
         self.inplanes = 64
         super(TaskonomyEncoder, self).__init__()
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=0, bias=False)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=0, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=0, ceil_mode=True)
@@ -368,4 +368,98 @@ class TaskonomyEncoder(nn.Module):
             warnings.warn("Ignoring 'train()' in TaskonomyEncoder since 'eval_only' was set during initialization.", RuntimeWarning)
         else:
             super(TaskonomyEncoder, self).train(val)
+        return self
+
+
+
+class TaskonomyEncoder_Color(nn.Module):
+
+    def __init__(self, normalize_outputs=True, eval_only=True, train_penultimate=False, train=False):
+        self.inplanes = 64
+        super(TaskonomyEncoder_Color, self).__init__()
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=0, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=0, ceil_mode=True)
+        block = Bottleneck
+        layers = [3,4,6,3]
+        self.layer1 = self._make_layer(block, 64, layers[0], stride=2)
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2])
+        self.layer4 = self._make_layer(block, 512, layers[3])
+        self.compress1 = nn.Conv2d(2048, 8, kernel_size=3, stride=1, padding=1, bias=False)
+        self.compress_bn = nn.BatchNorm2d(8)
+        self.relu1 = nn.ReLU(inplace=True)
+        self.groupnorm = nn.GroupNorm(8, 8, affine=False)
+        self.normalize_outputs = normalize_outputs
+        self.eval_only = eval_only
+        if self.eval_only:
+            self.eval()
+        for p in self.parameters():
+            p.requires_grad = False
+
+        if train_penultimate:
+            for name, param in self.named_parameters():
+                if 'compress' in name:  # last layers: compress1.weight, compress_bn.weight, compress_bn.bias
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+
+        if train:
+            for p in self.parameters():
+                p.requires_grad = True
+
+
+    def _make_layer(self, block, planes, blocks, stride=1):
+        downsample = None
+        layers = []
+
+        if self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.inplanes, planes * block.expansion,
+                        kernel_size=1, stride=1, bias=False),
+                nn.BatchNorm2d(planes * block.expansion),
+            )
+        layers.append(block(self.inplanes, planes, downsample=downsample))
+
+        self.inplanes = planes * block.expansion
+        for i in range(1, blocks - 1):
+            layers.append(block(self.inplanes, planes))
+
+        downsample = None
+        if stride != 1:
+            downsample = nn.Sequential(
+                nn.MaxPool2d( kernel_size=1, stride=stride ),
+            )
+        layers.append(block(self.inplanes, planes, stride, downsample))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = F.pad(x, pad=(3,3,3,3), mode='constant', value=0)
+        #  other modes are reflect, replicate, constant
+
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        # x = F.pad(x, (0,1,0,1), 'constant', 0)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.compress1(x)
+        x = self.compress_bn(x)
+        x = self.relu1(x)
+        if self.normalize_outputs:
+            x = self.groupnorm(x)
+        return x
+
+    def train(self, val=True):
+        if val and self.eval_only:
+            warnings.warn("Ignoring 'train()' in TaskonomyEncoder since 'eval_only' was set during initialization.", RuntimeWarning)
+        else:
+            super(TaskonomyEncoder_Color, self).train(val)
         return self
