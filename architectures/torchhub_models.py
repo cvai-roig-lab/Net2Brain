@@ -2,51 +2,50 @@ import warnings
 from .netsetbase import NetSetBase
 from .shared_functions import imagenet_preprocess, imagenet_preprocess_frames, load_from_json
 import torchextractor as tx
+import torch
 
 
-class Standard(NetSetBase):
+class Pytorch(NetSetBase):
 
     def __init__(self, model_name, device):
         self.supported_data_types = ['image', 'video']
-        self.netset_name = "Standard"
+        self.netset_name = "Pytorch"
         self.model_name = model_name
         self.device = device
 
 
     def get_preprocessing_function(self, data_type):
         if data_type == 'image':
-            return Standard.image_preprocessing
+            return Pytorch.image_preprocessing
         elif data_type == 'video':
             warnings.warn("Models only support image-data. Will average video frames")
-            return Standard.video_preprocessing
+            return Pytorch.video_preprocessing
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
         
 
     def get_feature_cleaner(self, data_type):
         if data_type == 'image':
-            return Standard.clean_extracted_features
+            return Pytorch.clean_extracted_features
         elif data_type == 'video':
-            return Standard.clean_extracted_features
+            return Pytorch.clean_extracted_features
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
         
-
-
 
         
 
     def get_model(self, pretrained):
 
         # Set configuration path 
-        config_path = "architectures\configs\pytorch.json"
+        config_path = "architectures/configs/torchhub.json"
 
         # Load attributes from the json
         model_attributes = load_from_json(config_path, self.model_name)
 
         # Set the layers and model function from the attributes
         self.layers = model_attributes["nodes"]
-        self.loaded_model = model_attributes["model_function"](pretrained=pretrained)
+        self.loaded_model = model_attributes["model_function"]('pytorch/vision:v0.10.0', self.model_name, pretrained=pretrained)
 
         # Model to device
         self.loaded_model.to(self.device)
@@ -54,7 +53,7 @@ class Standard(NetSetBase):
         # Randomize weights
         if not pretrained:
             self.loaded_model.apply(self.randomize_weights)
-
+        
         # Put in eval mode
         self.loaded_model.eval()
 

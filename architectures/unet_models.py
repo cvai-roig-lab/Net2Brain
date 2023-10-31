@@ -4,30 +4,30 @@ from .shared_functions import imagenet_preprocess, imagenet_preprocess_frames, l
 import torchextractor as tx
 
 
-class Standard(NetSetBase):
+class Unet(NetSetBase):
 
     def __init__(self, model_name, device):
         self.supported_data_types = ['image', 'video']
-        self.netset_name = "Standard"
+        self.netset_name = "Unet"
         self.model_name = model_name
         self.device = device
 
 
     def get_preprocessing_function(self, data_type):
         if data_type == 'image':
-            return Standard.image_preprocessing
+            return Unet.image_preprocessing
         elif data_type == 'video':
             warnings.warn("Models only support image-data. Will average video frames")
-            return Standard.video_preprocessing
+            return Unet.video_preprocessing
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
         
 
     def get_feature_cleaner(self, data_type):
         if data_type == 'image':
-            return Standard.clean_extracted_features
+            return Unet.clean_extracted_features
         elif data_type == 'video':
-            return Standard.clean_extracted_features
+            return Unet.clean_extracted_features
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
         
@@ -39,14 +39,19 @@ class Standard(NetSetBase):
     def get_model(self, pretrained):
 
         # Set configuration path 
-        config_path = "architectures\configs\pytorch.json"
+        config_path = "architectures/configs/unet.json"
 
         # Load attributes from the json
         model_attributes = load_from_json(config_path, self.model_name)
 
         # Set the layers and model function from the attributes
         self.layers = model_attributes["nodes"]
-        self.loaded_model = model_attributes["model_function"](pretrained=pretrained)
+        self.loaded_model = model_attributes["model_function"]('mateuszbuda/brain-segmentation-pytorch', 
+                                                               self.model_name, 
+                                                               in_channels=3, 
+                                                               out_channels=1, 
+                                                               init_features=32, 
+                                                               pretrained=pretrained)
 
         # Model to device
         self.loaded_model.to(self.device)

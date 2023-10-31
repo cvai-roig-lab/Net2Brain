@@ -1,6 +1,12 @@
 
 from torchvision.models.feature_extraction import get_graph_node_names, create_feature_extractor
 from .shared_functions import imagenet_preprocess, imagenet_preprocess_frames, torch_clean, load_from_json
+import torchextractor as tx
+from PIL import Image
+import cv2
+import librosa
+import torch
+import torch.nn as nn
 
 # Base class for all NetSets
 class NetSetBase:
@@ -14,16 +20,17 @@ class NetSetBase:
     layers = None  # Layers in the model to be used for feature extraction
     loaded_model = None  # The loaded model instance
     extractor_model = None  # The feature extractor model instance
+    device = None # Device for computation
 
     @classmethod
     def register_netset(cls):
         cls._registry[cls.__name__] = cls
 
     @classmethod
-    def initialize_netset(cls, model_name, netset_name):
+    def initialize_netset(cls, model_name, netset_name, device):
         # Return an instance of the netset class based on the netset_name from the registry
         if netset_name in cls._registry:
-            return cls._registry[netset_name](model_name)
+            return cls._registry[netset_name](model_name, device)
         else:
             raise ValueError(f"Unknown netset: {netset_name}")
 
@@ -37,7 +44,7 @@ class NetSetBase:
         elif network_layers:
             return network_layers
         else:
-            return get_graph_node_names(loaded_model)[0]
+            return tx.list_module_names(loaded_model)
 
 
     def __init_subclass__(cls, **kwargs):
@@ -87,3 +94,34 @@ class NetSetBase:
         """
 
         raise NotImplementedError
+    
+    
+    def load_image_data(self, data_path):
+        return Image.open(data_path).convert('RGB')
+    
+    def load_video_data(self, data_path):
+        # Logic to load video data using cv2
+        # This will return a list of frames. Each frame is a numpy array.
+        cap = cv2.VideoCapture(data_path)
+        frames = []
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frames.append(frame)
+        cap.release()
+        return frames
+    
+    def load_audio_data(self, data_path):
+        # Logic to load audio data using librosa
+        # This returns a numpy array representing the audio and its sample rate
+        y, sr = librosa.load(data_path, sr=None)
+        return y, sr
+    
+
+    def randomize_weights(self, m):
+        if isinstance(m, nn.Linear):
+            torch.nn.init.xavier_uniform_(m.weight)
+            m.bias.data.fill_(0.01)
+        if isinstance(m, nn.Conv2d):
+            torch.nn.init.xavier_uniform_(m.weight)

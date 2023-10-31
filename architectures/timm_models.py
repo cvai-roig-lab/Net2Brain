@@ -1,28 +1,23 @@
 
-import json
 import warnings
-import torchvision.models as models
 from .netsetbase import NetSetBase
-from .shared_functions import imagenet_preprocess, imagenet_preprocess_frames, torch_clean, load_from_json
-from torchvision.models.feature_extraction import create_feature_extractor, get_graph_node_names
+from .shared_functions import load_from_json
 import timm
-import torch
-from pathlib import Path
-from PIL import Image
-from typing import Union, Callable
+from typing import Callable
 import torch.nn as nn
 from timm.data import resolve_data_config
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data.transforms_factory import create_transform as timm_create_transform
 from torchvision import transforms as T
-
+import torchextractor as tx
 
 class Timm(NetSetBase):
 
-    def __init__(self, model_name):
+    def __init__(self, model_name, device):
         self.supported_data_types = ['image', 'video']
         self.netset_name = "timm"
         self.model_name = model_name
+        self.device = device
 
 
     def get_preprocessing_function(self, data_type):
@@ -60,6 +55,16 @@ class Timm(NetSetBase):
         except:
             self.loaded_model = model_attributes["model_function"](self.model_name, pretrained=pretrained)
 
+        # Model to device
+        self.loaded_model.to(self.device)
+
+        # Randomize weights
+        if not pretrained:
+            self.loaded_model.apply(self.randomize_weights)
+
+        # Put in eval mode
+        self.loaded_model.eval()
+
     
     def image_preprocessing(self, image, model_name, device):
         preprocesser = self.create_preprocess()
@@ -77,9 +82,12 @@ class Timm(NetSetBase):
         self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = create_feature_extractor(self.loaded_model, return_nodes=self.layers)
+        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
 
-        return self.extractor_model(data)
+        # Extract actual features
+        _, features = self.extractor_model(data)
+
+        return features
 
     def create_transform(self, model: nn.Module) -> T.Compose:
         """

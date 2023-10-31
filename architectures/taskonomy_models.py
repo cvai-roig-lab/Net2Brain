@@ -2,19 +2,19 @@
 import warnings
 from .netsetbase import NetSetBase
 from torchvision import transforms as trn
-from .shared_functions import imagenet_preprocess, imagenet_preprocess_frames, torch_clean, load_from_json
-from torchvision.models.feature_extraction import create_feature_extractor, get_graph_node_names
-import visualpriors
+from .shared_functions import imagenet_preprocess, imagenet_preprocess_frames, load_from_json
 from .implemented_models import taskonomy_model
-import torch
 import torchextractor as tx
+import torch
+
 
 class Taskonomy(NetSetBase):
 
-    def __init__(self, model_name):
+    def __init__(self, model_name, device):
         self.supported_data_types = ['image', 'video']
         self.netset_name = "Taskonomy"
         self.model_name = model_name
+        self.device = device
 
 
     def get_preprocessing_function(self, data_type):
@@ -50,11 +50,16 @@ class Taskonomy(NetSetBase):
         # Inititate the model
         self.loaded_model = model_attributes["model_function"](eval_only=True)
 
+        # Model to device
+        self.loaded_model.to(self.device)
+
         self.loaded_model.eval()
 
         if pretrained:
             checkpoint = torch.utils.model_zoo.load_url(self.weights) # Load weights
             self.loaded_model.load_state_dict(checkpoint['state_dict'])
+        else:
+            self.loaded_model.apply(self.randomize_weights)
 
 
 
@@ -106,8 +111,12 @@ class Taskonomy(NetSetBase):
         self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = create_feature_extractor(self.loaded_model, return_nodes=self.layers)
+        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
 
-        return self.extractor_model(data)
+        # Extract actual features
+        _, features = self.extractor_model(data)
+
+        return features
+
 
          
