@@ -10,6 +10,7 @@ from pytorchvideo.transforms import (
     ShortSideScale,
     UniformTemporalSubsample,
 )
+import os
 
 import warnings
 with warnings.catch_warnings():
@@ -51,6 +52,12 @@ class Pyvideo(NetSetBase):
         self.netset_name = "Pyvideo"
         self.model_name = model_name
         self.device = device
+
+        # Set config path:
+        file_path = os.path.abspath(__file__)
+        directory_path = os.path.dirname(file_path)
+        self.save_path = os.path.join(directory_path, "architectures/configs/pyvideo.json")
+
         self.config_path = "net2brain/architectures/configs/pyvideo.json"
 
 

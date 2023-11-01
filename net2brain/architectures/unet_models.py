@@ -2,7 +2,7 @@ import warnings
 from .netsetbase import NetSetBase
 from .shared_functions import load_from_json
 import torchextractor as tx
-
+import os
 
 class Unet(NetSetBase):
 
@@ -11,7 +11,11 @@ class Unet(NetSetBase):
         self.netset_name = "Unet"
         self.model_name = model_name
         self.device = device
-        self.config_path = "net2brain/architectures/configs/unet.json"
+
+        # Set config path:
+        file_path = os.path.abspath(__file__)
+        directory_path = os.path.dirname(file_path)
+        self.save_path = os.path.join(directory_path, "architectures/configs/unet.json")
 
 
     def get_preprocessing_function(self, data_type):

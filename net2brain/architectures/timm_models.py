@@ -11,6 +11,7 @@ from timm.data.transforms_factory import create_transform as timm_create_transfo
 from torchvision import transforms as T
 import torchextractor as tx
 from PIL import Image
+import os
 
 class Timm(NetSetBase):
 
@@ -19,7 +20,11 @@ class Timm(NetSetBase):
         self.netset_name = "timm"
         self.model_name = model_name
         self.device = device
-        self.config_path = "net2brain/architectures/configs/timm.json"
+
+        # Set config path:
+        file_path = os.path.abspath(__file__)
+        directory_path = os.path.dirname(file_path)
+        self.save_path = os.path.join(directory_path, "architectures/configs/timm.json")
 
 
     def get_preprocessing_function(self, data_type):

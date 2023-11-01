@@ -5,7 +5,7 @@ import torchextractor as tx
 
 from .implemented_models.places365_net import get_resnet50_places365
 from .implemented_models.semseg_models import get_semseg_model
-
+import os
 
 
 class Toolbox(NetSetBase):
@@ -15,7 +15,11 @@ class Toolbox(NetSetBase):
         self.netset_name = "Toolbox"
         self.model_name = model_name
         self.device = device
-        self.config_path = "net2brain/architectures/configs/toolbox.json"
+
+        # Set config path:
+        file_path = os.path.abspath(__file__)
+        directory_path = os.path.dirname(file_path)
+        self.save_path = os.path.join(directory_path, "architectures/configs/toolbox.json")
 
 
     def get_preprocessing_function(self, data_type):

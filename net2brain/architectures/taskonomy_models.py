@@ -7,6 +7,7 @@ from .implemented_models import taskonomy_model
 import torchextractor as tx
 import torch
 from PIL import Image
+import os
 
 
 class Taskonomy(NetSetBase):
@@ -16,7 +17,11 @@ class Taskonomy(NetSetBase):
         self.netset_name = "Taskonomy"
         self.model_name = model_name
         self.device = device
-        self.config_path = "net2brain/architectures/configs/taskonomy.json"
+
+        # Set config path:
+        file_path = os.path.abspath(__file__)
+        directory_path = os.path.dirname(file_path)
+        self.save_path = os.path.join(directory_path, "architectures/configs/taskonomy.json")
 
 
     def get_preprocessing_function(self, data_type):

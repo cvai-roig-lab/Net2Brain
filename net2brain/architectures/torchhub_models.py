@@ -3,6 +3,7 @@ from .netsetbase import NetSetBase
 from .shared_functions import load_from_json
 import torchextractor as tx
 import torch
+import os
 
 
 class Pytorch(NetSetBase):
@@ -12,7 +13,11 @@ class Pytorch(NetSetBase):
         self.netset_name = "Pytorch"
         self.model_name = model_name
         self.device = device
-        self.config_path = "net2brain/architectures/configs/torchhub.json"
+
+        # Set config path:
+        file_path = os.path.abspath(__file__)
+        directory_path = os.path.dirname(file_path)
+        self.save_path = os.path.join(directory_path, "architectures/configs/torchhub.json")
 
     def get_preprocessing_function(self, data_type):
         if data_type == 'image':
