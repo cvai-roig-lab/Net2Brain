@@ -1,17 +1,30 @@
 import warnings
 import json
+import importlib
 
 def get_function_from_module(function_string):
     module_name, function_name = function_string.rsplit('.', 1)
-    
+
     # Handle hierarchical module names
     segments = module_name.split('.')
 
-    module = __import__(segments[0])
-    for segment in segments[1:]:
-        module = getattr(module, segment)
+    if module_name.startswith("."):
+        # For relative imports, use importlib.import_module
+        if ".implemented_models" in module_name:
+            package = "net2brain.architectures"
+            module = importlib.import_module(".".join(segments), package=package)
+        else:
+            raise ValueError("Relative import without '.implemented_models' is not supported.")
+    else:
+        module = __import__(segments[0])
+        for segment in segments[1:]:
+            module = getattr(module, segment)
     
     return getattr(module, function_name)
+
+
+
+
 
 
 
