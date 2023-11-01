@@ -19,7 +19,7 @@ class Toolbox(NetSetBase):
         # Set config path:
         file_path = os.path.abspath(__file__)
         directory_path = os.path.dirname(file_path)
-        self.config_path = os.path.join(directory_path, "architectures/configs/toolbox.json")
+        self.config_path = os.path.join(directory_path, "configs/toolbox.json")
 
 
     def get_preprocessing_function(self, data_type):

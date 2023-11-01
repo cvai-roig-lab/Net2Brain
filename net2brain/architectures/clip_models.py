@@ -18,7 +18,7 @@ class Clip(NetSetBase):
         # Set config path:
         file_path = os.path.abspath(__file__)
         directory_path = os.path.dirname(file_path)
-        self.config_path = os.path.join(directory_path, "architectures/configs/clip.json")
+        self.config_path = os.path.join(directory_path, "configs/clip.json")
 
 
 
