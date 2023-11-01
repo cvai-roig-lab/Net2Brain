@@ -1,2 +1,3 @@
 include net2brain/architectures/taxonomy.csv
-include net2brain/architectures/configs/*.*
+include net2brain/architectures/configs/*.json
+
