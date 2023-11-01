@@ -1,6 +1,6 @@
 {
     "Places365": {
-        "model": "implemented_models.places365_net.get_resnet50_places365",
+        "model": ".implemented_models.places365_net.get_resnet50_places365",
         "nodes": [
             "model.4",
             "model.5",
@@ -10,7 +10,7 @@
         ]
     },
     "SceneParsing": {
-        "model": "implemented_models.semseg_models.get_semseg_model",
+        "model": ".implemented_models.semseg_models.get_semseg_model",
         "nodes": [
             "decoder.ppm_conv.2.2",
             "decoder.ppm_conv.3.2",

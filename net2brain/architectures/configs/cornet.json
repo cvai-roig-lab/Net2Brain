@@ -1,6 +1,6 @@
 {
     "cornet_z": {
-        "model": "implemented_models.cornet_z_model.cornet_z",
+        "model": ".implemented_models.cornet_z_model.cornet_z",
         "nodes": [
             "V1",
             "V2",
@@ -9,7 +9,7 @@
         ]
     },
     "cornet_rt": {
-        "model": "implemented_models.cornet_rt_model.cornet_rt",
+        "model": ".implemented_models.cornet_rt_model.cornet_rt",
         "nodes": [
             "V1",
             "V2",
@@ -18,7 +18,7 @@
         ]
     },
     "cornet_s": {
-        "model": "implemented_models.cornet_s_model.cornet_s",
+        "model": ".implemented_models.cornet_s_model.cornet_s",
         "nodes": [
             "V1",
             "V2",
