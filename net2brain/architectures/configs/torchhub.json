@@ -1,0 +1,101 @@
+{
+    "deeplabv3_mobilenet_v3_large": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "backbone.1",
+            "backbone.2",
+            "backbone.3",
+            "backbone.4",
+            "backbone.5",
+            "backbone.6",
+            "backbone.7backbone.8",
+            "backbone.9",
+            "backbone.10",
+            "backbone.11",
+            "backbone.12",
+            "backbone.13",
+            "backbone.14",
+            "backbone.15backbone.16",
+            "classifier",
+            "classifier.1",
+            "classifier.2",
+            "classifier.3",
+            "classifier.4"
+        ]
+    },
+    "deeplabv3_resnet101": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "backbone.layer1",
+            "backbone.layer2",
+            "backbone.layer3",
+            "backbone.layer4",
+            "classifier",
+            "classifier.1",
+            "classifier.2",
+            "classifier.3",
+            "classifier.4"
+        ]
+    },
+    "deeplabv3_resnet50": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "backbone.layer1",
+            "backbone.layer2",
+            "backbone.layer3",
+            "backbone.layer4",
+            "classifier",
+            "classifier.1",
+            "classifier.2",
+            "classifier.3",
+            "classifier.4"
+        ]
+    },
+    "fcn_resnet101": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "backbone.layer1",
+            "backbone.layer2",
+            "backbone.layer3",
+            "backbone.layer4",
+            "classifier",
+            "classifier.1",
+            "classifier.2",
+            "classifier.3",
+            "classifier.4"
+        ]
+    },
+    "fcn_resnet50": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "backbone.layer1",
+            "backbone.layer2",
+            "backbone.layer3",
+            "backbone.layer4",
+            "classifier",
+            "classifier.1",
+            "classifier.2",
+            "classifier.3",
+            "classifier.4"
+        ]
+    },
+    "lraspp_mobilenet_v3_large": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "backbone.1",
+            "backbone.2",
+            "backbone.3",
+            "backbone.4",
+            "backbone.5",
+            "backbone.6",
+            "backbone.7backbone.8",
+            "backbone.9",
+            "backbone.10",
+            "backbone.11",
+            "backbone.12",
+            "backbone.13",
+            "backbone.14",
+            "backbone.15backbone.16"
+        ]
+    }
+}
