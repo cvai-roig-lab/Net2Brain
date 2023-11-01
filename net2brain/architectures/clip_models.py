@@ -1,83 +1,105 @@
-import cv2
-from PIL import Image
-
+import warnings
+from .netsetbase import NetSetBase
+from .shared_functions import load_from_json
+import torchextractor as tx
 import clip
 import torch
-from torch.autograd import Variable as V
-from torchvision import transforms as trn
 
 
-MODELS = {'RN50': clip.load,
-          'RN101': clip.load,
-          'ViT-B_-_32': clip.load,
-          'ViT-B_-_16': clip.load,
-          'ViT-L_-_14': clip.load}
+class Clip(NetSetBase):
 
-MODEL_NODES = {
-    'RN50': [f'visual.layer{i}' for i in range(1, 5)],
-    'RN101': [f'visual.layer{i}' for i in range(1, 5)],
-    'ViT-B_-_32': [f'visual.transformer.resblocks.{i}' for i in range(12)],
-    'ViT-B_-_16': [f'visual.transformer.resblocks.{i}' for i in range(12)],
-    'ViT-L_-_14': [f'visual.transformer.resblocks.{i}' for i in range(24)]
-}
+    def __init__(self, model_name, device):
+        self.supported_data_types = ['image', 'video']
+        self.netset_name = "Clip"
+        self.model_name = model_name
+        self.device = device
+        self.config_path = "net2brain/architectures/configs/clip.json"
 
 
-def preprocess(image, model_name, device):
-    """Preprocesses image.
+    def get_preprocessing_function(self, data_type):
+        if data_type == 'image':
+            return self.image_preprocessing
+        elif data_type == 'video':
+            warnings.warn("Models only support image-data. Will average video frames")
+            return self.video_preprocessing
+        else:
+            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
+        
 
-    Args:
-        image (str/path): path to image
-        model_name (str): name of the model
+    def get_feature_cleaner(self, data_type):
+        if data_type == 'image':
+            return Clip.clean_extracted_features
+        elif data_type == 'video':
+            return Clip.clean_extracted_features
+        else:
+            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
+        
 
-    Returns:
-        PIL-Image: Preprocesses PIL Image
-    """
+    def get_model(self, pretrained):
 
-    # Transform image
-    transforms = trn.Compose([
-        trn.Resize((224, 224)),
-        trn.ToTensor(),
-        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-    img = Image.open(image).convert('RGB')
-    img = V(transforms(img).unsqueeze(0))
+        # Change model name
+        self.model_name = self.model_name.replace("_-_", "/")
 
-    # Create prompt and tokenize
-    txt = torch.cat([clip.tokenize(f"a photo of a {c}") for c in ["word"]])
+        # Load attributes from the json
+        model_attributes = load_from_json(self.config_path, self.model_name)
 
-    # Send to device
-    if device == 'cuda':
-        img = img.cuda()
-        txt = txt.cuda()
+        # Set the layers and model function from the attributes
+        self.layers = model_attributes["nodes"]
+        self.loaded_model = model_attributes["model_function"](self.model_name, device=self.device)[0]
 
-    return [img, txt]
+        # Model to device
+        self.loaded_model.to(self.device)
+
+        # Randomize weights
+        if not pretrained:
+            self.loaded_model.apply(self.randomize_weights)
+            
+        # Put in eval mode
+        self.loaded_model.eval()
 
 
-def preprocess_frame(frame, model_name, device):
-    """Preprocesses image according to the networks needs
+    def image_preprocessing(self, image, model_name, device):
+        image = super().image_preprocessing(image, model_name, device)
+        text = torch.cat([clip.tokenize("a photo of a word")])
 
-    Args:
-        frame (numpy array): array of frame
-        model_name (str): name of the model
+        # Send to device
+        if device == 'cuda':
+            image = image.cuda()
+            text = text.cuda()
 
-    Returns:
-        PIL-Image: Preprocesses PIL Image
-    """
-    transforms = trn.Compose([
-        trn.Resize((224, 224)),
-        trn.ToTensor(),
-        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    img = Image.fromarray(frame)
-    img = V(transforms(img).unsqueeze(0))
+        return [image, text]
 
-    # Create prompt and tokenize
-    txt = torch.cat([clip.tokenize(f"a photo of a {c}") for c in ["word"]])
+    def video_preprocessing(self, frame, model_name, device):
+        image = super().video_preprocessing(image, model_name, device)
+        text = torch.cat([clip.tokenize("a photo of a word")])
 
-    # Send to device
-    if device == 'cuda':
-        img = img.cuda()
-        txt = txt.cuda()
+        # Send to device
+        if device == 'cuda':
+            image = image.cuda()
+            text = text.cuda()
 
-    return [img, txt]
+        return [image, text]
+
+
+    def clean_extracted_features(self, features):
+        return features
+    
+        
+    
+    def extraction_function(self, data, layers_to_extract=None):
+
+        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+
+        # Create a extractor instance
+        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+
+        # Seperate image and text data
+        image_data = data[0]
+        tokenized_text = data[1]
+
+        # Extract actual features
+        _, features = self.extractor_model(image_data, tokenized_text)
+
+        return features
+
+         

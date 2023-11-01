@@ -1,6 +1,6 @@
 import warnings
 from .netsetbase import NetSetBase
-from .shared_functions import imagenet_preprocess, imagenet_preprocess_frames, load_from_json
+from .shared_functions import load_from_json
 import torchextractor as tx
 import torch
 from torchvision.transforms import Compose, Lambda
@@ -51,11 +51,12 @@ class Pyvideo(NetSetBase):
         self.netset_name = "Pyvideo"
         self.model_name = model_name
         self.device = device
+        self.config_path = "net2brain/architectures/configs/pyvideo.json"
 
 
     def get_preprocessing_function(self, data_type):
         if data_type == 'video':
-            return Pyvideo.video_preprocessing
+            return self.video_preprocessing
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
         
@@ -71,11 +72,8 @@ class Pyvideo(NetSetBase):
 
     def get_model(self, pretrained):
 
-        # Set configuration path 
-        config_path = "architectures\configs\pyvideo.json"
-
         # Load attributes from the json
-        model_attributes = load_from_json(config_path, self.model_name)
+        model_attributes = load_from_json(self.config_path, self.model_name)
 
         # Set the layers and model function from the attributes
         self.layers = model_attributes["nodes"]
@@ -83,7 +81,7 @@ class Pyvideo(NetSetBase):
                                                                self.model_name, 
                                                                pretrained=pretrained)
         
-         # Model to device
+        # Model to device
         self.loaded_model.to(self.device)
 
         # Randomize weights
