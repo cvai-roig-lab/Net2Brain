@@ -24,7 +24,7 @@ class Timm(NetSetBase):
         # Set config path:
         file_path = os.path.abspath(__file__)
         directory_path = os.path.dirname(file_path)
-        self.save_path = os.path.join(directory_path, "architectures/configs/timm.json")
+        self.config_path = os.path.join(directory_path, "architectures/configs/timm.json")
 
 
     def get_preprocessing_function(self, data_type):
