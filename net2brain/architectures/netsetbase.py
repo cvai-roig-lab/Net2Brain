@@ -105,7 +105,7 @@ class NetSetBase:
         # Convert numpy array to PIL Image
         pil_frame = Image.fromarray(frame)
         
-        return self.image_preprocessing(pil_frame, model_name, device)
+        return NetSetBase.image_preprocessing(self, pil_frame, model_name, device)
 
 
     def clean_extracted_features(self, features):

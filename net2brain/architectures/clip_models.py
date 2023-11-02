@@ -68,6 +68,7 @@ class Clip(NetSetBase):
         image = super().image_preprocessing(image, model_name, device)
         text = torch.cat([clip.tokenize("a photo of a word")])
 
+        
         # Send to device
         if device == 'cuda':
             image = image.cuda()
@@ -76,7 +77,7 @@ class Clip(NetSetBase):
         return [image, text]
 
     def video_preprocessing(self, frame, model_name, device):
-        image = super().video_preprocessing(image, model_name, device)
+        image = super().video_preprocessing(frame, model_name, device)
         text = torch.cat([clip.tokenize("a photo of a word")])
 
         # Send to device

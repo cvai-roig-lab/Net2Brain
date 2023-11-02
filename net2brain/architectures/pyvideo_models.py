@@ -345,7 +345,7 @@ class Pyvideo(NetSetBase):
     
 
     def load_video_data(self, data_path):
-        return data_path
+        return [data_path]
     
     
     def extraction_function(self, data, layers_to_extract=None):
