@@ -87,11 +87,10 @@ class Taskonomy(NetSetBase):
 
 
     def video_preprocessing(self, frame, model_name, device):
-
-        frame = Image.fromarray(frame)
         
         # Colorization needs a different preprocessing to be 1D
         if model_name == 'colorization':
+            frame = Image.fromarray(frame)
             image = frame.convert('L')
             transforms = trn.Compose([
                 trn.Resize((224, 224)),

@@ -15,6 +15,7 @@ from datetime import datetime
 import torchextractor as tx
 import warnings
 import json
+import gc
 warnings.filterwarnings("ignore", category=UserWarning, module='torchvision')
 
 try:
@@ -87,11 +88,17 @@ class FeatureExtractor:
             # Combine Data from list into single dictionary depending on input type
             final_features = self.data_combiner(data_from_file_list)
 
-            # Write the features directly to individual files named after the input image
-            for layer, data in final_features.items():
-                file_path = os.path.join(self.save_path, f"{layer}_{data_file}.npz")
-                self._ensure_dir_exists(file_path)
-                np.savez_compressed(file_path, **{data_file: data.detach().cpu().numpy()})
+            # Write the features for one image to a single file
+            file_path = os.path.join(self.save_path, f"{data_file}.npz")
+            self._ensure_dir_exists(file_path)
+
+            # Convert the final_features dictionary to one that contains detached numpy arrays
+            final_features_np = {key: value.detach().cpu().numpy() for key, value in final_features.items()}
+            np.savez_compressed(file_path, **final_features_np)
+
+            # Clear variables to save RAM
+            del data_from_file_list, final_features, final_features_np
+            gc.collect()
 
 
     def _ensure_dir_exists(self, file_path):
@@ -105,21 +112,34 @@ class FeatureExtractor:
 
 
     def consolidate_per_layer(self):
-        # Identify unique layers from filenames
         all_files = os.listdir(self.save_path)
-        unique_layers = set(file.split('_')[0] for file in all_files if '.npz' in file)
+        if not all_files:
+            print("No files to consolidate.")
+            return
 
-        for layer in tqdm(unique_layers):
-            combined_data = {}
-            # Gather all files for this layer
-            layer_files = [file for file in all_files if file.startswith(layer)]
-            for file in layer_files:
-                file_path = os.path.join(self.save_path, file)
-                with np.load(file_path, allow_pickle=True) as loaded_data:
-                    combined_data.update(dict(loaded_data))
-                os.remove(file_path)  # Optionally remove the individual file after reading
-            # Save the combined data for this layer
-            np.savez_compressed(os.path.join(self.save_path, f"{layer}.npz"), **combined_data)
+        # Assuming that each file has the same set of layers.
+        sample_file_path = os.path.join(self.save_path, all_files[0])
+        with np.load(sample_file_path, allow_pickle=True) as data:
+            layers = list(data.keys())
+
+        # Initialize a dictionary to hold all combined data for each layer
+        combined_data = {layer: {} for layer in layers}
+
+        # Iterate over each file and update the combined_data structure
+        for file_name in tqdm(all_files):
+            file_path = os.path.join(self.save_path, file_name)
+            with np.load(file_path, allow_pickle=True) as data:
+                for layer in layers:
+                    image_key = file_name.replace('.npz', '')
+                    combined_data[layer][image_key] = data[layer]
+            # Remove the file after its data has been added to combined_data
+            os.remove(file_path)
+
+        # Save the consolidated data for each layer
+        for layer, data in combined_data.items():
+            output_file_path = os.path.join(self.save_path, f"{layer}.npz")
+            np.savez_compressed(output_file_path, **data)
+
 
 
 
