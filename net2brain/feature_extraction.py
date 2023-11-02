@@ -332,6 +332,7 @@ class FeatureExtractor:
              The transforms to be applied to the inputs, by default None.
         """
         self.model = model
+        self.model.eval()
         self.model.to(self.device)
         self.model_name = "Custom model"
         
