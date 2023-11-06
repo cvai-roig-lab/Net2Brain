@@ -55,8 +55,8 @@ def test_extractor_outputs(
     imgs_path = root_path / Path("images")
 
     # Extract features
-    fx = FeatureExtractor(model, netset, pretrained=pretrained, save_path=tmp_path)
-    feats = fx.extract(imgs_path)
+    fx = FeatureExtractor(model, netset, imgs_path, pretrained=pretrained, save_path=tmp_path)
+    feats = fx.extract()
     output_files = list(tmp_path.iterdir())
 
     # Assert output files are as expected
