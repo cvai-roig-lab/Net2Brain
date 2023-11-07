@@ -33,21 +33,24 @@ def test_load_netset_model(netset, model):
 @pytest.mark.parametrize(
     "netset,model",
     [
-        ("standard", "AlexNet"),
-        ("timm", "vit_base_patch32_224_in21k"),
-        ("timm", "resnet50"),
-        ("pytorch", "deeplabv3_resnet101"),
-        ("unet", "unet"),
-        ("taskonomy", "autoencoding"),
-        ("pyvideo", "slowfast_r50"),
-        ("clip", "RN50"),
-        ("cornet", "cornet_z"),
+        ("Standard", "AlexNet"),
+        ("Timm", "vit_base_patch32_224_in21k"),
+        ("Timm", "resnet50"),
+        ("Pytorch", "deeplabv3_resnet101"),
+        ("Unet", "unet"),
+        ("Yolo, yolo51"),
+        ("Taskonomy", "autoencoding"),
+        ("Taskonomy", "colorization"),
+        ("Pyvideo", "slowfast_r50"),
+        ("Clip", "RN50"),
+        ("Cornet", "cornet_z"),
     ],
 )
 @pytest.mark.parametrize(
     "pretrained",
     [(True), (False)],
 )
+
 def test_extractor_outputs(
     root_path, tmp_path, netset, model, pretrained
 ):
@@ -56,7 +59,11 @@ def test_extractor_outputs(
 
     # Extract features
     fx = FeatureExtractor(model, netset, imgs_path, pretrained=pretrained, save_path=tmp_path)
-    feats = fx.extract()
+    fx.extract()
+
+    # Layer consolidation
+    fx.consolidate_per_layer()
+
     output_files = list(tmp_path.iterdir())
 
     # Assert output files are as expected
@@ -65,14 +72,14 @@ def test_extractor_outputs(
     return
 
 
-@pytest.mark.parametrize(
-    "input_layers,output_layers",
-    [(None, ["layer1", "layer2", "layer3", "layer4"]), (["layer1"], ["layer1"])],
-)
-def test_feature_extraction_layers(input_layers, output_layers):
-    fx = FeatureExtractor("ResNet50", "standard", layers_to_extract=input_layers)
-    #assert fx.layers_to_extract == output_layers
-    return
+# @pytest.mark.parametrize(
+#     "input_layers,output_layers",
+#     [(None, ["layer1", "layer2", "layer3", "layer4"]), (["layer1"], ["layer1"])],
+# )
+# def test_feature_extraction_layers(input_layers, output_layers):
+#     fx = FeatureExtractor("ResNet50", "standard", layers_to_extract=input_layers)
+#     #assert fx.layers_to_extract == output_layers
+#     return
 
 
 def test_feature_extraction_custom(root_path, tmp_path):

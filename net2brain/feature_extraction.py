@@ -27,7 +27,7 @@ except ModuleNotFoundError:
 
 # FeatureExtractor class
 class FeatureExtractor:
-    def __init__(self, model_name, netset, data_path, device, pretrained=True, save_path=None):
+    def __init__(self, model_name, netset, data_path, device="cpu", pretrained=True, save_path=None):
         # Parameters
         self.model_name = model_name
         self.netset_name = netset
