@@ -16,26 +16,6 @@ from net2brain.feature_extraction import FeatureExtractor
     [
         ("Standard", "AlexNet"),
         ("Timm", "vit_base_patch32_224_in21k"),
-        ("Pytorch", "deeplabv3_resnet101"),
-        ("Unet", "unet"),
-        ("Taskonomy", "autoencoding"),
-        ("Pyvideo", "slowfast_r50"),
-        ("Clip", "RN50"),
-        ("Cornet", "cornet_z"),
-    ],
-)
-def test_load_netset_model(netset, model):
-    fx = FeatureExtractor(model, netset, pretrained=True)
-    assert fx.model_name == model, "loaded model different than the one requested"
-    assert fx.layers_to_extract() is not None, "No layers to extract"
-    return
-
-
-@pytest.mark.parametrize(
-    "netset,model",
-    [
-        ("Standard", "AlexNet"),
-        ("Timm", "vit_base_patch32_224_in21k"),
         ("Timm", "resnet50"),
         ("Pytorch", "deeplabv3_resnet101"),
         ("Unet", "unet"),
