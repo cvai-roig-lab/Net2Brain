@@ -167,7 +167,7 @@ class FeatureExtractor:
         for file_name in tqdm(all_files):
             file_path = os.path.join(self.save_path, file_name)
             with np.load(file_path, allow_pickle=True) as data:
-                if data.size == 0:
+                if not data.keys():  # Check if the .npz file is empty
                     print(f"Error: The file {file_name} is empty.")
                     continue  # Skip this file and continue with the next one
 
@@ -179,21 +179,18 @@ class FeatureExtractor:
                     image_key = file_name.replace('.npz', '')
                     combined_data[layer][image_key] = data[layer]
 
-                    # Check if the dictionary for this layer has any values
-                    if not bool(combined_data[layer]):
-                        print(f"Error: No values found in the dictionary for layer {layer}.")
-
             # Remove the file after its data has been added to combined_data
             os.remove(file_path)
 
         # Save the consolidated data for each layer
         for layer, data in combined_data.items():
-            if not bool(data):
+            if not data:  # Check if the dictionary for this layer is empty
                 print(f"Error: No data found to consolidate for layer {layer}.")
                 continue  # Skip saving this layer and continue with the next one
 
             output_file_path = os.path.join(self.save_path, f"{layer}.npz")
             np.savez_compressed(output_file_path, **data)
+
 
 
 

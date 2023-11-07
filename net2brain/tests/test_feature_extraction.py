@@ -27,10 +27,10 @@ from net2brain.feature_extraction import FeatureExtractor
 def test_load_netset_model(netset, model):
     fx = FeatureExtractor(model, netset, pretrained=True)
     assert fx.model_name == model, "loaded model different than the one requested"
-    assert fx.preprocess is not None, "preprocess not loaded"
-    assert fx._extractor is not None, "extractor not loaded"
+    assert fx.preprocessor is not None, "preprocess not loaded"
+    assert fx.extraction_function is not None, "extractor not loaded"
     assert fx.layers_to_extract() is not None, "No layers to extract"
-    assert fx._features_cleaner is not None, "feature cleaner not loaded"
+    assert fx.feature_cleaner is not None, "feature cleaner not loaded"
     return
 
 
@@ -42,7 +42,7 @@ def test_load_netset_model(netset, model):
         ("Timm", "resnet50"),
         ("Pytorch", "deeplabv3_resnet101"),
         ("Unet", "unet"),
-        ("Yolo", "yolo51"),
+        ("Yolo", "yolov51"),
         ("Taskonomy", "autoencoding"),
         ("Taskonomy", "colorization"),
         ("Pyvideo", "slowfast_r50"),
