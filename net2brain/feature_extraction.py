@@ -27,13 +27,12 @@ except ModuleNotFoundError:
 
 # FeatureExtractor class
 class FeatureExtractor:
-    def __init__(self, model_name, netset, data_path, device="cpu", pretrained=True, save_path=None):
+    def __init__(self, model_name, netset=None, device="cpu", pretrained=True, save_path=None):
         # Parameters
         self.model_name = model_name
         self.netset_name = netset
         self.device = device
         self.netset = NetSetBase.initialize_netset(self.model_name, netset, device)
-        self.data_path = data_path
         self.pretrained = pretrained
 
 
@@ -47,8 +46,10 @@ class FeatureExtractor:
         self.model = self.netset.get_model(self.pretrained)
 
 
-    def extract(self, layers_to_extract=None):
+    def extract(self, data_path, layers_to_extract=None):
         # Iterate over all files in the given data_path
+
+        self.data_path = data_path
 
         for data_file in tqdm(os.listdir(self.data_path)):
 
