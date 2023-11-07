@@ -61,8 +61,8 @@ def test_extractor_outputs(
     imgs_path = root_path / Path("images")
 
     # Extract features
-    fx = FeatureExtractor(model, netset, pretrained=pretrained, save_path=tmp_path)
-    fx.extract(imgs_path)
+    fx = FeatureExtractor(model, netset, pretrained=pretrained)
+    fx.extract(imgs_path, save_path=tmp_path)
 
     # Layer consolidation
     fx.consolidate_per_layer()
@@ -84,13 +84,13 @@ def test_own_model(root_path, tmp_path):
     image_path = root_path / Path("images")
 
     # Define a model
-    model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)  # This one exists in the toolbox as well, it is just supposed to be an example!
+    model = models.alexnet(pretrained=True)   # This one exists in the toolbox as well, it is just supposed to be an example!
 
     ## Define extractor (Note: NO NETSET NEEDED HERE)
     fx = FeatureExtractor(model=model, device='cpu')
 
     # Run extractor
-    fx.extract(image_path, layers_to_extract=['layer1', 'layer2', 'layer3', 'layer4'])
+    fx.extract(image_path, layers_to_extract=['features.0', 'features.3', 'features.6', 'features.8', 'features.10'])
 
     return
 
@@ -151,7 +151,7 @@ def test_with_own_functions(root_path, tmp_path):
     fx = FeatureExtractor(model=model, device='cpu', preprocessor=my_preprocessor, feature_cleaner=my_cleaner, extraction_function=my_extactor)
 
     # Run extractor
-    fx.extract(image_path, layers_to_extract=['layer1', 'layer2', 'layer3', 'layer4'])
+    fx.extract(image_path, layers_to_extract=['features.0', 'features.3', 'features.6', 'features.8', 'features.10'])
 
     return
 
