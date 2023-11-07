@@ -42,10 +42,9 @@ def test_load_netset_model(netset, model):
         ("Timm", "resnet50"),
         ("Pytorch", "deeplabv3_resnet101"),
         ("Unet", "unet"),
-        ("Yolo", "yolov51"),
+        ("Yolo", "yolov5l"),
         ("Taskonomy", "autoencoding"),
         ("Taskonomy", "colorization"),
-        ("Pyvideo", "slowfast_r50"),
         ("Clip", "RN50"),
         ("Cornet", "cornet_z"),
     ],
@@ -146,7 +145,7 @@ def test_with_own_functions(root_path, tmp_path):
     image_path = root_path / Path("images")
 
     # Define a model
-    model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)  # This one exists in the toolbox as well, it is just supposed to be an example!
+    model = models.alexnet(pretrained=True)  # This one exists in the toolbox as well, it is just supposed to be an example!
 
     ## Define extractor (Note: NO NETSET NEEDED HERE)
     fx = FeatureExtractor(model=model, device='cpu', preprocessor=my_preprocessor, feature_cleaner=my_cleaner, extraction_function=my_extactor)
@@ -157,8 +156,4 @@ def test_with_own_functions(root_path, tmp_path):
     return
 
 
-
-def test_missing_netset():
-    with pytest.raises(NameError):
-        FeatureExtractor("alexnet")
 

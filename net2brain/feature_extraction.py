@@ -33,7 +33,6 @@ class FeatureExtractor:
                  netset=None, 
                  device="cpu", 
                  pretrained=True, 
-                 save_path=None, 
                  preprocessor=None, 
                  extraction_function=None, 
                  feature_cleaner=None):
@@ -51,8 +50,10 @@ class FeatureExtractor:
             self.netset_name = netset
             self.netset = NetSetBase.initialize_netset(self.model_name, netset, device)
 
+
             # Initiate netset-based functions
             self.model = self.netset.get_model(self.pretrained)
+            self.layers_to_extract = self.netset.layers
 
         else:
             if isinstance(model, str):
@@ -70,17 +71,14 @@ class FeatureExtractor:
 
 
 
+    def extract(self, data_path, save_path=None, layers_to_extract=None):
+
         # Create save_path:
         now = datetime.now()
         now_formatted = f'{now.day}_{now.month}_{now.year}_{now.hour}_{now.minute}_{now.second}'
         self.save_path = save_path or os.path.join(os.getcwd(),"results", now_formatted)
-        print(self.save_path)
 
-
-
-    def extract(self, data_path, layers_to_extract=None):
         # Iterate over all files in the given data_path
-
         self.data_path = data_path
 
         for data_file in tqdm(os.listdir(self.data_path)):
@@ -193,9 +191,7 @@ class FeatureExtractor:
 
 
 
-
-
-    def layers_to_extract(self):
+    def get_all_layers(self):
         """Returns all possible layers for extraction."""
 
         return tx.list_module_names(self.netset.loaded_model)
