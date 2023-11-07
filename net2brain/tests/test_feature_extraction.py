@@ -38,7 +38,7 @@ def test_load_netset_model(netset, model):
         ("Timm", "resnet50"),
         ("Pytorch", "deeplabv3_resnet101"),
         ("Unet", "unet"),
-        ("Yolo, yolo51"),
+        ("Yolo", "yolo51"),
         ("Taskonomy", "autoencoding"),
         ("Taskonomy", "colorization"),
         ("Pyvideo", "slowfast_r50"),
