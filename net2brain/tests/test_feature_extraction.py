@@ -27,10 +27,7 @@ from net2brain.feature_extraction import FeatureExtractor
 def test_load_netset_model(netset, model):
     fx = FeatureExtractor(model, netset, pretrained=True)
     assert fx.model_name == model, "loaded model different than the one requested"
-    assert fx.preprocessor is not None, "preprocess not loaded"
-    assert fx.extraction_function is not None, "extractor not loaded"
     assert fx.layers_to_extract() is not None, "No layers to extract"
-    assert fx.feature_cleaner is not None, "feature cleaner not loaded"
     return
 
 

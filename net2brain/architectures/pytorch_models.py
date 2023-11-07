@@ -63,7 +63,7 @@ class Standard(NetSetBase):
         return features
     
     
-    def extraction_function(self, data, layers_to_extract=None):
+    def extraction_function(self, data, layers_to_extract=None, model=None):
 
         self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
