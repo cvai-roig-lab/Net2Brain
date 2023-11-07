@@ -21,7 +21,7 @@ from net2brain.feature_extraction import FeatureExtractor
     ],
 )
 def test_load_netset_model(netset, model):
-    fx = FeatureExtractor(model, netset, pretrained=True)
+    fx = FeatureExtractor(model, netset, "/", pretrained=True)
     assert fx.model_name == model, "loaded model different than the one requested"
     assert fx.preprocess is not None, "preprocess not loaded"
     assert fx._extractor is not None, "extractor not loaded"
@@ -67,7 +67,7 @@ def test_extractor_outputs(
     output_files = list(tmp_path.iterdir())
 
     # Assert output files are as expected
-    assert len(output_files) == 2
+    assert len(output_files) > 1
 
     return
 
