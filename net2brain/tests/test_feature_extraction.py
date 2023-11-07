@@ -3,6 +3,10 @@ from pathlib import Path
 import pytest
 from torchvision import models
 from torchvision import transforms as T
+from torchvision import models
+from torchvision import transforms as T
+from torchvision import transforms as trn
+import torchextractor as tx
 
 from net2brain.feature_extraction import FeatureExtractor
 
@@ -59,10 +63,10 @@ def test_extractor_outputs(
 
     # Extract features
     fx = FeatureExtractor(model, netset, pretrained=pretrained, save_path=tmp_path)
-    fx.extract()
+    fx.extract(imgs_path)
 
     # Layer consolidation
-    fx.consolidate_per_layer(imgs_path)
+    fx.consolidate_per_layer()
 
     output_files = list(tmp_path.iterdir())
 
@@ -72,58 +76,89 @@ def test_extractor_outputs(
     return
 
 
-# @pytest.mark.parametrize(
-#     "input_layers,output_layers",
-#     [(None, ["layer1", "layer2", "layer3", "layer4"]), (["layer1"], ["layer1"])],
-# )
-# def test_feature_extraction_layers(input_layers, output_layers):
-#     fx = FeatureExtractor("ResNet50", "standard", layers_to_extract=input_layers)
-#     #assert fx.layers_to_extract == output_layers
-#     return
 
 
-def test_feature_extraction_custom(root_path, tmp_path):
-    # Define paths
-    imgs_path = root_path / "images"
 
-    # Define model and transforms
-    model = models.alexnet(pretrained=True)
-    # model = models.alexnet(weights=models.AlexNet_Weights.DEFAULT)
-    transforms = T.Compose(
-        [
-            T.Resize((224, 224)),  # transform images if needed
-            T.ToTensor(),
-            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
+def test_own_model(root_path, tmp_path):
 
-    # Define extractor
-    layers = ["features.0", "features.1"]
-    fx = FeatureExtractor(
-        model, transforms=transforms, layers_to_extract=layers, device="cpu"
-    )
+    # Define iamge path
+    image_path = root_path / Path("images")
+
+    # Define a model
+    model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)  # This one exists in the toolbox as well, it is just supposed to be an example!
+
+    ## Define extractor (Note: NO NETSET NEEDED HERE)
+    fx = FeatureExtractor(model=model, device='cpu')
 
     # Run extractor
-    fx.extract(dataset_path=imgs_path, save_format="pt", save_path=tmp_path)
-
-    # Test files got created
-    output_files = list(tmp_path.iterdir())
-    assert len(output_files) == 2
+    fx.extract(image_path, layers_to_extract=['layer1', 'layer2', 'layer3', 'layer4'])
 
     return
+
+
+
+def test_with_own_functions(root_path, tmp_path):
+
+    def my_preprocessor(image, model_name, device):
+        """
+        Args:
+            image (Union[Image.Image, List[Image.Image]]): A PIL Image or a list of PIL Images.
+            model_name (str): The name of the model, used to determine specific preprocessing if necessary.
+            device (str): The device to which the tensor should be transferred ('cuda' for GPU, 'cpu' for CPU).
+
+        Returns:
+            Union[torch.Tensor, List[torch.Tensor]]: The preprocessed image(s) as PyTorch tensor(s).
+        """
+
+        print("I am using my own preprocessor")
+        transforms = trn.Compose([
+            trn.Resize((224, 224)),
+            trn.ToTensor(),
+            trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+
+        img_tensor = transforms(image).unsqueeze(0)
+        if device == 'cuda':
+            img_tensor = img_tensor.cuda()
+
+        return img_tensor
+
+
+    def my_extactor(preprocessed_data, layers_to_extract, model):
+
+        print("I am using my own extractor")
+
+        # Create a extractor instance
+        extractor_model = tx.Extractor(model, layers_to_extract)
+        
+        # Extract actual features
+        _, features = extractor_model(preprocessed_data)
+
+        return features
+
+
+    def my_cleaner(features):
+        print("I am using my own cleaner which does not do anything")
+        return features
+    
+
+    # Define iamge path
+    image_path = root_path / Path("images")
+
+    # Define a model
+    model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)  # This one exists in the toolbox as well, it is just supposed to be an example!
+
+    ## Define extractor (Note: NO NETSET NEEDED HERE)
+    fx = FeatureExtractor(model=model, device='cpu', preprocessor=my_preprocessor, feature_cleaner=my_cleaner, extraction_function=my_extactor)
+
+    # Run extractor
+    fx.extract(image_path, layers_to_extract=['layer1', 'layer2', 'layer3', 'layer4'])
+
+    return
+
 
 
 def test_missing_netset():
     with pytest.raises(NameError):
         FeatureExtractor("alexnet")
 
-
-# @pytest.mark.parametrize(
-#     "netset,model", [(i, x) for i in AVAILABLE_NETWORKS for x in AVAILABLE_NETWORKS[i]]
-# )
-# def test_all_models(netset, model):
-#     fx = FeatureExtractor(model, netset, pretrained=False, device="cpu")
-#     assert fx.model_name == model, "loaded model different than the one requested"
-#     assert fx.preprocess is not None, "preprocess not loaded"
-#     assert fx._extractor is not None, "extractor not loaded"
-#     assert fx._features_cleaner is not None, "feature cleaner not loaded"

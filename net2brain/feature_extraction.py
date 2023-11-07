@@ -18,6 +18,7 @@ import json
 import gc
 warnings.filterwarnings("ignore", category=UserWarning, module='torchvision')
 
+
 try:
     from .architectures.clip_models import Clip
 except ModuleNotFoundError:
@@ -27,13 +28,46 @@ except ModuleNotFoundError:
 
 # FeatureExtractor class
 class FeatureExtractor:
-    def __init__(self, model_name, netset=None, device="cpu", pretrained=True, save_path=None):
+    def __init__(self, 
+                 model, 
+                 netset=None, 
+                 device="cpu", 
+                 pretrained=True, 
+                 save_path=None, 
+                 preprocessor=None, 
+                 extraction_function=None, 
+                 feature_cleaner=None):
         # Parameters
-        self.model_name = model_name
-        self.netset_name = netset
+        self.model_name = model
         self.device = device
-        self.netset = NetSetBase.initialize_netset(self.model_name, netset, device)
         self.pretrained = pretrained
+
+        # Get values for editable functions
+        self.preprocessor = preprocessor
+        self.extraction_function = extraction_function
+        self.feature_cleaner = feature_cleaner
+
+        if netset is not None:
+            self.netset_name = netset
+            self.netset = NetSetBase.initialize_netset(self.model_name, netset, device)
+
+            # Initiate netset-based functions
+            self.model = self.netset.get_model(self.pretrained)
+
+        else:
+            if isinstance(model, str):
+                raise ValueError("If no netset is given, the model_name parameter needs to be a ready model")
+            else:
+                # Initiate as Standard Netset structure in case user does not select preprocessing, extractor, etc.
+                self.netset = NetSetBase.initialize_netset(model_name=None, netset_name="Standard", device=self.device)
+                self.model = model
+                self.model.eval()
+                self.netset.loaded_model = self.model
+
+                if None in (preprocessor, extraction_function, feature_cleaner):
+                    warnings.warn("If you add your own model you can also select our own: \nPreprocessing Function (preprocessor) \nExtraction Function (extraction_function) \nFeature Cleaner (feature_cleaner) ")
+    
+
 
 
         # Create save_path:
@@ -42,8 +76,6 @@ class FeatureExtractor:
         self.save_path = save_path or os.path.join(os.getcwd(),"results", now_formatted)
         print(self.save_path)
 
-        # Initiate netset-based functions
-        self.model = self.netset.get_model(self.pretrained)
 
 
     def extract(self, data_path, layers_to_extract=None):
@@ -69,19 +101,24 @@ class FeatureExtractor:
             for data in data_from_file:
 
                 # Select preprocessor
-                self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
+                if self.preprocessor == None:
+                    self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
 
                 # Preprocess data
                 preprocessed_data = self.preprocessor(data, self.model_name, self.device)
 
                 # Extract features
-                features = self.netset.extraction_function(preprocessed_data, layers_to_extract)
+                if self.extraction_function == None:
+                    features = self.netset.extraction_function(preprocessed_data, layers_to_extract)
+                else:
+                    features = self.extraction_function(preprocessed_data, layers_to_extract, model=self.model)
 
                 # Select Feature Cleaner
-                self.feature_cleaner = self.netset.get_feature_cleaner(self.data_type)
-
-                # Clean features
-                features = self.feature_cleaner(self.netset, features)
+                if self.feature_cleaner == None:
+                    feature_cleaner = self.netset.get_feature_cleaner(self.data_type)
+                    features = feature_cleaner(self.netset, features)
+                else:
+                    features = self.feature_cleaner(features)
 
                 # Append to list of data
                 data_from_file_list.append(features)
@@ -130,37 +167,35 @@ class FeatureExtractor:
         for file_name in tqdm(all_files):
             file_path = os.path.join(self.save_path, file_name)
             with np.load(file_path, allow_pickle=True) as data:
+                if data.size == 0:
+                    print(f"Error: The file {file_name} is empty.")
+                    continue  # Skip this file and continue with the next one
+
                 for layer in layers:
+                    if layer not in data or data[layer].size == 0:
+                        print(f"Error: The layer {layer} in file {file_name} is empty.")
+                        continue  # Skip this layer and continue with the next one
+
                     image_key = file_name.replace('.npz', '')
                     combined_data[layer][image_key] = data[layer]
+
+                    # Check if the dictionary for this layer has any values
+                    if not bool(combined_data[layer]):
+                        print(f"Error: No values found in the dictionary for layer {layer}.")
+
             # Remove the file after its data has been added to combined_data
             os.remove(file_path)
 
         # Save the consolidated data for each layer
         for layer, data in combined_data.items():
+            if not bool(data):
+                print(f"Error: No data found to consolidate for layer {layer}.")
+                continue  # Skip saving this layer and continue with the next one
+
             output_file_path = os.path.join(self.save_path, f"{layer}.npz")
             np.savez_compressed(output_file_path, **data)
 
 
-
-
-    def consolidate_per_image(self):
-        # Identify unique data files (images) from filenames
-        all_files = os.listdir(self.save_path)
-        unique_data_files = set(file.split('_')[-1].split('.npz')[0] for file in all_files if '.npz' in file)
-
-        for data_file in tqdm(unique_data_files):
-            combined_data = {}
-            # Gather all files for this data_file (image)
-            data_file_feature_files = [file for file in all_files if data_file in file]
-            for file in data_file_feature_files:
-                file_path = os.path.join(self.save_path, file)
-                with np.load(file_path, allow_pickle=True) as loaded_data:
-                    # Here, we use the prefix of the file (which indicates the layer) as the key in our combined_data dictionary.
-                    combined_data[file.split('_')[0]] = dict(loaded_data)[data_file]
-                os.remove(file_path)  # Optionally remove the individual file after reading
-            # Save the combined data for this data_file (image)
-            np.savez_compressed(os.path.join(self.save_path, f"{data_file}.npz"), **combined_data)
 
 
     def layers_to_extract(self):
