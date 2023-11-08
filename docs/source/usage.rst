@@ -3,32 +3,42 @@ Usage
 
 .. _installation:
 
+Compatibility and System Requirements
+=====================================
+
+Net2Brain is thoroughly tested on systems running Python versions up to 3.10 and is compatible with Windows, macOS, and Linux operating systems.
+
+Please note that netsets, such as Detectron2 and VISSL, are designed specifically for Linux-based systems. Detailed installation instructions for these netsets are available within the provided notebooks.
+
 Installation
-------------
+============
 
-To use Lumache, first install it using pip:
+To install Net2Brain along with its dependencies, follow the steps below:
 
-.. code-block:: console
+1. Open your terminal or command prompt.
 
-   (.venv) $ pip install lumache
+2. Run the following command to install the Net2Brain repository:
 
-Creating recipes
-----------------
+   .. code-block:: bash
 
-To retrieve a list of random ingredients,
-you can use the ``lumache.get_random_ingredients()`` function:
+      pip install -U git+https://github.com/cvai-roig-lab/Net2Brain
 
-.. autofunction:: lumache.get_random_ingredients
+3. After the installation is complete, you can import Net2Brain into your Python environment:
 
-The ``kind`` parameter should be either ``"meat"``, ``"fish"``,
-or ``"veggies"``. Otherwise, :py:func:`lumache.get_random_ingredients`
-will raise an exception.
+   .. code-block:: python
 
-.. autoexception:: lumache.InvalidKindError
+      import net2brain
 
-For example:
+Now you are ready to utilize the powerful features of Net2Brain for neural research.
 
->>> import lumache
->>> lumache.get_random_ingredients()
-['shells', 'gorgonzola', 'parsley']
+Troubleshooting
+---------------
+
+If you encounter any installation issues:
+
+- Verify that you have Python 3.10 or lower installed on your system.
+- Ensure that pip is updated to the latest version.
+- Check if your system meets the requirements for specific netsets like Detectron2 and VISSL if you intend to use them.
+- For further assistance, refer to the [Net2Brain documentation](https://net2brain.readthedocs.io/) or raise an issue on the [Net2Brain GitHub repository](https://github.com/cvai-roig-lab/Net2Brain/issues).
+
 

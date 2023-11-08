@@ -46,9 +46,10 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#creating-recipes">Creating recipes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#compatibility-and-system-requirements">Compatibility and System Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#id1">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
@@ -81,26 +82,38 @@
              
   <section id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h1>
-<section id="installation">
-<span id="id1"></span><h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-9">To use Lumache, first install it using pip:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(.venv)</span> <span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>lumache
-</pre></div>
-</div>
 </section>
-<section id="creating-recipes">
-<h2>Creating recipes<a class="headerlink" href="#creating-recipes" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-18">To retrieve a list of random ingredients,
-you can use the <code class="docutils literal notranslate"><span class="pre">lumache.get_random_ingredients()</span></code> function:</p>
-<p class="linemarker linemarker-23">The <code class="docutils literal notranslate"><span class="pre">kind</span></code> parameter should be either <code class="docutils literal notranslate"><span class="pre">&quot;meat&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;fish&quot;</span></code>,
-or <code class="docutils literal notranslate"><span class="pre">&quot;veggies&quot;</span></code>. Otherwise, <code class="xref py py-func docutils literal notranslate"><span class="pre">lumache.get_random_ingredients()</span></code>
-will raise an exception.</p>
-<p class="linemarker linemarker-29">For example:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lumache</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">lumache</span><span class="o">.</span><span class="n">get_random_ingredients</span><span class="p">()</span>
-<span class="go">[&#39;shells&#39;, &#39;gorgonzola&#39;, &#39;parsley&#39;]</span>
+<section id="compatibility-and-system-requirements">
+<span id="installation"></span><h1>Compatibility and System Requirements<a class="headerlink" href="#compatibility-and-system-requirements" title="Permalink to this heading"></a></h1>
+<p class="linemarker linemarker-9">Net2Brain is thoroughly tested on systems running Python versions up to 3.10 and is compatible with Windows, macOS, and Linux operating systems.</p>
+<p class="linemarker linemarker-11">Please note that netsets, such as Detectron2 and VISSL, are designed specifically for Linux-based systems. Detailed installation instructions for these netsets are available within the provided notebooks.</p>
+</section>
+<section id="id1">
+<h1>Installation<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
+<p class="linemarker linemarker-16">To install Net2Brain along with its dependencies, follow the steps below:</p>
+<ol class="arabic">
+<li><p class="linemarker linemarker-18">Open your terminal or command prompt.</p></li>
+<li><p class="linemarker linemarker-20">Run the following command to install the Net2Brain repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>git+https://github.com/cvai-roig-lab/Net2Brain
 </pre></div>
 </div>
+</li>
+<li><p class="linemarker linemarker-26">After the installation is complete, you can import Net2Brain into your Python environment:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">net2brain</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p class="linemarker linemarker-32">Now you are ready to utilize the powerful features of Net2Brain for neural research.</p>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-37">If you encounter any installation issues:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-39">Verify that you have Python 3.10 or lower installed on your system.</p></li>
+<li><p class="linemarker linemarker-40">Ensure that pip is updated to the latest version.</p></li>
+<li><p class="linemarker linemarker-41">Check if your system meets the requirements for specific netsets like Detectron2 and VISSL if you intend to use them.</p></li>
+<li><p class="linemarker linemarker-42">For further assistance, refer to the [Net2Brain documentation](<a class="reference external" href="https://net2brain.readthedocs.io/">https://net2brain.readthedocs.io/</a>) or raise an issue on the [Net2Brain GitHub repository](<a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/issues">https://github.com/cvai-roig-lab/Net2Brain/issues</a>).</p></li>
+</ul>
 </section>
 </section>
 
