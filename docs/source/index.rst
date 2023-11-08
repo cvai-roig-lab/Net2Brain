@@ -5,7 +5,7 @@ Welcome to **Net2Brain**, a powerful toolbox designed to bridge the gap between 
 
 Developed through a partnership between CVAI and Radek Cichy's lab, Net2Brain is dedicated to enhancing the field of neural research by providing a user-friendly interface for engaging with deep neural networks.
 
-For more information on how to utilize this toolbox, visit the :doc:`usage` section. To get started with the project, see the :ref:`installation` guide.
+To get started with the project, see the :ref:`installation` guide.
 
 .. note::
 
@@ -17,6 +17,6 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   usage
+   installation
    api
    key_functions

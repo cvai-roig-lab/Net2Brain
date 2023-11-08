@@ -14,6 +14,6 @@ Each of these key functions is crucial for conducting advanced neural research a
    :maxdepth: 2
 
    feature_extraction
-   rdms_creation
+   rdm_creation
    evaluation
    plotting

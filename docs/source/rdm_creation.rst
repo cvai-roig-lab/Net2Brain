@@ -4,7 +4,7 @@ Creating Representational Dissimilarity Matrices (RDMs)
 
 After extracting features from the neural network models, the next step is to compute Representational Dissimilarity Matrices (RDMs). The ``RDMCreator`` class facilitates this process.
 
-Requirements for Generating RDMs:
+Requirements for Generating RDMs
 ----------------
 
 The ``RDMCreator`` requires:
@@ -19,8 +19,8 @@ The ``RDMCreator``:
 
 - **Outputs**: An RDM for each layer with the dimensionality (#Images, #Images).
 
-Example Usage:
-----------------
+Example Usage
+---------------
 
 Below is an example of how to use the ``RDMCreator`` to generate RDMs using features from AlexNet and ResNet50 models.
 

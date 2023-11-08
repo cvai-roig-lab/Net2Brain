@@ -1,3 +1,7 @@
+==============
+Installation
+==============
+
 Compatibility and System Requirements
 =====================================
 
@@ -35,3 +39,5 @@ If you encounter any installation issues:
 - Ensure that pip is updated to the latest version.
 - Check if your system meets the requirements for specific netsets like Detectron2 and VISSL if you intend to use them.
 - For further assistance, refer to the [Net2Brain documentation](https://net2brain.readthedocs.io/) or raise an issue on the [Net2Brain GitHub repository](https://github.com/cvai-roig-lab/Net2Brain/issues).
+
+
