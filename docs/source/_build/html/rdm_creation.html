@@ -19,6 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Evaluation" href="evaluation.html" />
     <link rel="prev" title="Feature Extraction" href="feature_extraction.html" /> 
 </head>
 
@@ -45,15 +46,18 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="key_functions.html">Key Functions</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="feature_extraction.html">Feature Extraction</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Creating Representational Dissimilarity Matrices (RDMs)</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#requirements-for-generating-rdms">Requirements for Generating RDMs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#functionality">Functionality:</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#example-usage">Example Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-rdms-from-dnn-features">Creating RDMs from DNN features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#functionality">Functionality:</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-rdms-from-eeg-data">Creating RDMs from EEG Data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
 </ul>
 </li>
 </ul>
@@ -86,24 +90,19 @@
   <section id="creating-representational-dissimilarity-matrices-rdms">
 <h1>Creating Representational Dissimilarity Matrices (RDMs)<a class="headerlink" href="#creating-representational-dissimilarity-matrices-rdms" title="Permalink to this heading"></a></h1>
 <p class="linemarker linemarker-5">After extracting features from the neural network models, the next step is to compute Representational Dissimilarity Matrices (RDMs). The <code class="docutils literal notranslate"><span class="pre">RDMCreator</span></code> class facilitates this process.</p>
-<section id="requirements-for-generating-rdms">
-<h2>Requirements for Generating RDMs<a class="headerlink" href="#requirements-for-generating-rdms" title="Permalink to this heading"></a></h2>
+<section id="creating-rdms-from-dnn-features">
+<h2>Creating RDMs from DNN features<a class="headerlink" href="#creating-rdms-from-dnn-features" title="Permalink to this heading"></a></h2>
 <p class="linemarker linemarker-10">The <code class="docutils literal notranslate"><span class="pre">RDMCreator</span></code> requires:</p>
 <ul class="simple">
 <li><p class="linemarker linemarker-12"><strong>Input</strong>: Path to <cite>.npz</cite> files with the neural features for each image, formatted as [Batch x Channel x Height x Width].</p></li>
 <li><p class="linemarker linemarker-13"><strong>Save Path</strong> (optional): Destination directory for the generated RDMs.</p></li>
 </ul>
-</section>
 <section id="functionality">
-<h2>Functionality:<a class="headerlink" href="#functionality" title="Permalink to this heading"></a></h2>
+<h3>Functionality:<a class="headerlink" href="#functionality" title="Permalink to this heading"></a></h3>
 <p class="linemarker linemarker-18">The <code class="docutils literal notranslate"><span class="pre">RDMCreator</span></code>:</p>
 <ul class="simple">
 <li><p class="linemarker linemarker-20"><strong>Outputs</strong>: An RDM for each layer with the dimensionality (#Images, #Images).</p></li>
 </ul>
-</section>
-<section id="example-usage">
-<h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-25">Below is an example of how to use the <code class="docutils literal notranslate"><span class="pre">RDMCreator</span></code> to generate RDMs using features from AlexNet and ResNet50 models.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># AlexNet Example</span>
 <span class="kn">from</span> <span class="nn">net2brain.rdm_creation</span> <span class="kn">import</span> <span class="n">RDMCreator</span>
 
@@ -123,12 +122,42 @@
 </div>
 </section>
 </section>
+<section id="creating-rdms-from-eeg-data">
+<h2>Creating RDMs from EEG Data<a class="headerlink" href="#creating-rdms-from-eeg-data" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-45">For each pair of images i,j find associated eeg trials X_i and X_j and using leave one out cross validation train a classifier,
+average accuracy is used for a distance measure. This is done at every timepoint.</p>
+<p class="linemarker linemarker-48">Pseudo code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">timepoints</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="n">image</span> <span class="n">pairs</span>
+        <span class="n">accuracy_ij</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">number</span> <span class="n">of</span> <span class="n">instances</span>
+            <span class="n">trn_I</span> <span class="o">=</span> <span class="nb">all</span> <span class="n">EEG</span> <span class="n">instances</span> <span class="k">for</span> <span class="n">image</span> <span class="n">i</span> <span class="k">except</span> <span class="n">k</span>
+            <span class="n">trn_J</span> <span class="o">=</span> <span class="nb">all</span> <span class="n">EEG</span> <span class="n">instances</span> <span class="k">for</span> <span class="n">image</span> <span class="n">j</span> <span class="k">except</span> <span class="n">k</span>
+            <span class="n">tst_I</span> <span class="o">=</span> <span class="n">EEG</span> <span class="n">instance</span> <span class="n">k</span> <span class="k">for</span> <span class="n">image</span> <span class="n">i</span>
+            <span class="n">tst_J</span> <span class="o">=</span> <span class="n">EEG</span> <span class="n">instance</span> <span class="n">k</span> <span class="k">for</span> <span class="n">image</span> <span class="n">j</span>
+            <span class="n">LDA</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">trn_I</span><span class="p">,</span><span class="n">trn_J</span><span class="p">])</span>
+            <span class="n">accuracy_ij</span> <span class="o">+=</span> <span class="n">LDA</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="n">tst_I</span><span class="p">,</span><span class="n">tst_j</span><span class="p">])</span>
+        <span class="n">RDM</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">tt</span><span class="p">]</span> <span class="o">=</span> <span class="n">accuracy_ij</span>
+</pre></div>
+</div>
+<p class="linemarker linemarker-65"><strong>eeg_rdm</strong> requires:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-67"><strong>eeg</strong>: EEG-Data</p></li>
+<li><p class="linemarker linemarker-68"><strong>labels</strong>: Labels for EEG-Data</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.preprocess.rdm</span> <span class="kn">import</span> <span class="n">eeg_rdm</span>
+<span class="n">rdm</span> <span class="o">=</span> <span class="n">eeg_rdm</span><span class="p">(</span><span class="n">subj_data</span><span class="p">[</span><span class="s1">&#39;dat&#39;</span><span class="p">],</span><span class="n">subj_data</span><span class="p">[</span><span class="s1">&#39;lbl&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="feature_extraction.html" class="btn btn-neutral float-left" title="Feature Extraction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="evaluation.html" class="btn btn-neutral float-right" title="Evaluation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

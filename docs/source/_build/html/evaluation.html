@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluation &mdash; Net2Brain 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Creating Representational Dissimilarity Matrices (RDMs)" href="rdm_creation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Net2Brain
+          </a>
+              <div class="version">
+                0.1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="key_functions.html">Key Functions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="feature_extraction.html">Feature Extraction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rdm_creation.html">Creating Representational Dissimilarity Matrices (RDMs)</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Evaluation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#representational-similiratiy-analysis-rsa">Representational Similiratiy Analysis (RSA)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#significant-pairs">Significant pairs</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#plotting-rsa-results">Plotting RSA Results</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#weighted-rsa">Weighted RSA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#searchlight-rsa">Searchlight RSA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#linear-encoding-models">Linear Encoding Models:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#variance-partitioning-analysis-vpa">Variance Partitioning Analysis (VPA)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#plotting-vpa">Plotting VPA</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Net2Brain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="key_functions.html">Key Functions</a></li>
+      <li class="breadcrumb-item active">Evaluation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/evaluation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="evaluation">
+<h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this heading"></a></h1>
+<p class="linemarker linemarker-6">After the generating RDMs you can use these to evaluate them against brain data. <strong>Net2Brain</strong> contains 3 datasets to play around with.
+In case you have your own dataset, make sure the brain activations are in this format: <strong>FORMAT FEHLT</strong></p>
+<section id="representational-similiratiy-analysis-rsa">
+<h2>Representational Similiratiy Analysis (RSA)<a class="headerlink" href="#representational-similiratiy-analysis-rsa" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-14">To perform RSA you can load up the RSA module. It will return a dataframe containing all correlation values, and information about the statistical significance.
+RSA requires:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-17"><strong>model_rdms_path</strong>: Path to model RDMs</p></li>
+<li><p class="linemarker linemarker-18"><strong>brain_rdms_path</strong>: Path to brain RDMs</p></li>
+<li><p class="linemarker linemarker-19"><strong>model_name</strong>: Name of model (important for plotting)</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># AlexNet Example</span>
+<span class="kn">from</span> <span class="nn">net2brain.evaluations.rsa</span> <span class="kn">import</span> <span class="n">RSA</span>
+
+<span class="c1"># Start RSA</span>
+<span class="n">evaluation_alexnet</span> <span class="o">=</span> <span class="n">RSA</span><span class="p">(</span><span class="n">model_rdms</span><span class="p">,</span> <span class="n">brain_rdms</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;AlexNet&quot;</span><span class="p">)</span>
+
+<span class="c1"># Evaluation - Returns a pandas dataframe</span>
+<span class="n">dataframe1</span> <span class="o">=</span> <span class="n">evaluation_alexnet</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+
+<span class="c1"># Show results</span>
+<span class="n">display</span><span class="p">(</span><span class="n">dataframe1</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="significant-pairs">
+<h3>Significant pairs<a class="headerlink" href="#significant-pairs" title="Permalink to this heading"></a></h3>
+<p class="linemarker linemarker-38">Furthermore, you might be interested in determining whether one model is significantly better than another, and not merely due to random variation. In this case, you can utilize the <cite>compare_model</cite> functionality provided by the toolbox. Use the following syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">test</span><span class="p">,</span> <span class="n">sig_pairs</span> <span class="o">=</span> <span class="n">eval_1</span><span class="o">.</span><span class="n">compare_model</span><span class="p">(</span><span class="n">eval_2</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="plotting-rsa-results">
+<h2>Plotting RSA Results<a class="headerlink" href="#plotting-rsa-results" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-49">The integrated plotting functionality of the toolbox allows you to easily visualize evaluation results. To achieve this, initialize the class with a list of DataFrames obtained from the evaluation. Make sure that each DataFrame:</p>
+<ol class="arabic simple">
+<li><p class="linemarker linemarker-51">Contains the same ROIs, signifying that each test was performed on the same brain RDMs.</p></li>
+<li><p class="linemarker linemarker-52">Has a distinct model name, which can be set manually or through the “model_name” parameter during evaluation (as mentioned earlier).</p></li>
+</ol>
+<p class="linemarker linemarker-54">The Plotting class requires:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-56"><strong>dataframes</strong>: One dataframe from the evaluation, or list of dataframes</p></li>
+</ul>
+<p class="linemarker linemarker-58">The function for plotting takes:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-60"><strong>pairs</strong>: (Optional) List of significant pairs that can be calculated using the evaluation function</p></li>
+<li><p class="linemarker linemarker-61"><strong>metric</strong>: (Optional) Either R2 or R</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.plotting</span> <span class="kn">import</span> <span class="n">Plotting</span>
+
+<span class="n">plotter</span> <span class="o">=</span> <span class="n">Plotting</span><span class="p">([</span><span class="n">dataframe1</span><span class="p">])</span>
+<span class="n">results_dataframe</span> <span class="o">=</span> <span class="n">plotter</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+
+<span class="c1"># Or</span>
+<span class="n">plotter</span> <span class="o">=</span> <span class="n">Plotting</span><span class="p">([</span><span class="n">dataframe1</span><span class="p">,</span><span class="n">dataframe2</span><span class="p">])</span>
+<span class="n">results_dataframe</span> <span class="o">=</span> <span class="n">plotter</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pairs</span><span class="o">=</span><span class="n">sig_pairs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="weighted-rsa">
+<h2>Weighted RSA<a class="headerlink" href="#weighted-rsa" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-81">In addition to the standard RSA, Net2Brain also supports weighted RSA (WRSA) as an evaluation metric.
+WRSA allows for the incorporation of weights into the analysis, providing an alternative approach to evaluating model performance and examining the relationship between neural representations
+and computational models.</p>
+<p class="linemarker linemarker-86">WRSA requires:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-88"><strong>model_rdms_path</strong>: Path to model RDMs</p></li>
+<li><p class="linemarker linemarker-89"><strong>brain_rdms_path</strong>: Path to brain RDMs</p></li>
+<li><p class="linemarker linemarker-90"><strong>model_name</strong>: Name of model (important for plotting)</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start WRSA</span>
+<span class="n">evaluation</span> <span class="o">=</span> <span class="n">WRSA</span><span class="p">(</span><span class="n">model_rdms</span><span class="p">,</span> <span class="n">brain_rdms</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;ResNet50&quot;</span><span class="p">)</span>
+
+<span class="c1"># Evaluation - Returns a pandas dataframe</span>
+<span class="n">dataframe1</span> <span class="o">=</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="searchlight-rsa">
+<h2>Searchlight RSA<a class="headerlink" href="#searchlight-rsa" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-104">The toolbox offers the capability to perform searchlight analysis using Searchlight RDMs in the [ROI, subject, stimuli, stimuli] format.
+Please note that this toolbox does not include RDMs for testing purposes.
+However, if you have access to RDMs, you are welcome to use this functionality to conduct searchlight analysis.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.searchlight</span> <span class="kn">import</span> <span class="n">Searchlight</span>
+
+<span class="c1"># Start Searchlight</span>
+<span class="n">evaluation</span> <span class="o">=</span> <span class="n">Searchlight</span><span class="p">(</span><span class="n">model_rdms</span><span class="p">,</span> <span class="n">searchlight_rdm</span><span class="p">)</span>
+
+<span class="c1"># Evaluation - Returns a pandas dataframe</span>
+<span class="n">evaluation</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="linear-encoding-models">
+<h2>Linear Encoding Models:<a class="headerlink" href="#linear-encoding-models" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-122">Another integrated analysis pipeline is a linear encoder. Given a npy file with voxel values, and extracted features,
+the encoder performs an X-fold regression where the training data is used to train a PCA embedding and a
+linear regression to predict voxel values. The output is the testing split X-fold average pearson correlation.</p>
+<p class="linemarker linemarker-126">Linear_encoding requires:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-128"><strong>feat_path</strong>: Path to model features</p></li>
+<li><p class="linemarker linemarker-129"><strong>roi_path</strong>: Path to brain data in RDM format</p></li>
+<li><p class="linemarker linemarker-130"><strong>model_name</strong>: Name of model (important for plotting)</p></li>
+<li><p class="linemarker linemarker-131"><strong>trn_tst_split</strong>: (Optional) How to split training and testing data at each fold. Defaults to 0.8</p></li>
+<li><p class="linemarker linemarker-132"><strong>n_folds</strong> : (Optionsl) Number of folds. Defaults to 3</p></li>
+<li><p class="linemarker linemarker-133"><strong>n_components</strong>: (Optional) Number of PCA components. Defaults to 100</p></li>
+<li><p class="linemarker linemarker-134"><strong>batch_size</strong>: (Optional) Size of batch of updating the incremental pca. Defaults to 100</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.encoding</span> <span class="kn">import</span> <span class="n">linear_encoding</span>
+
+<span class="n">results_dataframe</span> <span class="o">=</span> <span class="n">linear_encoding</span><span class="p">(</span><span class="n">feat_path</span><span class="p">,</span> <span class="n">roi_path</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">n_folds</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">trn_tst_split</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="variance-partitioning-analysis-vpa">
+<h2>Variance Partitioning Analysis (VPA)<a class="headerlink" href="#variance-partitioning-analysis-vpa" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-146"><strong>Net2Brain</strong> also allows Variance Partitioning Analysis as a method for model and brain evaluation. VPA allows <strong>up to 4 independent variables</strong> that can be evaluated
+against <strong>one dependent</strong> variable, which would be the brain data.</p>
+<p class="linemarker linemarker-149">VPA requires:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-151"><strong>dependent_variable</strong>: Path to brain data in form of RDM</p></li>
+<li><p class="linemarker linemarker-152"><strong>independent_variable</strong>: List of lists, containing paths to RDMs that are part of one group</p></li>
+<li><p class="linemarker linemarker-153"><strong>variable_names</strong>: Names of independent variables (important for plotting)</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.variance_partitioning_analysis</span> <span class="kn">import</span> <span class="n">VPA</span>
+
+<span class="n">independent_variables</span> <span class="o">=</span> <span class="p">[</span><span class="n">paths_to_RDM_folder_1</span><span class="p">,</span> <span class="n">paths_to_RDM_folder_2</span><span class="p">,</span> <span class="n">paths_to_RDM_folder_3</span><span class="p">,</span> <span class="n">paths_to_RDM_folder_4</span><span class="p">]</span>
+<span class="n">variable_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Ind_Var1&quot;</span><span class="p">,</span> <span class="s2">&quot;Ind_Var2&quot;</span><span class="p">,</span> <span class="s2">&quot;Ind_Var3&quot;</span><span class="p">,</span> <span class="s2">&quot;Ind_Var4&quot;</span><span class="p">]</span>
+
+<span class="n">VPA_eval</span> <span class="o">=</span> <span class="n">VPA</span><span class="p">(</span><span class="n">dependent_variable</span><span class="p">,</span> <span class="n">independent_variables</span><span class="p">,</span> <span class="n">variable_names</span><span class="p">)</span>
+<span class="n">dataframe</span> <span class="o">=</span> <span class="n">VPA_eval</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">average_models</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="plotting-vpa">
+<h3>Plotting VPA<a class="headerlink" href="#plotting-vpa" title="Permalink to this heading"></a></h3>
+<p class="linemarker linemarker-170">You can also plot time-data using our plotting functionalty.
+If needed the function <strong>plotting_over_time</strong> supports:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-173"><strong>add_std</strong>: If you wish to see the standard deviation along with the graph. Defaults to False</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.plotting</span> <span class="kn">import</span> <span class="n">Plotting</span>
+
+<span class="c1"># Plotting with significance</span>
+<span class="n">plotter</span> <span class="o">=</span> <span class="n">Plotting</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+
+<span class="n">plotter</span><span class="o">.</span><span class="n">plotting_over_time</span><span class="p">(</span><span class="n">add_std</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="rdm_creation.html" class="btn btn-neutral float-left" title="Creating Representational Dissimilarity Matrices (RDMs)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Domenic Bersch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

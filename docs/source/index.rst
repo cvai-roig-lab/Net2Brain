@@ -18,5 +18,4 @@ Contents
    :maxdepth: 2
 
    installation
-   api
    key_functions
