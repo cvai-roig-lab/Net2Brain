@@ -1,10 +1,11 @@
-Welcome to Lumache's documentation!
+Welcome to Net2Brain's documentation!
 ===================================
 
-**Lumache** (/lu'make/) is a Python library for cooks and food lovers
-that creates recipes mixing random ingredients.
-It pulls data from the `Open Food Facts database <https://world.openfoodfacts.org/>`_
-and offers a *simple* and *intuitive* API.
+Welcome to **Net2Brain**, a powerful toolbox designed to facilitate the comparison of human brain activity patterns with the activations of Deep Neural Networks (DNNs). 
+With over 600 pre-trained DNNs available, Net2Brain empowers neuroscientists to explore and analyze the relationships between artificial and biological neural representations.
+
+Net2Brain is a collaborative effort between CVAI and Radek Cichy's lab, aimed at providing a user-friendly toolbox for neural research with deep neural networks.
+
 
 Check out the :doc:`usage` section for further information, including
 how to :ref:`installation` the project.
