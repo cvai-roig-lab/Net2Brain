@@ -52,7 +52,7 @@ In addition to the provided netsets, **Net2Brain** supports the integration of c
 
 Discovering Models
 ------------------
-An extensive catalog of models is available for exploration within these netsets. To delve into the full array of models, consult the `Model Taxonomy documentation <taxonomy.rst>`_, which details the functions to view all available models.
+An extensive catalog of models is available for exploration within these netsets. To delve into the full array of models, consult the `Model Taxonomy documentation <https://net2brain.readthedocs.io/en/latest/taxonomy.html>`_, which details the functions to view all available models.
 
 .. _taxonomy.rst: taxonomy.rst
 .. _Adding Custom Models documentation: your-link-placeholder
