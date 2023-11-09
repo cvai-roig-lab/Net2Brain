@@ -47,6 +47,7 @@
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="key_functions.html">Key Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a></li>
 </ul>
 
         </div>
@@ -75,12 +76,19 @@
              
   <section id="welcome-to-net2brain-s-documentation">
 <h1>Welcome to Net2Brain’s Documentation!<a class="headerlink" href="#welcome-to-net2brain-s-documentation" title="Permalink to this heading"></a></h1>
-<p class="linemarker linemarker-4">Welcome to <strong>Net2Brain</strong>, a powerful toolbox designed to bridge the gap between human brain activity patterns and the activations of Deep Neural Networks (DNNs). Boasting a library of over 600 pre-trained DNNs, Net2Brain offers neuroscientists an expansive platform to investigate and compare artificial and biological neural representations.</p>
-<p class="linemarker linemarker-6">Developed through a partnership between CVAI and Radek Cichy’s lab, Net2Brain is dedicated to enhancing the field of neural research by providing a user-friendly interface for engaging with deep neural networks.</p>
-<p class="linemarker linemarker-8">To get started with the project, see the <span class="xref std std-ref">installation</span> guide.</p>
+<p class="linemarker linemarker-5">Welcome to <strong>Net2Brain</strong>, the comprehensive toolbox designed to illuminate the intricate parallels between the complex workings of the human brain and the sophisticated activations of Deep Neural Networks (DNNs).
+Offering access to over 600 pre-trained models, Net2Brain empowers researchers to delve into the comparative study of
+biological and artificial neural networks. This powerful resource, created by the collaborative efforts of
+<a class="reference external" href="http://www.cvai.cs.uni-frankfurt.de/">CVAI</a> and <a class="reference external" href="https://www.ewi-psy.fu-berlin.de/psychologie/arbeitsbereiche/neural_dyn_of_vis_cog/team/rm_cichy/index.html">Radoslaw Cichy’s lab</a> , is tailored to advance our understanding of cognitive processes through the lens of AI.</p>
+<p class="linemarker linemarker-10">Net2Brain stands out with its user-friendly design, supporting a broad spectrum of visual tasks
+and data formats. It provides intuitive methods for analyzing neural representations, facilitating the
+use of advanced neural network analysis by both seasoned researchers and those new to computational neuroscience.
+As a hub for exploration and discovery, Net2Brain invites you to uncover the synergies between brain activity patterns
+and DNN activations, propelling the frontier of cognitive computational research.</p>
+<p class="linemarker linemarker-17">To get started with the project, see the <span class="xref std std-ref">installation</span> guide.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p class="linemarker linemarker-12">Please note that Net2Brain is currently under active development, and features may be updated regularly.</p>
+<p class="linemarker linemarker-21">Please note that Net2Brain is currently under active development, and features may be updated regularly.</p>
 </div>
 <section id="contents">
 <h2>Contents<a class="headerlink" href="#contents" title="Permalink to this heading"></a></h2>
@@ -88,13 +96,25 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#compatibility-and-system-requirements">Compatibility and System Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#id1">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installation-with-conda">Installation with Conda</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="key_functions.html">Key Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="taxonomy.html">Exploring the Toolbox - Model Taxonomy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets.html">Loading Datasets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="feature_extraction.html">Feature Extraction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="rdm_creation.html">Creating Representational Dissimilarity Matrices (RDMs)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="adding_own_netsets.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adding_own_netsets.html#step-1-copying-the-empty-netset">Step 1: Copying the Empty NetSet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adding_own_netsets.html#step-2-customizing-the-netset">Step 2: Customizing the NetSet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adding_own_netsets.html#step-3-creating-a-configuration-file">Step 3: Creating a Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adding_own_netsets.html#step-4-optional-modifications">Step 4: Optional Modifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adding_own_netsets.html#step-5-importing-your-netset">Step 5: Importing Your NetSet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adding_own_netsets.html#conclusion">Conclusion</a></li>
 </ul>
 </li>
 </ul>

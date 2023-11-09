@@ -48,13 +48,12 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="key_functions.html">Key Functions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="taxonomy.html">Exploring the Toolbox - Model Taxonomy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets.html">Loading Datasets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="feature_extraction.html">Feature Extraction</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Creating Representational Dissimilarity Matrices (RDMs)</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#creating-rdms-from-dnn-features">Creating RDMs from DNN features</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#functionality">Functionality:</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#creating-rdms-from-eeg-data">Creating RDMs from EEG Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#generating-rdms-from-deep-neural-network-features">Generating RDMs from Deep Neural Network Features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#constructing-rdms-from-eeg-data">Constructing RDMs from EEG Data</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
@@ -89,19 +88,23 @@
              
   <section id="creating-representational-dissimilarity-matrices-rdms">
 <h1>Creating Representational Dissimilarity Matrices (RDMs)<a class="headerlink" href="#creating-representational-dissimilarity-matrices-rdms" title="Permalink to this heading"></a></h1>
-<p class="linemarker linemarker-5">After extracting features from the neural network models, the next step is to compute Representational Dissimilarity Matrices (RDMs). The <code class="docutils literal notranslate"><span class="pre">RDMCreator</span></code> class facilitates this process.</p>
-<section id="creating-rdms-from-dnn-features">
-<h2>Creating RDMs from DNN features<a class="headerlink" href="#creating-rdms-from-dnn-features" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-10">The <code class="docutils literal notranslate"><span class="pre">RDMCreator</span></code> requires:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="linemarker linemarker-6">Run and test this code by using <a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/2_RDM_Creation.ipynb">this notebook</a>!</p>
+</div>
+<p class="linemarker linemarker-10">Representational Dissimilarity Matrices (RDMs) are powerful tools in understanding the complex processing patterns of neural network models. The RDMCreator class is designed to streamline the creation of RDMs by quantifying the distinctiveness of neural responses to different stimuli.</p>
+<section id="generating-rdms-from-deep-neural-network-features">
+<h2>Generating RDMs from Deep Neural Network Features<a class="headerlink" href="#generating-rdms-from-deep-neural-network-features" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-15">The <cite>RDMCreator</cite> transforms the high-dimensional activations of neural networks into a two-dimensional space, representing the dissimilarity between the responses to different inputs. This is crucial for comparing neural network processing to human brain activity.</p>
+<p class="linemarker linemarker-17">Prerequisites for <cite>RDMCreator</cite>:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-12"><strong>Input</strong>: Path to <cite>.npz</cite> files with the neural features for each image, formatted as [Batch x Channel x Height x Width].</p></li>
-<li><p class="linemarker linemarker-13"><strong>Save Path</strong> (optional): Destination directory for the generated RDMs.</p></li>
+<li><p class="linemarker linemarker-20"><strong>feat_path</strong>: A path to <cite>.npz</cite> files containing neural features for each stimulus, structured as <em>[Batch x Channels x Height x Width]</em>.</p></li>
+<li><p class="linemarker linemarker-21"><strong>save_path</strong>: (Optional) The target directory to save the generated RDMs.</p></li>
+<li><p class="linemarker linemarker-22"><strong>distance</strong>: (Optional) Which distance metric to use. Defaults to Pearson</p></li>
 </ul>
-<section id="functionality">
-<h3>Functionality:<a class="headerlink" href="#functionality" title="Permalink to this heading"></a></h3>
-<p class="linemarker linemarker-18">The <code class="docutils literal notranslate"><span class="pre">RDMCreator</span></code>:</p>
+<p class="linemarker linemarker-24">Functionality of <cite>RDMCreator</cite>:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-20"><strong>Outputs</strong>: An RDM for each layer with the dimensionality (#Images, #Images).</p></li>
+<li><p class="linemarker linemarker-26">It outputs an RDM for each neural network layer, with dimensions <em>(#Stimuli x #Stimuli)</em>, providing a matrix of pairwise dissimilarity scores.</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># AlexNet Example</span>
 <span class="kn">from</span> <span class="nn">net2brain.rdm_creation</span> <span class="kn">import</span> <span class="n">RDMCreator</span>
@@ -111,22 +114,18 @@
 
 <span class="n">creator</span> <span class="o">=</span> <span class="n">RDMCreator</span><span class="p">(</span><span class="n">feat_path</span><span class="p">,</span> <span class="n">save_path</span><span class="p">)</span>
 <span class="n">creator</span><span class="o">.</span><span class="n">create_rdms</span><span class="p">()</span>  <span class="c1"># Creates and saves RDMs</span>
-
-<span class="c1"># ResNet50 Example</span>
-<span class="n">feat_path</span> <span class="o">=</span> <span class="s2">&quot;path/to/ResNet50_Feat&quot;</span>
-<span class="n">save_path</span> <span class="o">=</span> <span class="s2">&quot;path/to/ResNet50_RDM&quot;</span>
-
-<span class="n">creator</span> <span class="o">=</span> <span class="n">RDMCreator</span><span class="p">(</span><span class="n">feat_path</span><span class="p">,</span> <span class="n">save_path</span><span class="p">)</span>
-<span class="n">creator</span><span class="o">.</span><span class="n">create_rdms</span><span class="p">()</span>  <span class="c1"># Creates and saves RDMs</span>
 </pre></div>
 </div>
 </section>
-</section>
-<section id="creating-rdms-from-eeg-data">
-<h2>Creating RDMs from EEG Data<a class="headerlink" href="#creating-rdms-from-eeg-data" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-45">For each pair of images i,j find associated eeg trials X_i and X_j and using leave one out cross validation train a classifier,
-average accuracy is used for a distance measure. This is done at every timepoint.</p>
-<p class="linemarker linemarker-48">Pseudo code:</p>
+<section id="constructing-rdms-from-eeg-data">
+<h2>Constructing RDMs from EEG Data<a class="headerlink" href="#constructing-rdms-from-eeg-data" title="Permalink to this heading"></a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="linemarker linemarker-45">Run and test this code by using <a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/Workshops/Net2Brain_EEG_Cutting_Edge_Workshop.ipynb">this notebook</a>!</p>
+</div>
+<p class="linemarker linemarker-48">The creation of RDMs from EEG data involves comparing neural responses to pairs of stimuli.
+A classifier is trained using cross-validation to determine the distinctiveness of EEG responses, which is then used to populate the RDM at every timepoint.</p>
+<p class="linemarker linemarker-51">Pseudo code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">timepoints</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="n">image</span> <span class="n">pairs</span>
         <span class="n">accuracy_ij</span> <span class="o">=</span> <span class="mi">0</span>
@@ -140,10 +139,10 @@ average accuracy is used for a distance measure. This is done at every timepoint
         <span class="n">RDM</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">tt</span><span class="p">]</span> <span class="o">=</span> <span class="n">accuracy_ij</span>
 </pre></div>
 </div>
-<p class="linemarker linemarker-65"><strong>eeg_rdm</strong> requires:</p>
+<p class="linemarker linemarker-67">To use this approach, <strong>eeg_rdm</strong> function is provided, which requires:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-67"><strong>eeg</strong>: EEG-Data</p></li>
-<li><p class="linemarker linemarker-68"><strong>labels</strong>: Labels for EEG-Data</p></li>
+<li><p class="linemarker linemarker-69"><strong>eeg</strong>: EEG-Data</p></li>
+<li><p class="linemarker linemarker-70"><strong>labels</strong>: Labels for EEG-Data</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.preprocess.rdm</span> <span class="kn">import</span> <span class="n">eeg_rdm</span>
 <span class="n">rdm</span> <span class="o">=</span> <span class="n">eeg_rdm</span><span class="p">(</span><span class="n">subj_data</span><span class="p">[</span><span class="s1">&#39;dat&#39;</span><span class="p">],</span><span class="n">subj_data</span><span class="p">[</span><span class="s1">&#39;lbl&#39;</span><span class="p">])</span>

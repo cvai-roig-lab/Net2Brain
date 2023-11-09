@@ -1,23 +1,30 @@
-=======================================================
 Creating Representational Dissimilarity Matrices (RDMs)
 =======================================================
 
-After extracting features from the neural network models, the next step is to compute Representational Dissimilarity Matrices (RDMs). The ``RDMCreator`` class facilitates this process.
+.. note::
 
-Creating RDMs from DNN features
-----------------
+   Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/2_RDM_Creation.ipynb>`_!
 
-The ``RDMCreator`` requires:
 
-- **Input**: Path to `.npz` files with the neural features for each image, formatted as [Batch x Channel x Height x Width].
-- **Save Path** (optional): Destination directory for the generated RDMs.
 
-Functionality:
-^^^^^^
+Representational Dissimilarity Matrices (RDMs) are powerful tools in understanding the complex processing patterns of neural network models. The RDMCreator class is designed to streamline the creation of RDMs by quantifying the distinctiveness of neural responses to different stimuli.
 
-The ``RDMCreator``:
+Generating RDMs from Deep Neural Network Features
+-------------------------------------------------
 
-- **Outputs**: An RDM for each layer with the dimensionality (#Images, #Images).
+The `RDMCreator` transforms the high-dimensional activations of neural networks into a two-dimensional space, representing the dissimilarity between the responses to different inputs. This is crucial for comparing neural network processing to human brain activity.
+
+Prerequisites for `RDMCreator`:
+
+
+- **feat_path**: A path to `.npz` files containing neural features for each stimulus, structured as *[Batch x Channels x Height x Width]*.
+- **save_path**: (Optional) The target directory to save the generated RDMs.
+- **distance**: (Optional) Which distance metric to use. Defaults to Pearson
+
+Functionality of `RDMCreator`:
+
+- It outputs an RDM for each neural network layer, with dimensions *(#Stimuli x #Stimuli)*, providing a matrix of pairwise dissimilarity scores.
+
 
 .. code-block:: python
 
@@ -30,20 +37,16 @@ The ``RDMCreator``:
     creator = RDMCreator(feat_path, save_path)
     creator.create_rdms()  # Creates and saves RDMs
 
-    # ResNet50 Example
-    feat_path = "path/to/ResNet50_Feat"
-    save_path = "path/to/ResNet50_RDM"
-    
-    creator = RDMCreator(feat_path, save_path)
-    creator.create_rdms()  # Creates and saves RDMs
-
-
-
-Creating RDMs from EEG Data
+Constructing RDMs from EEG Data
 ----------------
 
-For each pair of images i,j find associated eeg trials X_i and X_j and using leave one out cross validation train a classifier, 
-average accuracy is used for a distance measure. This is done at every timepoint.
+.. note::
+
+   Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/Workshops/Net2Brain_EEG_Cutting_Edge_Workshop.ipynb>`_!
+
+
+The creation of RDMs from EEG data involves comparing neural responses to pairs of stimuli.
+A classifier is trained using cross-validation to determine the distinctiveness of EEG responses, which is then used to populate the RDM at every timepoint.
 
 Pseudo code:
 
@@ -61,8 +64,7 @@ Pseudo code:
                 accuracy_ij += LDA.predict([tst_I,tst_j])
             RDM[i,j,tt] = accuracy_ij
 
-
-**eeg_rdm** requires:
+To use this approach, **eeg_rdm** function is provided, which requires:
 
 - **eeg**: EEG-Data
 - **labels**: Labels for EEG-Data

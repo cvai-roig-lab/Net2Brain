@@ -19,7 +19,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Key Functions" href="key_functions.html" /> 
+    <link rel="next" title="Creating Representational Dissimilarity Matrices (RDMs)" href="rdm_creation.html" />
+    <link rel="prev" title="Loading Datasets" href="datasets.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,11 +46,11 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="key_functions.html">Key Functions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="taxonomy.html">Exploring the Toolbox - Model Taxonomy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets.html">Loading Datasets</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Feature Extraction</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#loading-datasets">Loading Datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#initializing-the-featureextractor">Initializing the FeatureExtractor</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#extracting-features">Extracting Features</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#inspecting-and-modifying-layers-to-extract">Inspecting and Modifying Layers to Extract</a></li>
@@ -57,8 +58,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#custom-functions-example">Custom Functions Example</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="rdm_creation.html">Creating Representational Dissimilarity Matrices (RDMs)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a></li>
 </ul>
 
         </div>
@@ -88,38 +92,25 @@
              
   <section id="feature-extraction">
 <h1>Feature Extraction<a class="headerlink" href="#feature-extraction" title="Permalink to this heading"></a></h1>
-<p class="linemarker linemarker-6">The <code class="docutils literal notranslate"><span class="pre">FeatureExtractor</span></code> class in Net2Brain is designed for extracting features from deep neural network models. Below are the steps and explanations for utilizing this class effectively.</p>
-<section id="loading-datasets">
-<h2>Loading Datasets<a class="headerlink" href="#loading-datasets" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-11">Before diving into feature extraction, we need to select an appropriate dataset. Net2Brain conveniently offers access to several datasets, each comprising a collection of stimulus images along with corresponding brain data. This data includes Representational Dissimilarity Matrices (RDMs) derived from fMRI and MEG measurements, providing a rich source for analysis.</p>
-<p class="linemarker linemarker-13">Currently, you can choose from the following datasets:</p>
-<ul class="simple">
-<li><p class="linemarker linemarker-15"><code class="docutils literal notranslate"><span class="pre">&quot;78images&quot;</span></code></p></li>
-<li><p class="linemarker linemarker-16"><code class="docutils literal notranslate"><span class="pre">&quot;92images&quot;</span></code></p></li>
-<li><p class="linemarker linemarker-17"><code class="docutils literal notranslate"><span class="pre">&quot;bonner_pnas2017&quot;</span></code></p></li>
-</ul>
-<p class="linemarker linemarker-19">Each dataset is uniquely identified by a name that can be used to load it with the <cite>load_dataset</cite> function. For example, to load the dataset from the study by Bonner et al. (2017), use the following code:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.utils.download_datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>
-<span class="c1"># Load stimuli and brain data from the specified dataset</span>
-<span class="n">stimuli_path</span><span class="p">,</span> <span class="n">roi_path</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;bonner_pnas2017&quot;</span><span class="p">)</span>
-</pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="linemarker linemarker-8">Run and test this code by using <a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/1_Feature_Extraction.ipynb">this notebook</a>!</p>
 </div>
-<p class="linemarker linemarker-27">This function returns the paths to the stimuli images and the region of interest (ROI) data, setting the stage for subsequent feature extraction and analysis.</p>
-</section>
+<p class="linemarker linemarker-11">The <code class="docutils literal notranslate"><span class="pre">FeatureExtractor</span></code> class in Net2Brain is designed for extracting features from deep neural network models. Below are the steps and explanations for utilizing this class effectively.</p>
 <section id="initializing-the-featureextractor">
 <h2>Initializing the FeatureExtractor<a class="headerlink" href="#initializing-the-featureextractor" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-33">The <code class="docutils literal notranslate"><span class="pre">FeatureExtractor</span></code> class requires the model from which features will be extracted. You can initialize the class with the following parameters:</p>
+<p class="linemarker linemarker-17">The <code class="docutils literal notranslate"><span class="pre">FeatureExtractor</span></code> class requires the model from which features will be extracted. You can initialize the class with the following parameters:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-35"><code class="docutils literal notranslate"><span class="pre">model</span></code> (required): The name or instance of the model.</p></li>
-<li><p class="linemarker linemarker-36"><code class="docutils literal notranslate"><span class="pre">netset</span></code> (optional): The collection of networks that the model belongs to.</p></li>
-<li><p class="linemarker linemarker-37"><code class="docutils literal notranslate"><span class="pre">device</span></code> (optional): Computation device, e.g., ‘cuda’ or ‘cpu’. Defaults to the global PyTorch settings.</p></li>
-<li><p class="linemarker linemarker-38"><code class="docutils literal notranslate"><span class="pre">pretrained</span></code> (optional): Whether to use a pretrained model. Defaults to True.</p></li>
+<li><p class="linemarker linemarker-19"><code class="docutils literal notranslate"><span class="pre">model</span></code> (required): The name or instance of the model.</p></li>
+<li><p class="linemarker linemarker-20"><code class="docutils literal notranslate"><span class="pre">netset</span></code> (optional): The collection of networks that the model belongs to. Not needed if you supply your own model.</p></li>
+<li><p class="linemarker linemarker-21"><code class="docutils literal notranslate"><span class="pre">device</span></code> (optional): Computation device, e.g., ‘cuda’ or ‘cpu’. Defaults to cpu.</p></li>
+<li><p class="linemarker linemarker-22"><code class="docutils literal notranslate"><span class="pre">pretrained</span></code> (optional): Whether to use a pretrained model. Defaults to True.</p></li>
 </ul>
-<p class="linemarker linemarker-40">Additional optional parameters to customize the FeatureExtractor, especially when using your own custom model, will be discussed further below.</p>
+<p class="linemarker linemarker-24">Additional optional parameters to customize the FeatureExtractor, especially when using your own custom model, will be discussed further below.</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-42"><code class="docutils literal notranslate"><span class="pre">preprocessor</span></code> (optional): Your custom data transform function (if not provided, standard ImageNet transformations will be used)</p></li>
-<li><p class="linemarker linemarker-43"><code class="docutils literal notranslate"><span class="pre">feature_cleaner</span></code> (optional):  Your custom feature cleaner (if not provided, no cleaning will be done)</p></li>
-<li><p class="linemarker linemarker-44"><code class="docutils literal notranslate"><span class="pre">extraction_function</span></code> (optional): Your custom extraction function (if not provided, standard Torchextractor will be used)</p></li>
+<li><p class="linemarker linemarker-26"><code class="docutils literal notranslate"><span class="pre">preprocessor</span></code> (optional): Your custom data transform function (if not provided, standard ImageNet transformations will be used)</p></li>
+<li><p class="linemarker linemarker-27"><code class="docutils literal notranslate"><span class="pre">feature_cleaner</span></code> (optional):  Your custom feature cleaner (if not provided, no cleaning will be done)</p></li>
+<li><p class="linemarker linemarker-28"><code class="docutils literal notranslate"><span class="pre">extraction_function</span></code> (optional): Your custom extraction function (if not provided, standard Torchextractor will be used)</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.feature_extraction</span> <span class="kn">import</span> <span class="n">FeatureExtractor</span>
 <span class="n">fx</span> <span class="o">=</span> <span class="n">FeatureExtractor</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;AlexNet&#39;</span><span class="p">,</span> <span class="n">netset</span><span class="o">=</span><span class="s1">&#39;Standard&#39;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
@@ -128,11 +119,11 @@
 </section>
 <section id="extracting-features">
 <h2>Extracting Features<a class="headerlink" href="#extracting-features" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-55">To extract features, use the <code class="docutils literal notranslate"><span class="pre">extract</span></code> method with the following parameters:</p>
+<p class="linemarker linemarker-39">To extract features, use the <code class="docutils literal notranslate"><span class="pre">extract</span></code> method with the following parameters:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-57"><code class="docutils literal notranslate"><span class="pre">data_path</span></code> (required): Path to the image dataset.</p></li>
-<li><p class="linemarker linemarker-58"><code class="docutils literal notranslate"><span class="pre">save_path</span></code> (optional): Where to save the extracted features. Defaults to a folder named with the current date.</p></li>
-<li><p class="linemarker linemarker-59"><code class="docutils literal notranslate"><span class="pre">layers_to_extract</span></code> (optional): Layers from which to extract features. Defaults to the layers specified during initialization.</p></li>
+<li><p class="linemarker linemarker-41"><code class="docutils literal notranslate"><span class="pre">data_path</span></code> (required): Path to the image (.jpg, .png)/video (.mp4, .avi), /text dataset (.txt).</p></li>
+<li><p class="linemarker linemarker-42"><code class="docutils literal notranslate"><span class="pre">save_path</span></code> (optional): Where to save the extracted features. Defaults to a folder named with the current date.</p></li>
+<li><p class="linemarker linemarker-43"><code class="docutils literal notranslate"><span class="pre">layers_to_extract</span></code> (optional): Layers from which to extract features. Defaults to the layers specified during initialization.</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fx</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">data_path</span><span class="o">=</span><span class="n">stimuli_path</span><span class="p">,</span> <span class="n">save_path</span><span class="o">=</span><span class="s1">&#39;AlexNet_Feat&#39;</span><span class="p">)</span>
 </pre></div>
@@ -140,22 +131,22 @@
 </section>
 <section id="inspecting-and-modifying-layers-to-extract">
 <h2>Inspecting and Modifying Layers to Extract<a class="headerlink" href="#inspecting-and-modifying-layers-to-extract" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-68">Inspect default layers for extraction:</p>
+<p class="linemarker linemarker-52">Inspect default layers for extraction:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">fx</span><span class="o">.</span><span class="n">layers_to_extract</span><span class="p">)</span>
 </pre></div>
 </div>
-<p class="linemarker linemarker-74">List all extractable layers:</p>
+<p class="linemarker linemarker-58">List all extractable layers:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">fx</span><span class="o">.</span><span class="n">get_all_layers</span><span class="p">())</span>
 </pre></div>
 </div>
-<p class="linemarker linemarker-80">To specify layers, pass them to the <code class="docutils literal notranslate"><span class="pre">extract</span></code> method:</p>
+<p class="linemarker linemarker-64">To specify layers, pass them to the <code class="docutils literal notranslate"><span class="pre">extract</span></code> method:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fx</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">data_path</span><span class="o">=</span><span class="n">stimuli_path</span><span class="p">,</span> <span class="n">layers_to_extract</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;layer1&#39;</span><span class="p">,</span> <span class="s1">&#39;layer2&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 </section>
 <section id="using-featureextractor-with-a-custom-dnn">
-<h2>Using FeatureExtractor with a Custom DNN<a class="headerlink" href="#using-featureextractor-with-a-custom-dnn" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-89">You can integrate a custom model by providing the model instance and optionally custom functions for preprocessing, feature extraction, and cleaning.</p>
+<span id="custom-dnn"></span><h2>Using FeatureExtractor with a Custom DNN<a class="headerlink" href="#using-featureextractor-with-a-custom-dnn" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-76">You can integrate a custom model by providing the model instance and optionally custom functions for preprocessing, feature extraction, and cleaning.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">torchvision</span> <span class="kn">import</span> <span class="n">models</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">resnet50</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">ResNet50_Weights</span><span class="o">.</span><span class="n">IMAGENET1K_V1</span><span class="p">)</span>
 <span class="n">fx</span> <span class="o">=</span> <span class="n">FeatureExtractor</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
@@ -165,7 +156,7 @@
 </section>
 <section id="custom-functions-example">
 <h2>Custom Functions Example<a class="headerlink" href="#custom-functions-example" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-101">Here’s how to define custom preprocessing, extraction, and cleaning functions:</p>
+<p class="linemarker linemarker-88">Here’s how to define custom preprocessing, extraction, and cleaning functions:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_preprocessor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>
     <span class="c1"># Define custom preprocessing steps</span>
     <span class="c1"># Return preprocessed image tensor</span>
@@ -190,7 +181,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="key_functions.html" class="btn btn-neutral float-left" title="Key Functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="datasets.html" class="btn btn-neutral float-left" title="Loading Datasets" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="rdm_creation.html" class="btn btn-neutral float-right" title="Creating Representational Dissimilarity Matrices (RDMs)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

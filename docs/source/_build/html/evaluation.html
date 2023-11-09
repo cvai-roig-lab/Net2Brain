@@ -47,14 +47,14 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="key_functions.html">Key Functions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="taxonomy.html">Exploring the Toolbox - Model Taxonomy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets.html">Loading Datasets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="feature_extraction.html">Feature Extraction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="rdm_creation.html">Creating Representational Dissimilarity Matrices (RDMs)</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Evaluation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#representational-similiratiy-analysis-rsa">Representational Similiratiy Analysis (RSA)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#significant-pairs">Significant pairs</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#plotting-rsa-results">Plotting RSA Results</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#representational-similarity-analysis-rsa">Representational Similarity Analysis (RSA)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#significant-model-comparisons">Significant Model Comparisons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#visualizing-rsa-results">Visualizing RSA Results</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#weighted-rsa">Weighted RSA</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#searchlight-rsa">Searchlight RSA</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#linear-encoding-models">Linear Encoding Models:</a></li>
@@ -95,129 +95,148 @@
              
   <section id="evaluation">
 <h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this heading"></a></h1>
-<p class="linemarker linemarker-6">After the generating RDMs you can use these to evaluate them against brain data. <strong>Net2Brain</strong> contains 3 datasets to play around with.
-In case you have your own dataset, make sure the brain activations are in this format: <strong>FORMAT FEHLT</strong></p>
-<section id="representational-similiratiy-analysis-rsa">
-<h2>Representational Similiratiy Analysis (RSA)<a class="headerlink" href="#representational-similiratiy-analysis-rsa" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-14">To perform RSA you can load up the RSA module. It will return a dataframe containing all correlation values, and information about the statistical significance.
-RSA requires:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="linemarker linemarker-7">Run and test this code by using <a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/3_Evaluation.ipynb">this notebook</a>!</p>
+</div>
+<p class="linemarker linemarker-11">Utilizing the generated representational dissimilarity matrices (RDMs), one can conduct a comprehensive evaluation against neural data. <strong>Net2Brain</strong> provides access to three distinct datasets for exploration purposes. For those possessing custom datasets, ensure the neural activation data adheres to the following formats: <em>[subject, stimuli, stimuli]</em> or <em>[subject, time, stimuli, stimuli]</em>.</p>
+<section id="representational-similarity-analysis-rsa">
+<h2>Representational Similarity Analysis (RSA)<a class="headerlink" href="#representational-similarity-analysis-rsa" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-16">The RSA module within <strong>Net2Brain</strong> simplifies the performance of RSA, offering a DataFrame output with correlation values and statistical significance markers. For RSA execution, supply:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-17"><strong>model_rdms_path</strong>: Path to model RDMs</p></li>
-<li><p class="linemarker linemarker-18"><strong>brain_rdms_path</strong>: Path to brain RDMs</p></li>
-<li><p class="linemarker linemarker-19"><strong>model_name</strong>: Name of model (important for plotting)</p></li>
+<li><p class="linemarker linemarker-18"><strong>model_rdms_path</strong>: Directory containing the model RDMs.</p></li>
+<li><p class="linemarker linemarker-19"><strong>brain_rdms_path</strong>: Directory containing the brain RDMs.</p></li>
+<li><p class="linemarker linemarker-20"><strong>model_name</strong>: Identifier for the model, significant for plotting.</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># AlexNet Example</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example using AlexNet</span>
 <span class="kn">from</span> <span class="nn">net2brain.evaluations.rsa</span> <span class="kn">import</span> <span class="n">RSA</span>
 
-<span class="c1"># Start RSA</span>
-<span class="n">evaluation_alexnet</span> <span class="o">=</span> <span class="n">RSA</span><span class="p">(</span><span class="n">model_rdms</span><span class="p">,</span> <span class="n">brain_rdms</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;AlexNet&quot;</span><span class="p">)</span>
+<span class="c1"># Initialize RSA</span>
+<span class="n">rsa_evaluation</span> <span class="o">=</span> <span class="n">RSA</span><span class="p">(</span><span class="n">model_rdms_path</span><span class="p">,</span> <span class="n">brain_rdms_path</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;AlexNet&quot;</span><span class="p">)</span>
 
-<span class="c1"># Evaluation - Returns a pandas dataframe</span>
-<span class="n">dataframe1</span> <span class="o">=</span> <span class="n">evaluation_alexnet</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<span class="c1"># Conduct Evaluation - Yields a DataFrame</span>
+<span class="n">results_df</span> <span class="o">=</span> <span class="n">rsa_evaluation</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
 
-<span class="c1"># Show results</span>
-<span class="n">display</span><span class="p">(</span><span class="n">dataframe1</span><span class="p">)</span>
-</pre></div>
-</div>
-<section id="significant-pairs">
-<h3>Significant pairs<a class="headerlink" href="#significant-pairs" title="Permalink to this heading"></a></h3>
-<p class="linemarker linemarker-38">Furthermore, you might be interested in determining whether one model is significantly better than another, and not merely due to random variation. In this case, you can utilize the <cite>compare_model</cite> functionality provided by the toolbox. Use the following syntax:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">test</span><span class="p">,</span> <span class="n">sig_pairs</span> <span class="o">=</span> <span class="n">eval_1</span><span class="o">.</span><span class="n">compare_model</span><span class="p">(</span><span class="n">eval_2</span><span class="p">)</span>
+<span class="c1"># Display the Results</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results_df</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
+<section id="significant-model-comparisons">
+<h2>Significant Model Comparisons<a class="headerlink" href="#significant-model-comparisons" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-39">When the objective is to ascertain whether one model outperforms another significantly and not by mere chance, the <cite>compare_model</cite> feature comes into play.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">test_statistic</span><span class="p">,</span> <span class="n">significant_pairs</span> <span class="o">=</span> <span class="n">rsa_evaluation</span><span class="o">.</span><span class="n">compare_model</span><span class="p">(</span><span class="n">another_evaluation</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
-<section id="plotting-rsa-results">
-<h2>Plotting RSA Results<a class="headerlink" href="#plotting-rsa-results" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-49">The integrated plotting functionality of the toolbox allows you to easily visualize evaluation results. To achieve this, initialize the class with a list of DataFrames obtained from the evaluation. Make sure that each DataFrame:</p>
+<section id="visualizing-rsa-results">
+<h2>Visualizing RSA Results<a class="headerlink" href="#visualizing-rsa-results" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-48">The built-in plotting capabilities of <strong>Net2Brain</strong> facilitate the visualization of evaluation metrics. Initialize the <cite>Plotting</cite> class with the evaluation DataFrames, ensuring each one:</p>
 <ol class="arabic simple">
-<li><p class="linemarker linemarker-51">Contains the same ROIs, signifying that each test was performed on the same brain RDMs.</p></li>
-<li><p class="linemarker linemarker-52">Has a distinct model name, which can be set manually or through the “model_name” parameter during evaluation (as mentioned earlier).</p></li>
+<li><p class="linemarker linemarker-50">Shares identical regions of interest (ROIs) indicating tests on the same brain RDMs.</p></li>
+<li><p class="linemarker linemarker-51">Features a unique model identifier, set manually or via the “model_name” during the evaluation process.</p></li>
 </ol>
-<p class="linemarker linemarker-54">The Plotting class requires:</p>
+<p class="linemarker linemarker-53">Required for plotting:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-56"><strong>dataframes</strong>: One dataframe from the evaluation, or list of dataframes</p></li>
-</ul>
-<p class="linemarker linemarker-58">The function for plotting takes:</p>
-<ul class="simple">
-<li><p class="linemarker linemarker-60"><strong>pairs</strong>: (Optional) List of significant pairs that can be calculated using the evaluation function</p></li>
-<li><p class="linemarker linemarker-61"><strong>metric</strong>: (Optional) Either R2 or R</p></li>
+<li><p class="linemarker linemarker-55"><strong>dataframes</strong>: A single DataFrame from the evaluation or a list of them.</p></li>
+<li><p class="linemarker linemarker-56"><strong>pairs</strong>: (Optional) A list of significant pairs derived from the evaluation function.</p></li>
+<li><p class="linemarker linemarker-57"><strong>metric</strong>: (Optional) The evaluation metric, either R² or R.</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.plotting</span> <span class="kn">import</span> <span class="n">Plotting</span>
 
-<span class="n">plotter</span> <span class="o">=</span> <span class="n">Plotting</span><span class="p">([</span><span class="n">dataframe1</span><span class="p">])</span>
-<span class="n">results_dataframe</span> <span class="o">=</span> <span class="n">plotter</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="c1"># Single DataFrame plotting</span>
+<span class="n">single_plotter</span> <span class="o">=</span> <span class="n">Plotting</span><span class="p">([</span><span class="n">results_df</span><span class="p">])</span>
+<span class="n">single_plotter</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 
-<span class="c1"># Or</span>
-<span class="n">plotter</span> <span class="o">=</span> <span class="n">Plotting</span><span class="p">([</span><span class="n">dataframe1</span><span class="p">,</span><span class="n">dataframe2</span><span class="p">])</span>
-<span class="n">results_dataframe</span> <span class="o">=</span> <span class="n">plotter</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pairs</span><span class="o">=</span><span class="n">sig_pairs</span><span class="p">)</span>
+<span class="c1"># Multiple DataFrames plotting</span>
+<span class="n">multiple_plotter</span> <span class="o">=</span> <span class="n">Plotting</span><span class="p">([</span><span class="n">results_df</span><span class="p">,</span> <span class="n">another_results_df</span><span class="p">])</span>
+<span class="n">multiple_plotter</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pairs</span><span class="o">=</span><span class="n">significant_pairs</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="weighted-rsa">
 <h2>Weighted RSA<a class="headerlink" href="#weighted-rsa" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-81">In addition to the standard RSA, Net2Brain also supports weighted RSA (WRSA) as an evaluation metric.
-WRSA allows for the incorporation of weights into the analysis, providing an alternative approach to evaluating model performance and examining the relationship between neural representations
-and computational models.</p>
-<p class="linemarker linemarker-86">WRSA requires:</p>
+<p class="linemarker linemarker-77"><strong>Net2Brain</strong> extends support for Weighted RSA, incorporating weights into the analysis to refine model
+performance assessment and the study of neural representation correlations with computational models.</p>
+<p class="linemarker linemarker-80">WRSA necessitates:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-88"><strong>model_rdms_path</strong>: Path to model RDMs</p></li>
-<li><p class="linemarker linemarker-89"><strong>brain_rdms_path</strong>: Path to brain RDMs</p></li>
-<li><p class="linemarker linemarker-90"><strong>model_name</strong>: Name of model (important for plotting)</p></li>
+<li><p class="linemarker linemarker-82"><strong>model_rdms_path</strong>: Directory containing the model RDMs.</p></li>
+<li><p class="linemarker linemarker-83"><strong>brain_rdms_path</strong>: Directory containing the brain RDMs.</p></li>
+<li><p class="linemarker linemarker-84"><strong>model_name</strong>: Identifier for the model, significant for plotting.</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start WRSA</span>
-<span class="n">evaluation</span> <span class="o">=</span> <span class="n">WRSA</span><span class="p">(</span><span class="n">model_rdms</span><span class="p">,</span> <span class="n">brain_rdms</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;ResNet50&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example with WRSA</span>
+<span class="kn">from</span> <span class="nn">net2brain.evaluations.wrsa</span> <span class="kn">import</span> <span class="n">WRSA</span>
 
-<span class="c1"># Evaluation - Returns a pandas dataframe</span>
-<span class="n">dataframe1</span> <span class="o">=</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<span class="c1"># Initialize WRSA</span>
+<span class="n">wrsa_evaluation</span> <span class="o">=</span> <span class="n">WRSA</span><span class="p">(</span><span class="n">model_rdms_path</span><span class="p">,</span> <span class="n">brain_rdms_path</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;ResNet50&quot;</span><span class="p">)</span>
+
+<span class="c1"># Perform Evaluation - Produces a DataFrame</span>
+<span class="n">wrsa_results_df</span> <span class="o">=</span> <span class="n">wrsa_evaluation</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+
+<span class="c1"># Output the Results</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">wrsa_results_df</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="searchlight-rsa">
 <h2>Searchlight RSA<a class="headerlink" href="#searchlight-rsa" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-104">The toolbox offers the capability to perform searchlight analysis using Searchlight RDMs in the [ROI, subject, stimuli, stimuli] format.
-Please note that this toolbox does not include RDMs for testing purposes.
-However, if you have access to RDMs, you are welcome to use this functionality to conduct searchlight analysis.</p>
+<p class="linemarker linemarker-105">For a focused analysis, the toolbox offers a searchlight RSA functionality, which requires Searchlight
+RDMs formatted as <em>[ROI, subject, stimuli, stimuli]</em>. Note that this toolbox does not provide RDMs for demonstration purposes,
+but users can apply the feature if they have suitable RDMs.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.searchlight</span> <span class="kn">import</span> <span class="n">Searchlight</span>
 
-<span class="c1"># Start Searchlight</span>
-<span class="n">evaluation</span> <span class="o">=</span> <span class="n">Searchlight</span><span class="p">(</span><span class="n">model_rdms</span><span class="p">,</span> <span class="n">searchlight_rdm</span><span class="p">)</span>
+<span class="c1"># Initialize Searchlight</span>
+<span class="n">searchlight_evaluation</span> <span class="o">=</span> <span class="n">Searchlight</span><span class="p">(</span><span class="n">model_rdms_path</span><span class="p">,</span> <span class="n">searchlight_rdms_path</span><span class="p">)</span>
 
-<span class="c1"># Evaluation - Returns a pandas dataframe</span>
-<span class="n">evaluation</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<span class="c1"># Conduct Evaluation - Returns a DataFrame</span>
+<span class="n">searchlight_results_df</span> <span class="o">=</span> <span class="n">searchlight_evaluation</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+
+<span class="c1"># Present the Results</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">searchlight_results_df</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="linear-encoding-models">
 <h2>Linear Encoding Models:<a class="headerlink" href="#linear-encoding-models" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-122">Another integrated analysis pipeline is a linear encoder. Given a npy file with voxel values, and extracted features,
-the encoder performs an X-fold regression where the training data is used to train a PCA embedding and a
-linear regression to predict voxel values. The output is the testing split X-fold average pearson correlation.</p>
-<p class="linemarker linemarker-126">Linear_encoding requires:</p>
+<p class="linemarker linemarker-127">Another integrated analysis pipeline is a linear encoder. Given a npy file with voxel values, and extracted features, the encoder performs an X-fold regression where the training data is used to train a PCA embedding and a linear regression to predict voxel values. The output is the testing split X-fold average pearson correlation.</p>
+<p class="linemarker linemarker-129">Prerequisites for the linear encoding function include:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-128"><strong>feat_path</strong>: Path to model features</p></li>
-<li><p class="linemarker linemarker-129"><strong>roi_path</strong>: Path to brain data in RDM format</p></li>
-<li><p class="linemarker linemarker-130"><strong>model_name</strong>: Name of model (important for plotting)</p></li>
-<li><p class="linemarker linemarker-131"><strong>trn_tst_split</strong>: (Optional) How to split training and testing data at each fold. Defaults to 0.8</p></li>
-<li><p class="linemarker linemarker-132"><strong>n_folds</strong> : (Optionsl) Number of folds. Defaults to 3</p></li>
-<li><p class="linemarker linemarker-133"><strong>n_components</strong>: (Optional) Number of PCA components. Defaults to 100</p></li>
-<li><p class="linemarker linemarker-134"><strong>batch_size</strong>: (Optional) Size of batch of updating the incremental pca. Defaults to 100</p></li>
+<li><p class="linemarker linemarker-131"><strong>feat_path</strong>: The file path directing to the model’s features.</p></li>
+<li><p class="linemarker linemarker-132"><strong>roi_path</strong>: The file path for brain data formatted as RDM.</p></li>
+<li><p class="linemarker linemarker-133"><strong>model_name</strong>: The identifier for the model, crucial for subsequent visualization.</p></li>
+<li><p class="linemarker linemarker-134"><strong>trn_tst_split</strong>: (Optional) specifies the train-test data ratio per fold, with a default of 0.8.</p></li>
+<li><p class="linemarker linemarker-135"><strong>n_folds</strong>: (Optional) The cross-validation folds count, preset to 3.</p></li>
+<li><p class="linemarker linemarker-136"><strong>n_components</strong>: (Optional) The PCA components quantity, defaulting to 100.</p></li>
+<li><p class="linemarker linemarker-137"><strong>batch_size</strong>: (Optional) The incremental PCA’s batch size, with a standard value of 100.</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.encoding</span> <span class="kn">import</span> <span class="n">linear_encoding</span>
 
-<span class="n">results_dataframe</span> <span class="o">=</span> <span class="n">linear_encoding</span><span class="p">(</span><span class="n">feat_path</span><span class="p">,</span> <span class="n">roi_path</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">n_folds</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">trn_tst_split</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">results_dataframe</span> <span class="o">=</span> <span class="n">linear_encoding</span><span class="p">(</span>
+    <span class="n">feat_path</span><span class="p">,</span>
+    <span class="n">roi_path</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="p">,</span>
+    <span class="n">n_folds</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">trn_tst_split</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="variance-partitioning-analysis-vpa">
 <h2>Variance Partitioning Analysis (VPA)<a class="headerlink" href="#variance-partitioning-analysis-vpa" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-146"><strong>Net2Brain</strong> also allows Variance Partitioning Analysis as a method for model and brain evaluation. VPA allows <strong>up to 4 independent variables</strong> that can be evaluated
-against <strong>one dependent</strong> variable, which would be the brain data.</p>
-<p class="linemarker linemarker-149">VPA requires:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="linemarker linemarker-162">Run and test this code by using <a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/Workshops/Net2Brain_EEG_Cutting_Edge_Workshop.ipynb">this notebook</a>!</p>
+</div>
+<p class="linemarker linemarker-166"><strong>Net2Brain</strong> enhances model and cerebral data assessment through Variance Partitioning Analysis.
+This technique supports the evaluation of <strong>up to four independent variables</strong> in relation to a
+<strong>singular dependent variable</strong>, typically the neural data.</p>
+<p class="linemarker linemarker-170">The requirements for VPA are:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-151"><strong>dependent_variable</strong>: Path to brain data in form of RDM</p></li>
-<li><p class="linemarker linemarker-152"><strong>independent_variable</strong>: List of lists, containing paths to RDMs that are part of one group</p></li>
-<li><p class="linemarker linemarker-153"><strong>variable_names</strong>: Names of independent variables (important for plotting)</p></li>
+<li><p class="linemarker linemarker-172"><strong>dependent_variable</strong>: The RDM-formatted path to the brain data.</p></li>
+<li><p class="linemarker linemarker-173"><strong>independent_variable</strong>: An array of arrays, each containing RDM paths belonging to a specific group.</p></li>
+<li><p class="linemarker linemarker-174"><strong>variable_names</strong>: The labels for the independent variables, integral for visualization.</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.variance_partitioning_analysis</span> <span class="kn">import</span> <span class="n">VPA</span>
 
@@ -230,10 +249,11 @@ against <strong>one dependent</strong> variable, which would be the brain data.<
 </div>
 <section id="plotting-vpa">
 <h3>Plotting VPA<a class="headerlink" href="#plotting-vpa" title="Permalink to this heading"></a></h3>
-<p class="linemarker linemarker-170">You can also plot time-data using our plotting functionalty.
-If needed the function <strong>plotting_over_time</strong> supports:</p>
+<p class="linemarker linemarker-192">The plotting utilities of <strong>Net2Brain</strong> offer the capability to visualize time-course data.
+The <cite>plotting_over_time</cite> function includes an optional standard deviation overlay to enrich the
+graphical representation.</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-173"><strong>add_std</strong>: If you wish to see the standard deviation along with the graph. Defaults to False</p></li>
+<li><p class="linemarker linemarker-196"><strong>add_std</strong>: Enable to display the standard deviation on the graph. Defaults to False.</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.evaluations.plotting</span> <span class="kn">import</span> <span class="n">Plotting</span>
 

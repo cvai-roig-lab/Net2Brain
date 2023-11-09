@@ -48,7 +48,7 @@
               <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#compatibility-and-system-requirements">Compatibility and System Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id1">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation-with-conda">Installation with Conda</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
@@ -88,31 +88,37 @@
 <p class="linemarker linemarker-8">Net2Brain is thoroughly tested on systems running Python versions up to 3.10 and is compatible with Windows, macOS, and Linux operating systems.</p>
 <p class="linemarker linemarker-10">Please note that netsets, such as Detectron2 and VISSL, are designed specifically for Linux-based systems. Detailed installation instructions for these netsets are available within the provided notebooks.</p>
 </section>
-<section id="id1">
-<h2>Installation<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-15">To install Net2Brain along with its dependencies, follow the steps below:</p>
+<section id="installation-with-conda">
+<h2>Installation with Conda<a class="headerlink" href="#installation-with-conda" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-15">To create a Conda environment and install Net2Brain along with its dependencies, follow the steps below:</p>
 <ol class="arabic">
 <li><p class="linemarker linemarker-17">Open your terminal or command prompt.</p></li>
-<li><p class="linemarker linemarker-19">Run the following command to install the Net2Brain repository:</p>
+<li><p class="linemarker linemarker-19">If desired, create a new conda environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>net2brain_env<span class="w"> </span><span class="c1"># python=3.10 (optional)</span>
+conda<span class="w"> </span>activate<span class="w"> </span>net2brain_env
+</pre></div>
+</div>
+</li>
+<li><p class="linemarker linemarker-26">With the Conda environment activated, install the Net2Brain repository:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>git+https://github.com/cvai-roig-lab/Net2Brain
 </pre></div>
 </div>
 </li>
-<li><p class="linemarker linemarker-25">After the installation is complete, you can import Net2Brain into your Python environment:</p>
+<li><p class="linemarker linemarker-32">After the installation is complete, you can import Net2Brain into your Python environment:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">net2brain</span>
 </pre></div>
 </div>
 </li>
 </ol>
-<p class="linemarker linemarker-31">Now you are ready to utilize the powerful features of Net2Brain for neural research.</p>
+<p class="linemarker linemarker-38">Now you are ready to explore the functionalities of Net2Brain for your neural research projects within a dedicated Conda environment.</p>
 <section id="troubleshooting">
 <h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading"></a></h3>
-<p class="linemarker linemarker-36">If you encounter any installation issues:</p>
+<p class="linemarker linemarker-43">If you encounter any installation issues:</p>
 <ul class="simple">
-<li><p class="linemarker linemarker-38">Verify that you have Python 3.10 or lower installed on your system.</p></li>
-<li><p class="linemarker linemarker-39">Ensure that pip is updated to the latest version.</p></li>
-<li><p class="linemarker linemarker-40">Check if your system meets the requirements for specific netsets like Detectron2 and VISSL if you intend to use them.</p></li>
-<li><p class="linemarker linemarker-41">For further assistance, refer to the [Net2Brain documentation](<a class="reference external" href="https://net2brain.readthedocs.io/">https://net2brain.readthedocs.io/</a>) or raise an issue on the [Net2Brain GitHub repository](<a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/issues">https://github.com/cvai-roig-lab/Net2Brain/issues</a>).</p></li>
+<li><p class="linemarker linemarker-45">Verify that you have Python 3.10 or lower installed on your system.</p></li>
+<li><p class="linemarker linemarker-46">Ensure that pip is updated to the latest version within the Conda environment.</p></li>
+<li><p class="linemarker linemarker-47">Check if your system meets the requirements for specific netsets like Detectron2 and VISSL if you intend to use them.</p></li>
+<li><p class="linemarker linemarker-48">For further assistance, refer to the [Net2Brain documentation](<a class="reference external" href="https://net2brain.readthedocs.io/">https://net2brain.readthedocs.io/</a>) or raise an issue on the [Net2Brain GitHub repository](<a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/issues">https://github.com/cvai-roig-lab/Net2Brain/issues</a>).</p></li>
 </ul>
 </section>
 </section>

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Search &mdash; Net2Brain 0.1 documentation</title>
+  <title>Loading Datasets &mdash; Net2Brain 0.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -17,10 +17,8 @@
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
-    <script src="_static/searchtools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" /> 
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -38,7 +36,7 @@
                 0.1.0
               </div>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -48,7 +46,6 @@
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="key_functions.html">Key Functions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a></li>
 </ul>
 
         </div>
@@ -65,8 +62,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Search</li>
+      <li class="breadcrumb-item active">Loading Datasets</li>
       <li class="wy-breadcrumbs-aside">
+            <a href="_sources/datasets.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -74,18 +72,24 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <noscript>
-  <div id="fallback" class="admonition warning">
-    <p class="last">
-      Please activate JavaScript to enable the search functionality.
-    </p>
-  </div>
-  </noscript>
+  <section id="loading-datasets">
+<h1>Loading Datasets<a class="headerlink" href="#loading-datasets" title="Permalink to this heading"></a></h1>
+<p class="linemarker linemarker-4">Before diving into feature extraction, we need to select an appropriate dataset. Net2Brain conveniently offers access to several datasets, each comprising a collection of stimulus images along with corresponding brain data. This data includes Representational Dissimilarity Matrices (RDMs) derived from fMRI and MEG measurements, providing a rich source for analysis.</p>
+<p class="linemarker linemarker-6">Currently, you can choose from the following datasets:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-8"><code class="docutils literal notranslate"><span class="pre">&quot;78images&quot;</span></code></p></li>
+<li><p class="linemarker linemarker-9"><code class="docutils literal notranslate"><span class="pre">&quot;92images&quot;</span></code></p></li>
+<li><p class="linemarker linemarker-10"><code class="docutils literal notranslate"><span class="pre">&quot;bonner_pnas2017&quot;</span></code></p></li>
+</ul>
+<p class="linemarker linemarker-12">Each dataset is uniquely identified by a name that can be used to load it with the <cite>load_dataset</cite> function. For example, to load the dataset from the study by Bonner et al. (2017), use the following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.utils.download_datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="c1"># Load stimuli and brain data from the specified dataset</span>
+<span class="n">stimuli_path</span><span class="p">,</span> <span class="n">roi_path</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;bonner_pnas2017&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="linemarker linemarker-20">This function returns the paths to the stimuli images and the region of interest (ROI) data, setting the stage for subsequent feature extraction and analysis.</p>
+</section>
 
-  
-  <div id="search-results">
-  
-  </div>
 
            </div>
           </div>
@@ -111,14 +115,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-  <script>
-    jQuery(function() { Search.loadIndex("searchindex.js"); });
-  </script>
-  
-  <script id="searchindexloader"></script>
-   
-
+  </script> 
 
 </body>
 </html>
