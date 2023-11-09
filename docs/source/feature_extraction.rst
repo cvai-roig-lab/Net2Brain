@@ -68,7 +68,7 @@ To specify layers, pass them to the ``extract`` method:
     fx.extract(data_path=stimuli_path, layers_to_extract=['layer1', 'layer2'])
 
 
-.. _Custom_DNN:
+.. _customdnn:
 
 Using FeatureExtractor with a Custom DNN
 ----------------------------------------

@@ -62,6 +62,7 @@
 <li class="toctree-l2"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="existing_models.html">Model Zoo</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a></li>
 </ul>
 
@@ -145,7 +146,7 @@
 </div>
 </section>
 <section id="using-featureextractor-with-a-custom-dnn">
-<span id="custom-dnn"></span><h2>Using FeatureExtractor with a Custom DNN<a class="headerlink" href="#using-featureextractor-with-a-custom-dnn" title="Permalink to this heading"></a></h2>
+<span id="customdnn"></span><h2>Using FeatureExtractor with a Custom DNN<a class="headerlink" href="#using-featureextractor-with-a-custom-dnn" title="Permalink to this heading"></a></h2>
 <p class="linemarker linemarker-76">You can integrate a custom model by providing the model instance and optionally custom functions for preprocessing, feature extraction, and cleaning.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">torchvision</span> <span class="kn">import</span> <span class="n">models</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">resnet50</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">ResNet50_Weights</span><span class="o">.</span><span class="n">IMAGENET1K_V1</span><span class="p">)</span>

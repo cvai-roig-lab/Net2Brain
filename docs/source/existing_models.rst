@@ -48,7 +48,7 @@ Available Netsets
 
 Adding Your Own Models
 ----------------------
-In addition to the provided netsets, **Net2Brain** supports the integration of custom models. For guidance on incorporating your own neural networks, please refer to `Creating Your Own NetSet <https://net2brain.readthedocs.io/en/latest/adding_own_netsets.html>`_ or `Using FeatureExtractor with a Custom DNN <https://net2brain.readthedocs.io/en/latest/adding_own_netsets.html>`_.
+In addition to the provided netsets, **Net2Brain** supports the integration of custom models. For guidance on incorporating your own neural networks, please refer to :ref:`Creating Your Own NetSet <ownnetset>` or :ref:`Using FeatureExtractor with a Custom DNN <customdnn>`.
 
 Discovering Models
 ------------------

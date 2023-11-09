@@ -85,18 +85,18 @@
            <div itemprop="articleBody">
              
   <section id="creating-your-own-netset">
-<h1>Creating Your Own NetSet<a class="headerlink" href="#creating-your-own-netset" title="Permalink to this heading"></a></h1>
+<span id="ownnetset"></span><h1>Creating Your Own NetSet<a class="headerlink" href="#creating-your-own-netset" title="Permalink to this heading"></a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p class="linemarker linemarker-6">If you don’t want to create a whole netset but still want to use your own models, check <a class="reference external" href="https://net2brain.readthedocs.io/en/latest/feature_extraction.html#using-featureextractor-with-a-custom-dnn">Using FeatureExtractor with a Custom DNN</a>  out!</p>
+<p class="linemarker linemarker-7">If you don’t want to create a whole netset but still want to use your own models, check <a class="reference internal" href="feature_extraction.html#customdnn"><span class="std std-ref">Using FeatureExtractor with a Custom DNN</span></a> out!</p>
 </div>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-13">Creating a custom NetSet into <strong>Net2Brain</strong> is really easy and only involves a few simple steps, including copying a template, adding data types, and configuring model settings. This guide will walk you through each step with examples to help you create your own NetSet.</p>
+<p class="linemarker linemarker-14">Creating a custom NetSet into <strong>Net2Brain</strong> is really easy and only involves a few simple steps, including copying a template, adding data types, and configuring model settings. This guide will walk you through each step with examples to help you create your own NetSet.</p>
 </section>
 <section id="step-1-copying-the-empty-netset">
 <h2>Step 1: Copying the Empty NetSet<a class="headerlink" href="#step-1-copying-the-empty-netset" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-18">Start by copying our template-file <code class="docutils literal notranslate"><span class="pre">empty_netset.py</span></code>. This file contains a template class <cite>YOURNETSET</cite> which inherits from <cite>NetSetBase</cite>.</p>
+<p class="linemarker linemarker-19">Start by copying our template-file <code class="docutils literal notranslate"><span class="pre">empty_netset.py</span></code>. This file contains a template class <cite>YOURNETSET</cite> which inherits from <cite>NetSetBase</cite>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">YOURNETSET</span><span class="p">(</span><span class="n">NetSetBase</span><span class="p">):</span>  <span class="c1"># Rename to your desired netset name</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>
         <span class="c1"># Your code here</span>
@@ -105,7 +105,7 @@
 </section>
 <section id="step-2-customizing-the-netset">
 <h2>Step 2: Customizing the NetSet<a class="headerlink" href="#step-2-customizing-the-netset" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-29">Rename the <cite>YOURNETSET</cite> class to the name of your netset. Define the supported data types and the netset name and the path to your config-file (step 3).</p>
+<p class="linemarker linemarker-30">Rename the <cite>YOURNETSET</cite> class to the name of your netset. Define the supported data types and the netset name and the path to your config-file (step 3).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyCustomNetSet</span><span class="p">(</span><span class="n">NetSetBase</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">supported_data_types</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span> <span class="s1">&#39;audio&#39;</span><span class="p">]</span>  <span class="c1"># Example data types</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">netset_name</span> <span class="o">=</span> <span class="s2">&quot;MyCustomNetSet&quot;</span>
@@ -115,7 +115,7 @@
 </section>
 <section id="step-3-creating-a-configuration-file">
 <h2>Step 3: Creating a Configuration File<a class="headerlink" href="#step-3-creating-a-configuration-file" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-41">Create a JSON configuration file that lists all the models and their functions. The configuration files for the other architectures lie under <em>“/net2brain/architectures/configs”</em>. Feel free to take a look at them for inspiration.</p>
+<p class="linemarker linemarker-42">Create a JSON configuration file that lists all the models and their functions. The configuration files for the other architectures lie under <em>“/net2brain/architectures/configs”</em>. Feel free to take a look at them for inspiration.</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;AlexNet&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;model_function&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;torchvision.models.alexnet&quot;</span><span class="p">,</span>
@@ -127,7 +127,7 @@
 </section>
 <section id="step-4-optional-modifications">
 <h2>Step 4: Optional Modifications<a class="headerlink" href="#step-4-optional-modifications" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-55">You may wish to add custom preprocessing or feature cleaning methods. These can be specified within the class methods. For example:</p>
+<p class="linemarker linemarker-56">You may wish to add custom preprocessing or feature cleaning methods. These can be specified within the class methods. For example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_preprocessing_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">):</span>
     <span class="c1"># Custom preprocessing steps</span>
 
@@ -138,14 +138,14 @@
 </section>
 <section id="step-5-importing-your-netset">
 <h2>Step 5: Importing Your NetSet<a class="headerlink" href="#step-5-importing-your-netset" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-68">Finally, import your new netset into <cite>feature_extractor.py</cite>.</p>
+<p class="linemarker linemarker-69">Finally, import your new netset into <cite>feature_extractor.py</cite>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">my_custom_netset</span> <span class="kn">import</span> <span class="n">MyCustomNetSet</span>
 </pre></div>
 </div>
 </section>
 <section id="conclusion">
 <h2>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this heading"></a></h2>
-<p class="linemarker linemarker-77">You now have a custom NetSet ready for use with your feature extraction pipeline. Remember to test your NetSet thoroughly to ensure it functions as expected.</p>
+<p class="linemarker linemarker-78">You now have a custom NetSet ready for use with your feature extraction pipeline. Remember to test your NetSet thoroughly to ensure it functions as expected.</p>
 </section>
 </section>
 
