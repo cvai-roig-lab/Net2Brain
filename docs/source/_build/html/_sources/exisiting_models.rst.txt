@@ -9,7 +9,7 @@ What is a Netset?
 A Netset is a curated collection of neural network models from the same family but with potentially different training protocols or datasets. This organization allows for clear differentiation when multiple versions of a model, such as ResNet50, are available from various sources, ensuring clarity and ease of use.
 
 
-Net2Brain Netsets
+Available Netsets
 -----------------
 **Net2Brain** facilitates exploration and utilization of a vast range of Deep Neural Networks (DNNs) through its diverse netsets, which are libraries of different pre-trained models:
 

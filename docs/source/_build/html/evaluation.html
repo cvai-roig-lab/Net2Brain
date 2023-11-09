@@ -19,6 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Creating Your Own NetSet" href="adding_own_netsets.html" />
     <link rel="prev" title="Creating Representational Dissimilarity Matrices (RDMs)" href="rdm_creation.html" /> 
 </head>
 
@@ -52,8 +53,10 @@
 <li class="toctree-l2"><a class="reference internal" href="feature_extraction.html">Feature Extraction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="rdm_creation.html">Creating Representational Dissimilarity Matrices (RDMs)</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Evaluation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#representational-similarity-analysis-rsa">Representational Similarity Analysis (RSA)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#significant-model-comparisons">Significant Model Comparisons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#representational-similarity-analysis-rsa">Representational Similarity Analysis (RSA)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#significant-model-comparisons">Significant Model Comparisons</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#visualizing-rsa-results">Visualizing RSA Results</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#weighted-rsa">Weighted RSA</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#searchlight-rsa">Searchlight RSA</a></li>
@@ -66,6 +69,7 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a></li>
 </ul>
 
         </div>
@@ -121,13 +125,13 @@
 <span class="nb">print</span><span class="p">(</span><span class="n">results_df</span><span class="p">)</span>
 </pre></div>
 </div>
-</section>
 <section id="significant-model-comparisons">
-<h2>Significant Model Comparisons<a class="headerlink" href="#significant-model-comparisons" title="Permalink to this heading"></a></h2>
+<h3>Significant Model Comparisons<a class="headerlink" href="#significant-model-comparisons" title="Permalink to this heading"></a></h3>
 <p class="linemarker linemarker-39">When the objective is to ascertain whether one model outperforms another significantly and not by mere chance, the <cite>compare_model</cite> feature comes into play.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">test_statistic</span><span class="p">,</span> <span class="n">significant_pairs</span> <span class="o">=</span> <span class="n">rsa_evaluation</span><span class="o">.</span><span class="n">compare_model</span><span class="p">(</span><span class="n">another_evaluation</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
 </section>
 <section id="visualizing-rsa-results">
 <h2>Visualizing RSA Results<a class="headerlink" href="#visualizing-rsa-results" title="Permalink to this heading"></a></h2>
@@ -272,6 +276,7 @@ graphical representation.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="rdm_creation.html" class="btn btn-neutral float-left" title="Creating Representational Dissimilarity Matrices (RDMs)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="adding_own_netsets.html" class="btn btn-neutral float-right" title="Creating Your Own NetSet" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

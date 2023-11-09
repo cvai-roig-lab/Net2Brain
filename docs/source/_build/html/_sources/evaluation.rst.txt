@@ -34,7 +34,7 @@ The RSA module within **Net2Brain** simplifies the performance of RSA, offering 
     print(results_df)
 
 Significant Model Comparisons
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When the objective is to ascertain whether one model outperforms another significantly and not by mere chance, the `compare_model` feature comes into play.
 

@@ -30,3 +30,4 @@ Contents
    key_functions
    existing_models
    adding_own_netsets
+   existing_models
