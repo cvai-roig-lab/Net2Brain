@@ -3,7 +3,7 @@ Creating Your Own NetSet
 
 .. note::
 
-   If you don't want to create a whole netset but still want to use your own models, check `Using FeatureExtractor with a Custom DNN <Custom_DNN>`_  out! 
+   If you don't want to create a whole netset but still want to use your own models, check `Using FeatureExtractor with a Custom DNN <https://net2brain.readthedocs.io/en/latest/adding_own_netsets.html>`_  out! 
 
 
 
