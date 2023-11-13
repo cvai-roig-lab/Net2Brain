@@ -170,6 +170,7 @@ class NetSetBase:
     def load_video_data(self, data_path):
         # Logic to load video data using cv2
         # This will return a list of frames. Each frame is a numpy array.
+        data_path = r"{}".format(data_path)  # Using raw string
         cap = cv2.VideoCapture(data_path)
         frames = []
         while True:

@@ -73,18 +73,20 @@ class FeatureExtractor:
 
 
 
-    def extract(self, data_path, save_path=None, layers_to_extract=None):
+    def extract(self, data_path, layers_to_extract=None, save_path=None):
 
         # Create save_path:
         now = datetime.now()
         now_formatted = f'{now.day}_{now.month}_{now.year}_{now.hour}_{now.minute}_{now.second}'
         self.save_path = save_path or os.path.join(os.getcwd(),"results", now_formatted)
+        self._ensure_dir_exists(self.save_path)
+
 
         # Iterate over all files in the given data_path
         self.data_path = data_path
 
         # Get all datafiles:
-        data_files = [i for i in Path(self.data_path).iterdir() if i.suffix in ['.jpeg', '.jpg', '.png']]
+        data_files = [i for i in Path(self.data_path).iterdir()]
         data_files.sort()
 
         # Detect data type
@@ -100,10 +102,10 @@ class FeatureExtractor:
         for data_file in tqdm(data_files):
 
             # Get datapath
-            full_path = os.path.join(self.data_path, data_file)
-            
+            file_name = str(data_file).split(os.sep)[-1]
+
             # Load data
-            data_from_file = data_loader(full_path)
+            data_from_file = data_loader(data_file)
 
             # Create empty list for data accumulation
             data_from_file_list = []
@@ -132,117 +134,25 @@ class FeatureExtractor:
             # Combine Data from list into single dictionary depending on input type
             final_features = self.data_combiner(data_from_file_list)
 
-            # Write the features for one image to a single file
-            file_path = os.path.join(self.save_path, f"{data_file}.npz")
-            # self._ensure_dir_exists(file_path)
-
             # Convert the final_features dictionary to one that contains detached numpy arrays
             final_features_np = {key: value.detach().cpu().numpy() for key, value in final_features.items()}
+
+            # Write the features for one image to a single file
+            file_path = os.path.join(self.save_path, f"{file_name}.npz")
             np.savez(file_path, **final_features_np)
 
             # Clear variables to save RAM
             del data_from_file_list, final_features, final_features_np
 
 
-
-    def extract_2(self, data_path, save_path=None, layers_to_extract=None):
-
-        # Create save_path:
-        now = datetime.now()
-        now_formatted = f'{now.day}_{now.month}_{now.year}_{now.hour}_{now.minute}_{now.second}'
-        self.save_path = save_path or os.path.join(os.getcwd(),"results", now_formatted)
-        
-        # Iterate over all files in the given data_path
-        self.data_path = data_path
-
-        # Get all datafiles:
-        data_files = [i for i in Path(self.data_path).iterdir() if i.suffix in ['.jpeg', '.jpg', '.png']]
-        data_files.sort()
-
-        # Get dataloader
-        data_loader, self.data_type, self.data_combiner = self._get_dataloader(data_files[0])
-
-        # Check if datatype is supported
-        if self.data_type not in self.netset.supported_data_types:
-            raise ValueError(f"{self.netset_name} does not support data type: {self.data_type}")
-        
-        #TODO: Check if they all have the same extension 
-
-
-        # Select preprocessor
-        if self.preprocessor == None:
-            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
-
-        for data_file in tqdm(data_files):
-
-            full_path = os.path.join(self.data_path, data_file)
-        
-            # Load data
-            data_from_file = data_loader(full_path)
-            data_from_file_list = []
-
-
-            for data in data_from_file:
-
-                loop_start_time = time.time()  # Start timer for loop
-
-                # Preprocess data
-                preprocessed_data = self.preprocessor(data, self.model_name, self.device)
-
-                loop_end_time = time.time()  # End timer for loop
-                #print(f"Time taken for processing one data item: {loop_end_time - loop_start_time} seconds")
-
-                loop_start_time = time.time()  # Start timer for loop
-                # Extract features
-                if self.extraction_function == None:
-                    features = self.netset.extraction_function(preprocessed_data, layers_to_extract)
-                else:
-                    features = self.extraction_function(preprocessed_data, layers_to_extract, model=self.model)
-
-                loop_end_time = time.time()  # End timer for loop
-                #print(f"Time taken for extracting one data item: {loop_end_time - loop_start_time} seconds")
-
-                # x = torch.tensor(2.5)
-                # features = {"Hey": x}
-
-                # Select Feature Cleaner
-                if self.feature_cleaner == None:
-                    feature_cleaner = self.netset.get_feature_cleaner(self.data_type)
-                    features = feature_cleaner(self.netset, features)
-                else:
-                    features = self.feature_cleaner(features)
-
-                # Append to list of data
-                data_from_file_list.append(features)
-
-            loop_start_time = time.time()  # Start timer for loop
-            # Combine Data from list into single dictionary depending on input type
-            final_features =  self.data_combiner(data_from_file_list)
-
-            # Write the features for one image to a single file
-            file_path = os.path.join(self.save_path, f"{data_file}.npz")
-            
-            # Convert the final_features dictionary to one that contains detached numpy arrays
-            final_features_np = {k: v.detach().numpy() for k, v in final_features.items()}
-            np.savez(file_path, **final_features_np)
-
-            loop_end_time = time.time()  # End timer for loop
-            #print(f"Time taken for saving one data item: {loop_end_time - loop_start_time} seconds")
-
-
-            # Clear variables to save RAM
-            # del data_from_file_list, final_features , final_features_np
-            # gc.collect()
-
-
-    def _ensure_dir_exists(self, file_path):
+    def _ensure_dir_exists(self, directory_path):
         """
-        Ensure the directory of the given file path exists.
+        Ensure the specified directory exists.
         If not, it will be created.
         """
-        directory = os.path.dirname(file_path)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+
 
 
     def consolidate_per_layer(self):
