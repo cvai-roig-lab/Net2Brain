@@ -11,10 +11,14 @@ from .architectures.cornet_models import Cornet
 from .architectures.unet_models import Unet
 from .architectures.yolo_models import Yolo
 from .architectures.pyvideo_models import Pyvideo
+from .architectures.huggingface_llm import Huggingface
 from datetime import datetime
 import torchextractor as tx
 import warnings
 import json
+import torch
+from sklearn.decomposition import PCA
+from sklearn.random_projection import SparseRandomProjection
 warnings.filterwarnings("ignore", category=UserWarning, module='torchvision')
 
 from pathlib import Path
@@ -36,7 +40,8 @@ class FeatureExtractor:
                  pretrained=True, 
                  preprocessor=None, 
                  extraction_function=None, 
-                 feature_cleaner=None):
+                 feature_cleaner=None,
+                 dim_reduction=None):
         # Parameters
         self.model_name = model
         self.device = device
@@ -46,6 +51,9 @@ class FeatureExtractor:
         self.preprocessor = preprocessor
         self.extraction_function = extraction_function
         self.feature_cleaner = feature_cleaner
+        self.dim_reduction = dim_reduction
+
+
 
         if netset is not None:
             self.netset_name = netset
@@ -134,15 +142,18 @@ class FeatureExtractor:
             # Combine Data from list into single dictionary depending on input type
             final_features = self.data_combiner(data_from_file_list)
 
+            # Reduce dimension of feautres
+            final_features = self.reduce_dimensionality(final_features)
+
             # Convert the final_features dictionary to one that contains detached numpy arrays
-            final_features_np = {key: value.detach().cpu().numpy() for key, value in final_features.items()}
+            final_features = {key: value.detach().cpu().numpy() for key, value in final_features.items()}
 
             # Write the features for one image to a single file
             file_path = os.path.join(self.save_path, f"{file_name}.npz")
-            np.savez(file_path, **final_features_np)
+            np.savez(file_path, **final_features)
 
             # Clear variables to save RAM
-            del data_from_file_list, final_features, final_features_np
+            del data_from_file_list, final_features
 
 
     def _ensure_dir_exists(self, directory_path):
@@ -199,6 +210,41 @@ class FeatureExtractor:
 
 
 
+    def consolidate_per_txt_file(self):
+        """
+        Consolidate features from multiple sentences in a single file into separate files.
+
+        Parameters:
+        - save_path (str): Path to the folder containing .npz files.
+
+        Returns:
+        - None
+        """
+        # List all files in the given directory
+        files = [f for f in os.listdir(self.save_path) if f.endswith('.npz')]
+
+        for file_name in tqdm(files):
+            # Load the features from the original file
+            data = np.load(os.path.join(self.save_path, file_name))
+
+            # Extract original file name without extension
+            original_file_name = os.path.splitext(file_name)[0]
+
+            # Get the number of sentences in the file (assuming all layers have the same number of sentences)
+            num_sentences = len(list(data.values())[0][0])
+
+            for i in range(num_sentences):
+                # Create a new file name with index
+                new_file_name = f"{original_file_name}_sentence_{i}.npz"
+
+                # Extract features for the current sentence across all layers
+                sentence_features = {key: values[0][i] for key, values in data.items()}
+
+                # Save features for the current sentence to a new file
+                np.savez(os.path.join(self.save_path, new_file_name), **sentence_features)
+
+
+
     def get_all_layers(self):
         """Returns all possible layers for extraction."""
 
@@ -230,9 +276,65 @@ class FeatureExtractor:
             data_type = "audio"
             data_combiner = self.netset.combine_audio_data
             return data_loader, data_type, data_combiner
-        
+        elif file_extension in ['.txt']:
+            data_loader = self.netset.load_text_data
+            data_type = "text"
+            data_combiner = self.netset.combine_text_data
+            return data_loader, data_type, data_combiner
         else:
             raise ValueError(f"Unsupported file format: {file_extension}")
+        
+
+
+
+    def reduce_dimensionality(self, features):
+        if self.dim_reduction == None:
+            return features
+        elif self.dim_reduction == "pca":
+            return self.reduce_dimensionality_pca(features)
+        elif self.dim_reduction == "srp":
+            return self.reduce_dimensionality_sparse_random(features)
+        else:
+            warnings.warn(f"{self.dim_reduction} does not exist as form of dimensionality reduction. Choose between 'pca', 'srp'")
+
+
+
+
+
+    def reduce_dimensionality_pca(self, features, n_components=50):
+        """
+        Perform dimensionality reduction using Principal Component Analysis (PCA).
+
+        Parameters:
+        - features (dict): Dictionary of layers with corresponding torch tensors.
+        - n_components (int): Number of components to keep (default is 50).
+
+        Returns:
+        - dict: Reduced features.
+        """
+        raise NotImplementedError
+
+    
+
+    def reduce_dimensionality_sparse_random(self, features, n_components=50):
+        """
+        Perform dimensionality reduction using Sparse Random Projection.
+
+        Parameters:
+        - features (dict): Dictionary of layers with corresponding torch tensors.
+        - n_components (int): Number of components to keep (default is 50).
+
+        Returns:
+        - dict: Reduced features.
+        """
+        reduced_features = {}
+        for layer, original_tensor in features.items():
+            print(original_tensor.shape)
+            flattened_tensor = original_tensor.detach().view(original_tensor.size(0), -1).cpu().numpy()
+            sparse_random_proj = SparseRandomProjection(n_components=n_components)
+            reduced_tensor = sparse_random_proj.fit_transform(flattened_tensor)
+            reduced_features[layer] = torch.tensor(reduced_tensor).view(original_tensor.size(0), -1)
+        return reduced_features
         
 
 

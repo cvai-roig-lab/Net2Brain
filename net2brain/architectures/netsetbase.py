@@ -106,7 +106,10 @@ class NetSetBase:
         pil_frame = Image.fromarray(frame)
         
         return NetSetBase.image_preprocessing(self, pil_frame, model_name, device)
+    
 
+    def text_preprocessing(self, text, model_name, device):
+        return text
 
     def clean_extracted_features(self, features):
         # return features
@@ -162,6 +165,9 @@ class NetSetBase:
     def combine_audio_data(self, feature_list):
         raise NotImplementedError
     
+    def combine_text_data(self, feature_list):
+        return feature_list[0]
+    
 
 
     def load_image_data(self, data_path):
@@ -186,6 +192,20 @@ class NetSetBase:
         # This returns a numpy array representing the audio and its sample rate
         y, sr = librosa.load(data_path, sr=None)
         return y, sr
+    
+    def load_text_data(self, data_path):
+        """
+        Load text data from a .txt file and return a list of sentences/words.
+
+        Parameters:
+        - data_path (str): Path to the .txt file.
+
+        Returns:
+        - list: List of sentences/words.
+        """
+        with open(data_path, 'r', encoding='utf-8') as file:
+            text_data = file.read().splitlines()
+        return text_data
     
 
 
