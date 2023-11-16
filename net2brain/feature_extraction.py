@@ -41,7 +41,8 @@ class FeatureExtractor:
                  preprocessor=None, 
                  extraction_function=None, 
                  feature_cleaner=None,
-                 dim_reduction=None):
+                 dim_reduction=None,
+                 n_components=50):
         # Parameters
         self.model_name = model
         self.device = device
@@ -52,6 +53,7 @@ class FeatureExtractor:
         self.extraction_function = extraction_function
         self.feature_cleaner = feature_cleaner
         self.dim_reduction = dim_reduction
+        self.n_components = n_components
 
 
 
@@ -290,33 +292,15 @@ class FeatureExtractor:
     def reduce_dimensionality(self, features):
         if self.dim_reduction == None:
             return features
-        elif self.dim_reduction == "pca":
-            return self.reduce_dimensionality_pca(features)
         elif self.dim_reduction == "srp":
             return self.reduce_dimensionality_sparse_random(features)
         else:
-            warnings.warn(f"{self.dim_reduction} does not exist as form of dimensionality reduction. Choose between 'pca', 'srp'")
+            warnings.warn(f"{self.dim_reduction} does not exist as form of dimensionality reduction. Choose between 'srp'")
 
-
-
-
-
-    def reduce_dimensionality_pca(self, features, n_components=50):
-        """
-        Perform dimensionality reduction using Principal Component Analysis (PCA).
-
-        Parameters:
-        - features (dict): Dictionary of layers with corresponding torch tensors.
-        - n_components (int): Number of components to keep (default is 50).
-
-        Returns:
-        - dict: Reduced features.
-        """
-        raise NotImplementedError
 
     
 
-    def reduce_dimensionality_sparse_random(self, features, n_components=50):
+    def reduce_dimensionality_sparse_random(self, features):
         """
         Perform dimensionality reduction using Sparse Random Projection.
 
@@ -329,9 +313,8 @@ class FeatureExtractor:
         """
         reduced_features = {}
         for layer, original_tensor in features.items():
-            print(original_tensor.shape)
             flattened_tensor = original_tensor.detach().view(original_tensor.size(0), -1).cpu().numpy()
-            sparse_random_proj = SparseRandomProjection(n_components=n_components)
+            sparse_random_proj = SparseRandomProjection(n_components=self.n_components)
             reduced_tensor = sparse_random_proj.fit_transform(flattened_tensor)
             reduced_features[layer] = torch.tensor(reduced_tensor).view(original_tensor.size(0), -1)
         return reduced_features
