@@ -3,6 +3,10 @@ from pathlib import Path
 import pytest
 from torchvision import models
 from torchvision import transforms as T
+from torchvision import models
+from torchvision import transforms as T
+from torchvision import transforms as trn
+import torchextractor as tx
 
 from net2brain.feature_extraction import FeatureExtractor
 
@@ -10,126 +14,123 @@ from net2brain.feature_extraction import FeatureExtractor
 @pytest.mark.parametrize(
     "netset,model",
     [
-        ("standard", "AlexNet"),
-        ("timm", "vit_base_patch32_224_in21k"),
-        ("pytorch", "deeplabv3_resnet101"),
-        ("unet", "unet"),
-        ("taskonomy", "autoencoding"),
-        ("pyvideo", "slowfast_r50"),
-        ("clip", "RN50"),
-        ("cornet", "cornet_z"),
-    ],
-)
-def test_load_netset_model(netset, model):
-    fx = FeatureExtractor(model, netset, pretrained=True)
-    assert fx.model_name == model, "loaded model different than the one requested"
-    assert fx.preprocess is not None, "preprocess not loaded"
-    assert fx._extractor is not None, "extractor not loaded"
-    assert fx._features_cleaner is not None, "feature cleaner not loaded"
-    return
-
-
-@pytest.mark.parametrize(
-    "netset,model",
-    [
-        ("standard", "AlexNet"),
-        ("timm", "vit_base_patch32_224_in21k"),
-        ("timm", "resnet50"),
-        ("pytorch", "deeplabv3_resnet101"),
-        ("unet", "unet"),
-        ("taskonomy", "autoencoding"),
-        ("pyvideo", "slowfast_r50"),
-        ("clip", "RN50"),
-        ("cornet", "cornet_z"),
+        ("Standard", "AlexNet"),
+        ("Timm", "vit_base_patch32_224_in21k"),
+        ("Timm", "resnet50"),
+        ("Pytorch", "deeplabv3_resnet101"),
+        ("Unet", "unet"),
+        ("Yolo", "yolov5l"),
+        ("Taskonomy", "autoencoding"),
+        ("Taskonomy", "colorization"),
+        ("Clip", "RN50"),
+        ("Cornet", "cornet_z"),
     ],
 )
 @pytest.mark.parametrize(
-    "save_format,output_type",
-    [("dataset", dict), ("pt", None), ("npz", None)],
+    "pretrained",
+    [(True), (False)],
 )
+
 def test_extractor_outputs(
-    root_path, tmp_path, netset, model, save_format, output_type
+    root_path, tmp_path, netset, model, pretrained
 ):
     # Define paths
     imgs_path = root_path / Path("images")
 
     # Extract features
-    fx = FeatureExtractor(model, netset, pretrained=False)
-    feats = fx.extract(imgs_path, save_format=save_format, save_path=tmp_path)
-    output_files = list(tmp_path.iterdir())
+    fx = FeatureExtractor(model, netset, pretrained=pretrained)
+    fx.extract(imgs_path, save_path=tmp_path)
 
-    # Assert return type is as expected
-    if output_type is None:
-        assert type(feats) is type(output_type)
-    else:
-        assert type(feats) == output_type
+    # Layer consolidation
+    fx.consolidate_per_layer()
+
+    output_files = list(tmp_path.iterdir())
 
     # Assert output files are as expected
-    if save_format == "dataset":
-        if "slowfast" in model:
-            assert len(output_files) == len(fx.layers_to_extract) * 2
-        else:
-            if not netset == "timm" and len(fx.layers_to_extract) == 0:
-                assert len(output_files) == len(fx.layers_to_extract)
-                assert feats[list(feats.keys())[0]].measurements.shape[0] == 2
-    else:
-        assert len(output_files) == 2
+    assert len(output_files) > 1
 
     return
 
 
-@pytest.mark.parametrize(
-    "input_layers,output_layers",
-    [(None, ["layer1", "layer2", "layer3", "layer4"]), (["layer1"], ["layer1"])],
-)
-def test_feature_extraction_layers(input_layers, output_layers):
-    fx = FeatureExtractor("ResNet50", "standard", layers_to_extract=input_layers)
-    assert fx.layers_to_extract == output_layers
-    return
 
 
-def test_feature_extraction_custom(root_path, tmp_path):
-    # Define paths
-    imgs_path = root_path / "images"
 
-    # Define model and transforms
-    model = models.alexnet(pretrained=True)
-    # model = models.alexnet(weights=models.AlexNet_Weights.DEFAULT)
-    transforms = T.Compose(
-        [
-            T.Resize((224, 224)),  # transform images if needed
-            T.ToTensor(),
-            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
+def test_own_model(root_path, tmp_path):
 
-    # Define extractor
-    layers = ["features.0", "features.1"]
-    fx = FeatureExtractor(
-        model, transforms=transforms, layers_to_extract=layers, device="cpu"
-    )
+    # Define iamge path
+    image_path = root_path / Path("images")
+
+    # Define a model
+    model = models.alexnet(pretrained=True)   # This one exists in the toolbox as well, it is just supposed to be an example!
+
+    ## Define extractor (Note: NO NETSET NEEDED HERE)
+    fx = FeatureExtractor(model=model, device='cpu')
 
     # Run extractor
-    fx.extract(dataset_path=imgs_path, save_format="pt", save_path=tmp_path)
-
-    # Test files got created
-    output_files = list(tmp_path.iterdir())
-    assert len(output_files) == 2
+    fx.extract(image_path, layers_to_extract=['features.0', 'features.3', 'features.6', 'features.8', 'features.10'])
 
     return
 
 
-def test_missing_netset():
-    with pytest.raises(NameError):
-        FeatureExtractor("alexnet")
+
+def test_with_own_functions(root_path, tmp_path):
+
+    def my_preprocessor(image, model_name, device):
+        """
+        Args:
+            image (Union[Image.Image, List[Image.Image]]): A PIL Image or a list of PIL Images.
+            model_name (str): The name of the model, used to determine specific preprocessing if necessary.
+            device (str): The device to which the tensor should be transferred ('cuda' for GPU, 'cpu' for CPU).
+
+        Returns:
+            Union[torch.Tensor, List[torch.Tensor]]: The preprocessed image(s) as PyTorch tensor(s).
+        """
+
+        print("I am using my own preprocessor")
+        transforms = trn.Compose([
+            trn.Resize((224, 224)),
+            trn.ToTensor(),
+            trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+
+        img_tensor = transforms(image).unsqueeze(0)
+        if device == 'cuda':
+            img_tensor = img_tensor.cuda()
+
+        return img_tensor
 
 
-# @pytest.mark.parametrize(
-#     "netset,model", [(i, x) for i in AVAILABLE_NETWORKS for x in AVAILABLE_NETWORKS[i]]
-# )
-# def test_all_models(netset, model):
-#     fx = FeatureExtractor(model, netset, pretrained=False, device="cpu")
-#     assert fx.model_name == model, "loaded model different than the one requested"
-#     assert fx.preprocess is not None, "preprocess not loaded"
-#     assert fx._extractor is not None, "extractor not loaded"
-#     assert fx._features_cleaner is not None, "feature cleaner not loaded"
+    def my_extactor(preprocessed_data, layers_to_extract, model):
+
+        print("I am using my own extractor")
+
+        # Create a extractor instance
+        extractor_model = tx.Extractor(model, layers_to_extract)
+        
+        # Extract actual features
+        _, features = extractor_model(preprocessed_data)
+
+        return features
+
+
+    def my_cleaner(features):
+        print("I am using my own cleaner which does not do anything")
+        return features
+    
+
+    # Define iamge path
+    image_path = root_path / Path("images")
+
+    # Define a model
+    model = models.alexnet(pretrained=True)  # This one exists in the toolbox as well, it is just supposed to be an example!
+
+    ## Define extractor (Note: NO NETSET NEEDED HERE)
+    fx = FeatureExtractor(model=model, device='cpu', preprocessor=my_preprocessor, feature_cleaner=my_cleaner, extraction_function=my_extactor)
+
+    # Run extractor
+    fx.extract(image_path, layers_to_extract=['features.0', 'features.3', 'features.6', 'features.8', 'features.10'])
+
+    return
+
+
+

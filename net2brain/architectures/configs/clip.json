@@ -1,0 +1,83 @@
+{
+    "RN50": {
+        "model": "clip.load",
+        "nodes": [
+            "visual.layer1",
+            "visual.layer2",
+            "visual.layer3",
+            "visual.layer4"
+        ]
+    },
+    "RN101": {
+        "model": "clip.load",
+        "nodes": [
+            "visual.layer1",
+            "visual.layer2",
+            "visual.layer3",
+            "visual.layer4"
+        ]
+    },
+    "ViT-B_-_32": {
+        "model": "clip.load",
+        "nodes": [
+            "visual.transformer.resblocks.0",
+            "visual.transformer.resblocks.1",
+            "visual.transformer.resblocks.2",
+            "visual.transformer.resblocks.3",
+            "visual.transformer.resblocks.4",
+            "visual.transformer.resblocks.5",
+            "visual.transformer.resblocks.6",
+            "visual.transformer.resblocks.7",
+            "visual.transformer.resblocks.8",
+            "visual.transformer.resblocks.9",
+            "visual.transformer.resblocks.10",
+            "visual.transformer.resblocks.11"
+        ]
+    },
+    "ViT-B_-_16": {
+        "model": "clip.load",
+        "nodes": [
+            "visual.transformer.resblocks.0",
+            "visual.transformer.resblocks.1",
+            "visual.transformer.resblocks.2",
+            "visual.transformer.resblocks.3",
+            "visual.transformer.resblocks.4",
+            "visual.transformer.resblocks.5",
+            "visual.transformer.resblocks.6",
+            "visual.transformer.resblocks.7",
+            "visual.transformer.resblocks.8",
+            "visual.transformer.resblocks.9",
+            "visual.transformer.resblocks.10",
+            "visual.transformer.resblocks.11"
+        ]
+    },
+    "ViT-L_-_14": {
+        "model": "clip.load",
+        "nodes": [
+            "visual.transformer.resblocks.0",
+            "visual.transformer.resblocks.1",
+            "visual.transformer.resblocks.2",
+            "visual.transformer.resblocks.3",
+            "visual.transformer.resblocks.4",
+            "visual.transformer.resblocks.5",
+            "visual.transformer.resblocks.6",
+            "visual.transformer.resblocks.7",
+            "visual.transformer.resblocks.8",
+            "visual.transformer.resblocks.9",
+            "visual.transformer.resblocks.10",
+            "visual.transformer.resblocks.11",
+            "visual.transformer.resblocks.12",
+            "visual.transformer.resblocks.13",
+            "visual.transformer.resblocks.14",
+            "visual.transformer.resblocks.15",
+            "visual.transformer.resblocks.16",
+            "visual.transformer.resblocks.17",
+            "visual.transformer.resblocks.18",
+            "visual.transformer.resblocks.19",
+            "visual.transformer.resblocks.20",
+            "visual.transformer.resblocks.21",
+            "visual.transformer.resblocks.22",
+            "visual.transformer.resblocks.23"
+        ]
+    }
+}
