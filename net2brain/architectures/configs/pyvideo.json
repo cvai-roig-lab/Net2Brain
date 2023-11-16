@@ -1,0 +1,64 @@
+{
+    "slow_r50": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5"
+        ]
+    },
+    "slowfast_r101": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6"
+        ]
+    },
+    "slowfast_r50": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6"
+        ]
+    },
+    "x3d_m": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5"
+        ]
+    },
+    "x3d_s": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5"
+        ]
+    },
+    "x3d_xs": {
+        "model": "torch.hub.load",
+        "nodes": [
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5"
+        ]
+    }
+}

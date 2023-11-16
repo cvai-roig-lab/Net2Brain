@@ -1,818 +1,365 @@
-from collections import defaultdict
-from datetime import datetime
-import os.path as op
+from .architectures.netsetbase import NetSetBase
 import os
-from pathlib import Path
-from pprint import pprint
-from PIL import Image
-import pandas as pd
-
 import numpy as np
-from rsatoolbox.data.dataset import Dataset
-import torch
-import torch.nn as nn
-from torch.autograd import Variable as V
-import torchextractor as tx
-from torchvision import transforms as T
 from tqdm import tqdm
+from .architectures.pytorch_models import Standard
+from .architectures.timm_models import Timm
+from .architectures.taskonomy_models import Taskonomy
+from .architectures.toolbox_models import Toolbox
+from .architectures.torchhub_models import Pytorch
+from .architectures.cornet_models import Cornet
+from .architectures.unet_models import Unet
+from .architectures.yolo_models import Yolo
+from .architectures.pyvideo_models import Pyvideo
+from .architectures.huggingface_llm import Huggingface
+from datetime import datetime
+import torchextractor as tx
+import warnings
+import json
+import torch
+from sklearn.decomposition import PCA
+from sklearn.random_projection import SparseRandomProjection
+warnings.filterwarnings("ignore", category=UserWarning, module='torchvision')
 
-import net2brain.architectures.pytorch_models as pymodule
-import net2brain.architectures.slowfast_models as pyvideo
-import net2brain.architectures.taskonomy_models as taskonomy
-import net2brain.architectures.timm_models as timm
-import net2brain.architectures.torchhub_models as torchmodule
-import net2brain.architectures.unet_models as unet
-import net2brain.architectures.yolo_models as yolo
-import net2brain.architectures.toolbox_models as toolbox_models
-import net2brain.architectures.cornet_models as cornet_models
-import random
+from pathlib import Path
 
-
-## Get available networks
-AVAILABLE_NETWORKS = {
-    'standard': list(pymodule.MODELS.keys()),
-    'toolbox': list(toolbox_models.MODELS.keys()),
-    'timm': list(timm.MODELS.keys()),
-    'cornet': list(cornet_models.MODELS.keys()),
-    'pytorch': list(torchmodule.MODELS.keys()),
-    'unet': list(unet.MODELS.keys()),
-    'taskonomy': list(taskonomy.MODELS.keys()),
-    'pyvideo': list(pyvideo.MODELS.keys())
-}
-
-## TODO: don't import unless needed
 
 try:
-    #import clip
-    import net2brain.architectures.clip_models as clip_models
-    AVAILABLE_NETWORKS.update({'clip': list(clip_models.MODELS.keys())})
+    from .architectures.clip_models import Clip
 except ModuleNotFoundError:
-    print("Clip models are not installed.")
-    clip_exist = False
+    warnings.warn("Clip not installed")
 
-try:
-    #import vissl
-    import net2brain.architectures.vissl_models as vissl_models
-    AVAILABLE_NETWORKS.update({'vissl': list(vissl_models.MODELS.keys())})
-except ModuleNotFoundError:
-    print("vissl models are not installed")
-    vissl_exist = False
 
-try:
-    #import detectron2
-    import net2brain.architectures.detectron2_models as detectron2_models
-    AVAILABLE_NETWORKS.update(
-        {'detectron2': list(detectron2_models.MODELS.keys())}
-    )
-except ModuleNotFoundError:
-    print("detectron2 is not installed.")
-    detectron_exist = False
 
-
-## Define relevant paths
-CURRENT_DIR = op.abspath(os.curdir)
-BASE_DIR = op.dirname(os.path.dirname(os.path.abspath(__file__)))
-PARENT_DIR = op.dirname(BASE_DIR)  # path to parent folder
-FEATURES_DIR = op.join(PARENT_DIR, 'features')
-GUI_DIR = op.join(BASE_DIR, 'helper', 'gui')
-INPUTS_DIR = op.join(PARENT_DIR, 'input_data')
-STIMULI_DIR = op.join(INPUTS_DIR, 'stimuli_data')
-RDMS_DIR = op.join(PARENT_DIR, 'rdms')
-BRAIN_DIR = op.join(INPUTS_DIR, 'brain_data')
-
-
-def open_taxonomy():
-
-    file_path = os.path.abspath(__file__)
-    directory_path = os.path.dirname(file_path)
-
-    taxonomy_path = os.path.join(directory_path, "architectures/taxonomy.csv")
-
-    # Read the CSV file
-    df = pd.read_csv(taxonomy_path)
-
-    # Replace "x" with 1 and empty cells with 0
-    df = df.replace({'x': 1, '': 0, pd.NA: 0})
-
-    # Drop the 'Unnamed: 34' column if it exists
-    if 'Unnamed: 34' in df.columns:
-        df = df.drop(columns=['Unnamed: 34'])
-
-    return df
-
-
-
-
-
-def show_all_architectures():
-    """Returns available models.
-
-    Returns
-    -------
-    dict
-        Available models by netset.
-    """
-    print("\n")
-    for key, values in AVAILABLE_NETWORKS.items():
-        print(f"NetSet: {key}")
-        print(f"Models: {[v for v in values]}")
-        print("\n")
-    return
-
-
-def show_all_netsets():
-    """Returns available netsets.
-
-    Returns
-    -------
-    list
-       Available netsets.
-    """
-    return list(AVAILABLE_NETWORKS.keys())
-
-
-def print_netset_models(netset):
-    """Returns available models of a given netset.
-
-    Parameters
-    ----------
-    netset : str
-        Name of netset.
-
-    Returns
-    -------
-    list
-        Available models.
-
-    Raises
-    ------
-    KeyError
-        If netset is not available in the toolbox.
-    """
-    if netset in list(AVAILABLE_NETWORKS.keys()):
-        return AVAILABLE_NETWORKS[netset]
-    else:
-        raise KeyError(
-            f"This netset '{netset}' is not available. Available netsets are", 
-            list(AVAILABLE_NETWORKS.keys())
-        )
-
-
-
-def find_model_like_name(model_name, df=None):
-    """Find models containing the given string. Way of finding a model within \
-        the model zoo.
-
-    Parameters
-    ----------
-    name : str
-        Name models.
-    """
-
-    # Get taxnomy df:
-
-    if df is None:
-        df = open_taxonomy()
-
-    # Filter the DataFrame based on whether the model_name is a substring of the 'Model' column values
-    similar_models_df = df[df['Model'].str.contains(model_name, case=False)]
-
-    # Drop columns that do not contain a "1" in any row, except for "Model" and "Netset"
-    columns_to_drop = [col for col in similar_models_df.columns if col not in ['Model', 'Netset'] and not (similar_models_df[col] == 1).any()]
-    similar_models_df = similar_models_df.drop(columns=columns_to_drop)
-
-    return similar_models_df
-
-
-def find_model_by_custom(category, model_name=None):
-    df = open_taxonomy()
-
-    try:
-        if isinstance(category, list):
-            # Filter the DataFrame based on whether all of the category columns have a 1
-            filtered_df = df[df[category].eq(1).all(axis=1)]
-        else:
-            # Filter the DataFrame based on whether the category column has a 1
-            filtered_df = df[df[category] == 1]
-    except KeyError:
-        print(f"Column '{category}' not found in the DataFrame.")
-        print("Available columns are:")
-        print(df.columns.tolist())
-        return None
-
-    if model_name != None:
-        # Apply the find_model_like_name functionality to the filtered DataFrame
-        result = find_model_like_name(model_name, filtered_df)
-    else:
-        result = filtered_df
-
-    # Drop columns that do not contain a "1" in any row, except for "Model" and "Netset"
-    columns_to_drop = [col for col in result.columns if col not in ['Model', 'Netset'] and not (result[col] == 1).any()]
-    result = result.drop(columns=columns_to_drop)
-
-    return result
-
-
-
-
-def show_taxonomy():
-    df = open_taxonomy()
-
-    # Filter rows where 'Header' equals 'Header Category'
-    filtered_df = df.loc[df['Header'] == 'Header Category']
-
-    # Get unique values from the filtered DataFrame
-    unique_values = list(set(filtered_df.values.flatten()))
-    unique_values = [str(x) for x in unique_values]
-
-    # Remove columns if they exist in the unique_values list
-    columns_to_remove = ['Header Category', 'nan', 'Model', 'Netset']
-    for column in columns_to_remove:
-        if column in unique_values:
-            unique_values.remove(column)
-
-    # Create a dictionary with unique values as keys and corresponding column names as values
-    result = {}
-    for value in unique_values:
-        columns_with_value = filtered_df.columns[filtered_df.eq(value).any()].tolist()
-        result[value] = columns_with_value
-
-    pprint(result)
-
-
-
-
-def find_model_by_dataset(dataset_name):
-    return find_model_by_custom(dataset_name)
-
-
-def find_model_by_training_method(training_method):
-    return find_model_by_custom(training_method)
-
-
-def find_model_by_visual_task(visual_task):
-    return find_model_by_custom(visual_task)
-
-
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.benchmark = False
-        torch.backends.cudnn.deterministic = True
-
-# Usage: set a seed value for reproducibility
-seed = 10
-set_seed(seed)
-
-
-
-def randomize_weights(m):
-    if isinstance(m, nn.Linear):
-        torch.nn.init.xavier_uniform_(m.weight)
-        m.bias.data.fill_(0.01)
-    if isinstance(m, nn.Conv2d):
-        torch.nn.init.xavier_uniform_(m.weight)
-
-
-
-
-
+# FeatureExtractor class
 class FeatureExtractor:
-    # self.layers_to_extract= The layers we want to extract
-    ## TODO: define this here for all types or dont
-
-    def __init__(
-        self, model, netset=None, layers_to_extract=None, device=None, 
-        transforms=None, pretrained=True
-    ):
-        """Initializes feature extractor.
-
-        Parameters
-        ----------
-        model : str or PyTorch model.
-            If string is provided, the model will be loaded from the model zoo.
-            Else the custom model will be used.
-        netset : str optional
-            NetSet from which to extract model, by default None.
-        layers_to_extract : list, optional
-            List of layers to extract the features from. If None, use default
-            layers.   
-        device : str
-            CPU or CUDA.
-        transforms : Pytorch Transforms, optional
-            The transforms to be applied to the inputs, by default None.
-        """
-        # Set model and device
-        if device == None:
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        else:
-            self.device = device
+    def __init__(self, 
+                 model, 
+                 netset=None, 
+                 device="cpu", 
+                 pretrained=True, 
+                 preprocessor=None, 
+                 extraction_function=None, 
+                 feature_cleaner=None,
+                 dim_reduction=None,
+                 n_components=50):
+        # Parameters
+        self.model_name = model
+        self.device = device
         self.pretrained = pretrained
+
+        # Get values for editable functions
+        self.preprocessor = preprocessor
+        self.extraction_function = extraction_function
+        self.feature_cleaner = feature_cleaner
+        self.dim_reduction = dim_reduction
+        self.n_components = n_components
+
+
+
+        if netset is not None:
+            self.netset_name = netset
+            self.netset = NetSetBase.initialize_netset(self.model_name, netset, device)
+
+
+            # Initiate netset-based functions
+            self.model = self.netset.get_model(self.pretrained)
+            self.layers_to_extract = self.netset.layers
+
+        else:
+            if isinstance(model, str):
+                raise ValueError("If no netset is given, the model_name parameter needs to be a ready model")
+            else:
+                # Initiate as Standard Netset structure in case user does not select preprocessing, extractor, etc.
+                self.netset = NetSetBase.initialize_netset(model_name=None, netset_name="Standard", device=self.device)
+                self.model = model
+                self.model.eval()
+                self.netset.loaded_model = self.model
+
+                if None in (preprocessor, extraction_function, feature_cleaner):
+                    warnings.warn("If you add your own model you can also select our own: \nPreprocessing Function (preprocessor) \nExtraction Function (extraction_function) \nFeature Cleaner (feature_cleaner) ")
+    
+
+
+
+
+    def extract(self, data_path, layers_to_extract=None, save_path=None):
+
+        # Create save_path:
+        now = datetime.now()
+        now_formatted = f'{now.day}_{now.month}_{now.year}_{now.hour}_{now.minute}_{now.second}'
+        self.save_path = save_path or os.path.join(os.getcwd(),"results", now_formatted)
+        self._ensure_dir_exists(self.save_path)
+
+
+        # Iterate over all files in the given data_path
+        self.data_path = data_path
+
+        # Get all datafiles:
+        data_files = [i for i in Path(self.data_path).iterdir()]
+        data_files.sort()
+
+        # Detect data type
+        data_loader, self.data_type, self.data_combiner = self._get_dataloader(data_files[0])
+
+        if self.data_type not in self.netset.supported_data_types:
+                raise ValueError(f"{self.netset_name} does not support data type: {self.data_type}")
         
-        # Load model from netset or load custom model
-        if type(model) == str:
-            if netset == None:
-                raise NameError("netset must be specified")
-            self.load_netset_model(model, netset, layers_to_extract)
-        else: 
-            self.load_model(model, layers_to_extract, transforms)
+        # Select preprocessor
+        if self.preprocessor == None:
+            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
 
-    def load_model(self, model, layers_to_extract, transforms=None):
-        """Load a custom model.
+        for data_file in tqdm(data_files):
 
-        Parameters
-        ----------
-        model : PyTorch model
-            Custom model.
-        transforms : PyTorch Transforms, optional
-             The transforms to be applied to the inputs, by default None.
-        """
-        self.model = model
-        self.model.to(self.device)
-        self.model_name = "Custom model"
-        
-        # Define preprocessing strategy
-        self.transforms = transforms
-        self.preprocess = self.preprocess_image
-        
-        # Define feature extraction parameters
-        self.layers_to_extract = layers_to_extract
-        self.features_path = None
-        self._extractor = self._extract_features_tx
-        self._features_cleaner = self._no_clean
+            # Get datapath
+            file_name = str(data_file).split(os.sep)[-1]
 
-    def load_netset_model(self, model_name, netset, layers_to_extract):
-        """Load a model from the model zoo.
+            # Load data
+            data_from_file = data_loader(data_file)
 
-        Parameters
-        ----------
-        model_name : str
-            Name of the model.
-        netset : str
-            Netset from which to extract the model.
-        """
-        self.model_name = model_name
+            # Create empty list for data accumulation
+            data_from_file_list = []
 
-        # Some Torchversion return a download error on MacOS, this is a fix
-        torch.hub._validate_not_a_forked_repo=lambda a,b,c: True
+            for data in data_from_file:
 
-        if netset == "standard":
-            self.module = pymodule
-            self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._no_clean
+                # Preprocess data
+                preprocessed_data = self.preprocessor(data, self.model_name, self.device)
 
-        elif netset == 'pytorch':
-            self.module = torchmodule
-            self.model = self.module.MODELS[model_name](
-                'pytorch/vision:v0.10.0', self.model_name, pretrained=self.pretrained
-            )
-
-            if not self.pretrained:
-                self.model.to(self.device)
-                self.model.apply(randomize_weights)
-
-            self.model.eval()
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._torch_clean
-
-
-        elif netset == 'toolbox':
-            self.module = toolbox_models
-            self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
-            if not self.pretrained:
-                self.model.to(self.device)
-                self.model.apply(randomize_weights)
-            self.model.eval()
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._torch_clean
-
-        elif netset == 'taskonomy':
-            self.module = taskonomy
-            self.model = self.module.MODELS[model_name](eval_only=True)
-            if self.pretrained:
-                checkpoint = torch.utils.model_zoo.load_url(
-                    self.module.MODEL_WEIGHTS[model_name]
-                ) # Load weights
-                self.model.load_state_dict(checkpoint['state_dict'])
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._no_clean
-
-        elif netset == 'unet':
-            self.module = unet
-            self.model = self.module.MODELS[model_name](
-                'mateuszbuda/brain-segmentation-pytorch', self.model_name, 
-                in_channels=3, out_channels=1, init_features=32, 
-                pretrained=self.pretrained
-            )
-            if not self.pretrained:
-                self.model.to(self.device)
-                self.model.apply(randomize_weights)
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._no_clean
-
-        elif netset == 'clip':
-            self.module = clip_models
-            correct_model_name = self.model_name.replace("_-_", "/")
-            self.model = self.module.MODELS[model_name](
-                correct_model_name, device=self.device
-            )[0]
-
-            if not self.pretrained:
-                self.model.initialize_parameters()
-
-            self._extractor = self._extract_features_tx_clip
-            self._features_cleaner = self._no_clean
-
-        elif netset == 'cornet':
-            self.module = cornet_models
-            self.model = self.module.MODELS[model_name](pretrained=self.pretrained)
-            #self.model.to(self.device)
-            #self.model = torch.nn.DataParallel(self.model)
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._CORnet_RT_clean
-
-        elif netset == 'yolo':
-            # TODO: ONLY WORKS ON CUDA YET - NEEDS CLEANUP
-            self.module = yolo
-            self.model = self.module.MODELS[model_name](
-                'ultralytics/yolov5', 'yolov5l', pretrained=self.pretrained, 
-                device=self.device
-            )
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._no_clean
-
-        elif netset == 'detectron2':
-            self.module = detectron2_models
-            config = self.module.configurator(self.model_name)
-            self.model = self.module.MODELS[model_name](config)
-            if not self.pretrained:
-                self.model.to(self.device)
-                self.model.apply(randomize_weights)
-            self.model.eval()
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._detectron_clean
-
-        elif netset == 'vissl':
-            self.module = vissl_models
-            config = self.module.configurator(self.model_name)
-            self.model = (
-                self.module.MODELS[model_name]
-                (config.MODEL, config.OPTIMIZER)
-            )
-            if not self.pretrained:
-                self.model.to(self.device)
-                self.model.apply(randomize_weights)
-
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._no_clean
-
-        elif netset == "timm":
-            self.module = timm
-            try:
-                self.model = self.module.MODELS[model_name](
-                    model_name, pretrained=self.pretrained, features_only=True)
-            except:
-                self.model = self.module.MODELS[model_name](
-                    model_name, pretrained=self.pretrained)
-            # Handle layers to extract differently
-            if layers_to_extract == None:
-                self.layers_to_extract = self.module.MODEL_NODES[model_name]
-                if self.layers_to_extract == []:
-                    self._extractor = self._extract_features_timm
+                # Extract features
+                if self.extraction_function == None:
+                    features = self.netset.extraction_function(preprocessed_data, layers_to_extract)
                 else:
-                    self._extractor = self._extract_features_tx
-            self._features_cleaner = self._no_clean
-            self.module.preprocess = self.module.create_preprocess(self.model)
+                    features = self.extraction_function(preprocessed_data, layers_to_extract, model=self.model)
 
-        elif netset == 'pyvideo':
-            self.module = pyvideo
-            self.model = self.module.MODELS[model_name](
-                'facebookresearch/pytorchvideo', self.model_name, 
-                pretrained=self.pretrained
-            )
-            if not self.pretrained:
-                self.model.to(self.device)
-                self.model.apply(randomize_weights)
+                # Select Feature Cleaner
+                if self.feature_cleaner == None:
+                    feature_cleaner = self.netset.get_feature_cleaner(self.data_type)
+                    features = feature_cleaner(self.netset, features)
+                else:
+                    features = self.feature_cleaner(features)
 
-            self.model.eval()
-            self._extractor = self._extract_features_tx
-            self._features_cleaner = self._slowfast_clean
+                # Append to list of data
+                data_from_file_list.append(features)
 
-        else:
-            raise NotImplementedError(f"The netset '{netset}' does not appear to be implement. Perhaps check spelling!")
+            # Combine Data from list into single dictionary depending on input type
+            final_features = self.data_combiner(data_from_file_list)
 
-        # Define layers to extract
-        if (layers_to_extract == None) and (netset != "timm"):
-            self.layers_to_extract = self.module.MODEL_NODES[model_name]
-        elif netset!= "timm":
-            self.layers_to_extract = layers_to_extract
+            # Reduce dimension of feautres
+            final_features = self.reduce_dimensionality(final_features)
 
-        # Send model to device
-        self.model.to(self.device)
+            # Convert the final_features dictionary to one that contains detached numpy arrays
+            final_features = {key: value.detach().cpu().numpy() for key, value in final_features.items()}
 
-        # Define standard preprocessing
-        self.preprocess = self.module.preprocess
+            # Write the features for one image to a single file
+            file_path = os.path.join(self.save_path, f"{file_name}.npz")
+            np.savez(file_path, **final_features)
 
-    def preprocess_image(self, image, model_name, device):
-        """Default preprocessing based on ImageNet standard training.
+            # Clear variables to save RAM
+            del data_from_file_list, final_features
 
-        Parameters
-        ----------
-        image : str
-            Path to the image to be preprocessed.
 
-        Returns
-        -------
-        PyTorch Tensor
-            Preprocessed image.
+    def _ensure_dir_exists(self, directory_path):
         """
-        if self.transforms is None:
-            self.transforms = T.Compose([
-                T.Resize((224, 224)),
-                T.ToTensor(),
-                T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
-        image = Image.open(image).convert('RGB')
-        image = V(self.transforms(image).unsqueeze(0))
-        image = image.to(device)
-        return image
-
-    def _extract_features_tx(self, image):
-        """Extract features with torch extractor.
-
-        Parameters
-        ----------
-        image : Torch Tensor
-            Preprocessed image.
-
-        Returns
-        -------
-        dict of Torch Tensors
-            Features by layer.
+        Ensure the specified directory exists.
+        If not, it will be created.
         """
-        extractor = tx.Extractor(self.model, self.layers_to_extract)
-        _, features = extractor(image)
-        features = self._features_cleaner(features)
-        return features
-
-    def _extract_features_tx_clip(self, image):
-        """Extract CLIP features with torch extractor.
-
-        Parameters
-        ----------
-        image : Torch Tensor
-            Preprocessed image.
-
-        Returns
-        -------
-        dict of Torch Tensors
-            Features by layer.
-        """
-        extractor = tx.Extractor(self.model, self.layers_to_extract)
-        image_data = image[0]
-        tokenized_data = image[1]
-        _, features = extractor(image_data, tokenized_data)
-        features = self._features_cleaner(features)
-        return features
-
-    def _extract_features_timm(self, image):
-        """Extract features with timm.
-
-        Parameters
-        ----------
-        image : Torch Tensor
-            Preprocessed image.
-
-        Returns
-        -------
-        dict of Torch Tensors
-            Features by layer.
-        """
-        features = self.model(image)
-        # Convert the features into a dict because timm extractor returns a 
-        # list of tensors
-        converted_features = {}
-        for counter, feature in enumerate(features):
-            converted_features[f"feature {str(counter+1)}"] = feature.data.cpu()
-        features = self._features_cleaner(converted_features)
-        return converted_features
-
-    def _no_clean(self, features):
-        """Cleanup after feature extraction: This one requires no cleanup.
-        Just put it on cpu in case it isn't yet!
-
-        Args:
-            features (dict:tensors): dictionary of tensors
-
-        Returns:
-            (dict:tensors): dictionary of tensors
-        """
-        return {key: value.data.cpu() for key, value in features.items()}
-
-    def _torch_clean(self, features):
-        """Cleanup function after feature extraction: 
-        This one contains subdictionaries which need to be eliminated.
-
-        Args:
-            features (dict:tensors): dictionary of tensors
-
-        Returns:
-            (dict:tensors): dictionary of tensors
-        """
-        new_features = {}
-        for key, value in features.items():
-            try:
-                new_features[key] = value["out"].data.cpu()
-            except:
-                new_features[key] = value.data.cpu()
-        return new_features
-
-    def _detectron_clean(self, features):
-        """Cleanup function after feature extraction.
-        Detectron models contain subdictionaries which need to be eliminated.
-
-        Args:
-            features (dict:tensors): dictionary of tensors
-
-        Returns:
-            (dict:tensors): dictionary of tensors
-        """
-        clean_dict = {}
-        for key, subdict in features.items():
-            keys = list(subdict.keys())
-            for key in keys:
-                clean_dict.update({key: subdict[key].cpu()})
-        return clean_dict
-
-    def _CORnet_RT_clean(self, features):
-        """Cleanup function after feature extraction.
-        The RT-Model contains subdirectories.
-
-        Args:
-            features (dict:tensors): dictionary of tensors
-
-        Returns:
-            (dict:tensors): dictionary of tensors
-        """
-
-        if self.model_name == "cornet_rt":
-            clean_dict = {}
-            for A_key, subtuple in features.items():
-                keys = [A_key + "_A", A_key + "_B"]
-                for counter, key in enumerate(keys):
-                    clean_dict.update({key: subtuple[counter].cpu()})
-                    break  # we actually only want one key
-            return clean_dict
-        else:
-            return {key: value.cpu() for key, value in features.items()}
-
-    def _slowfast_clean(self, features):
-        """Cleanup function after feature extraction.
-        Some features have two values (list).
-
-        Args:
-            features (dict:tensors): dictionary of tensors
-
-        Returns:
-            (dict:tensors): dictionary of tensors
-        """
-
-        clean_dict = {}
-        for A_key, subtuple in features.items():
-            keys = [A_key + "_slow", A_key + "_fast"]
-
-            try:  # if subdict is a list of two values
-                for counter, key in enumerate(keys):
-                    clean_dict.update({key: subtuple[counter].cpu()})
-            except:
-                clean_dict.update({A_key: subtuple.cpu()})
-
-        return clean_dict
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
 
 
-    def extract(
-        self, dataset_path, save_format='npz', save_path=None, layers_to_extract=None):
-        """Compute feature extraction from image dataset.
 
-        Parameters
-        ----------
-        dataset_path : str or pathlib.Path
-            Path to the images to extract the features from. Images cneed to be
-            .jpg or .png.
-        save_format : str, optional
-            Format to save the features in. Can be 'npz', 'pt' or 'datasaet',
-            by default 'npz'. If 'dataset', the features are saved in the
-            Dataset class format of the rsa toolbox.
-        save_path : str or pathlib.Path, optional
-            Path to save the features to. If None, the folder where the
-            features are saved is named after the current date in the 
-            format "{year}_{month}_{day}_{hour}_{minute}".    
-        
-        """
-        # Define save parameters
-        self.save_format = save_format
-        if save_path is None:
-            self.save_path = create_save_path()
-        else:
-            self.save_path = Path(save_path)
-            self.save_path.mkdir(parents=True, exist_ok=True)
-
-
-        # Exchange extration layers
-        if layers_to_extract is not None:
-            self.layers_to_extract = layers_to_extract
-
-        # Find all input files
-        image_files = [
-            i for i in Path(dataset_path).iterdir() 
-            if i.suffix in ['.jpeg', '.jpg', '.png']
-        ]
-        image_files.sort()
-
-        # Extract features from images
-        if image_files != []:
-            fts = self._extract_from_images(image_files)
-        else:
-            raise ValueError(
-                "Could not find any .jpg or .png images in the given folder."
-            )
-
-        return fts
-
-
-    def _extract_from_images(self, image_files):
-        ## TODO: check no weird network names for saving
-        
-        if self.save_format == 'dataset':
-            all_fts = defaultdict(list)
-
-        for img in tqdm(image_files):
-            
-            # Preprocess image and extract features
-            processsed_img = self.preprocess(img, self.model_name, self.device)
-            fts = self._extractor(processsed_img)
-
-            # Save features if npz or pt
-            if self.save_format == 'npz':
-                fts = {k: v.detach().numpy() for k, v in fts.items()}
-                filename = self.save_path / f'{self.model_name}_{img.stem}.npz'
-                np.savez(filename, **fts)
-            elif self.save_format == 'pt':
-                filename = self.save_path / f'{self.model_name}_{img.stem}.pt'
-                torch.save(fts, filename)
-            # Add features to dictionary if dataset
-            elif self.save_format == 'dataset':
-                for l in fts.keys():
-                    all_fts[l].append(fts[l])
-
-        # Save and return features per layer in rsa toolbox format 
-        if self.save_format == 'dataset':
-            obs_imgs = {'images': np.array([i.stem for i in image_files])}
-            fts_datasets = {}
-            for l in all_fts.keys():
-                d = torch.flatten(torch.stack(all_fts[l]), start_dim=1)
-                fts_datasets[l] = Dataset(
-                    measurements=d.detach().numpy(),
-                    descriptors = {'dnn': self.model_name, 'layer': l},
-                    obs_descriptors = obs_imgs
-                )
-                filename = self.save_path / f'{self.model_name}_{l}.hdf5'
-                fts_datasets[l].save(filename)
-            return fts_datasets
-        else:
+    def consolidate_per_layer(self):
+        all_files = os.listdir(self.save_path)
+        if not all_files:
+            print("No files to consolidate.")
             return
+
+        # Assuming that each file has the same set of layers.
+        sample_file_path = os.path.join(self.save_path, all_files[0])
+        with np.load(sample_file_path, allow_pickle=True) as data:
+            layers = list(data.keys())
+
+        # Initialize a dictionary to hold all combined data for each layer
+        combined_data = {layer: {} for layer in layers}
+
+        # Iterate over each file and update the combined_data structure
+        for file_name in tqdm(all_files):
+            file_path = os.path.join(self.save_path, file_name)
+            with np.load(file_path, allow_pickle=True) as data:
+                if not data.keys():  # Check if the .npz file is empty
+                    print(f"Error: The file {file_name} is empty.")
+                    continue  # Skip this file and continue with the next one
+
+                for layer in layers:
+                    if layer not in data or data[layer].size == 0:
+                        print(f"Error: The layer {layer} in file {file_name} is empty.")
+                        continue  # Skip this layer and continue with the next one
+
+                    image_key = file_name.replace('.npz', '')
+                    combined_data[layer][image_key] = data[layer]
+
+            # Remove the file after its data has been added to combined_data
+            os.remove(file_path)
+
+        # Save the consolidated data for each layer
+        for layer, data in combined_data.items():
+            if not data:  # Check if the dictionary for this layer is empty
+                print(f"Error: No data found to consolidate for layer {layer}.")
+                continue  # Skip saving this layer and continue with the next one
+
+            output_file_path = os.path.join(self.save_path, f"{layer}.npz")
+            np.savez_compressed(output_file_path, **data)
+
+
+
+    def consolidate_per_txt_file(self):
+        """
+        Consolidate features from multiple sentences in a single file into separate files.
+
+        Parameters:
+        - save_path (str): Path to the folder containing .npz files.
+
+        Returns:
+        - None
+        """
+        # List all files in the given directory
+        files = [f for f in os.listdir(self.save_path) if f.endswith('.npz')]
+
+        for file_name in tqdm(files):
+            # Load the features from the original file
+            data = np.load(os.path.join(self.save_path, file_name))
+
+            # Extract original file name without extension
+            original_file_name = os.path.splitext(file_name)[0]
+
+            # Get the number of sentences in the file (assuming all layers have the same number of sentences)
+            num_sentences = len(list(data.values())[0][0])
+
+            for i in range(num_sentences):
+                # Create a new file name with index
+                new_file_name = f"{original_file_name}_sentence_{i}.npz"
+
+                # Extract features for the current sentence across all layers
+                sentence_features = {key: values[0][i] for key, values in data.items()}
+
+                # Save features for the current sentence to a new file
+                np.savez(os.path.join(self.save_path, new_file_name), **sentence_features)
+
 
 
     def get_all_layers(self):
-        """Helping function to extract all possible layers from a model
+        """Returns all possible layers for extraction."""
+
+        return tx.list_module_names(self.netset.loaded_model)
+
+
+    def _initialize_netset(self, netset_name):
+        # Use the dynamic loading and registration mechanism
+        return NetSetBase._registry.get(netset_name, None)
+
+    def _get_dataloader(self, data_path):
+        # Logic to detect and return the correct DataType derived class
+        file_extension = os.path.splitext(data_path)[1].lower()
+    
+        if file_extension in ['.jpg', '.jpeg', '.png']:
+            data_loader = self.netset.load_image_data
+            data_type = "image"
+            data_combiner = self.netset.combine_image_data
+            return data_loader, data_type, data_combiner
+        
+        elif file_extension in ['.mp4', '.avi']:
+            data_loader = self.netset.load_video_data
+            data_type = "video"
+            data_combiner = self.netset.combine_video_data
+            return data_loader, data_type, data_combiner
+        
+        elif file_extension in ['.wav', '.mp3']:
+            data_loader = self.netset.load_audio_data
+            data_type = "audio"
+            data_combiner = self.netset.combine_audio_data
+            return data_loader, data_type, data_combiner
+        elif file_extension in ['.txt']:
+            data_loader = self.netset.load_text_data
+            data_type = "text"
+            data_combiner = self.netset.combine_text_data
+            return data_loader, data_type, data_combiner
+        else:
+            raise ValueError(f"Unsupported file format: {file_extension}")
+        
+
+
+
+    def reduce_dimensionality(self, features):
+        if self.dim_reduction == None:
+            return features
+        elif self.dim_reduction == "srp":
+            return self.reduce_dimensionality_sparse_random(features)
+        else:
+            warnings.warn(f"{self.dim_reduction} does not exist as form of dimensionality reduction. Choose between 'srp'")
+
+
+    
+
+    def reduce_dimensionality_sparse_random(self, features):
+        """
+        Perform dimensionality reduction using Sparse Random Projection.
+
+        Parameters:
+        - features (dict): Dictionary of layers with corresponding torch tensors.
+        - n_components (int): Number of components to keep (default is 50).
 
         Returns:
-            list: all layers we can extract features from
+        - dict: Reduced features.
         """
-        layers = tx.list_module_names(self.model)
-        return layers
+        reduced_features = {}
+        for layer, original_tensor in features.items():
+            flattened_tensor = original_tensor.detach().view(original_tensor.size(0), -1).cpu().numpy()
+            sparse_random_proj = SparseRandomProjection(n_components=self.n_components)
+            reduced_tensor = sparse_random_proj.fit_transform(flattened_tensor)
+            reduced_features[layer] = torch.tensor(reduced_tensor).view(original_tensor.size(0), -1)
+        return reduced_features
+        
 
 
-def create_save_path():
-    """ Creates folder to save the image features.
 
-    Returns
-    -------
-    pathlib Path
-        Path to directory of features. Named after the current date in the
-        format "{year}_{month}_{day}_{hour}_{minute}"
-    """
-    # Get current time and format string accordingly
-    now = datetime.now()
-    now_formatted = f'{now.year}_{now.month}_{now.day}_{now.hour}_{now.minute}'
+# Create Taxonomy
 
-    # Create directory
-    save_path = Path(f"features/{now_formatted}")
-    save_path.mkdir(parents=True, exist_ok=True)
+def get_netset_model_dict():
+    # Define a Function to Load JSON Configs
+    def load_json_config(config_path):
+        with open(config_path, 'r') as f:
+            data = json.load(f)
+        return data
 
-    return save_path
+    # Initialize Your Dictionary
+    netset_models_dict = {}
+
+    # Iterate Over the NetSets in the Registry
+    for netset_name, netset_class in NetSetBase._registry.items():
+        try:
+            # Provide placeholder values for model_name and device
+            netset_instance = netset_class(model_name='placeholder', device='cpu')
+            
+            # Access the config path directly from the instance
+            config_path = netset_instance.config_path
+            
+            # Load the config file
+            models_data = load_json_config(config_path)
+            
+            # Extract the model names and add them to the dictionary
+            model_names = list(models_data.keys())
+            netset_models_dict[netset_name] = model_names
+        
+        except AttributeError:
+            # Handle the case where config_path is not defined in the instance
+            warnings.warn(f"{netset_name} does not have a config_path attribute")
+        except Exception as e:
+            print(f"An error occurred while processing {netset_name}: {str(e)}")
+
+    # Return the Dictionary
+    return netset_models_dict
+
+# Have this variable for the taxonomy function
+all_networks = get_netset_model_dict()
+
+

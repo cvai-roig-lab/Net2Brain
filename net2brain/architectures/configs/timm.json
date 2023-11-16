@@ -1,0 +1,2148 @@
+{
+    "adv_inception_v3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_m36_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_m48_448": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_s24_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_s24_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_s36_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_xs24_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_xxs24_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_xxs24_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_xxs36_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cait_xxs36_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "coat_lite_mini": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "coat_lite_small": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "coat_lite_tiny": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "coat_mini": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "coat_tiny": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "convit_base": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "convit_small": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "convit_tiny": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cspdarknet53": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cspresnet50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "cspresnext50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "deit_base_distilled_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "deit_base_distilled_patch16_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "deit_base_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "deit_base_patch16_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "deit_small_distilled_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "deit_small_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "deit_tiny_distilled_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "deit_tiny_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "densenet121": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "densenet161": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "densenet169": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "densenet201": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "densenetblur121d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla34": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla46_c": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla46x_c": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla60": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla60_res2net": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla60_res2next": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla60x": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla60x_c": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla102": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla102x": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla102x2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dla169": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dm_nfnet_f0": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dm_nfnet_f1": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dm_nfnet_f2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dm_nfnet_f3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dm_nfnet_f4": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dm_nfnet_f5": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dm_nfnet_f6": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dpn68": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dpn68b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dpn92": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dpn98": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dpn107": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "dpn131": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "eca_nfnet_l0": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "eca_nfnet_l1": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "eca_nfnet_l2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ecaresnet26t": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ecaresnet50d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ecaresnet50d_pruned": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ecaresnet50t": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ecaresnet101d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ecaresnet101d_pruned": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ecaresnet269d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ecaresnetlight": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_b0": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_b1": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_b1_pruned": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_b2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_b2_pruned": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_b3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_b3_pruned": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_b4": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_el": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_el_pruned": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_em": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_es": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_es_pruned": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnet_lite0": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnetv2_rw_m": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "efficientnetv2_rw_s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ens_adv_inception_resnet_v2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ese_vovnet19b_dw": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ese_vovnet39b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "fbnetc_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gernet_l": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gernet_m": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gernet_s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ghostnet_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_inception_v3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet18_v1b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet34_v1b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet50_v1b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet50_v1c": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet50_v1d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet50_v1s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet101_v1b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet101_v1c": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet101_v1d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet101_v1s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet152_v1b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet152_v1c": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet152_v1d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnet152_v1s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnext50_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnext101_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_resnext101_64x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_senet154": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_seresnext50_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_seresnext101_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_seresnext101_64x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gluon_xception65": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gmixer_24_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "gmlp_s16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hardcorenas_a": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hardcorenas_b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hardcorenas_c": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hardcorenas_d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hardcorenas_e": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hardcorenas_f": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hrnet_w18": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hrnet_w18_small": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hrnet_w18_small_v2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hrnet_w30": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hrnet_w32": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hrnet_w40": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hrnet_w44": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hrnet_w48": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "hrnet_w64": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ig_resnext101_32x8d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ig_resnext101_32x16d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ig_resnext101_32x32d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ig_resnext101_32x48d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "inception_resnet_v2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "inception_v3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "inception_v4": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "legacy_senet154": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "legacy_seresnet18": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "legacy_seresnet34": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "legacy_seresnet50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "legacy_seresnet101": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "legacy_seresnet152": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "legacy_seresnext26_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "legacy_seresnext50_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "legacy_seresnext101_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "levit_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixer_b16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixer_b16_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixer_b16_224_miil": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixer_b16_224_miil_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixer_l16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixer_l16_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixnet_l": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixnet_m": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixnet_s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mixnet_xl": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mnasnet_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mobilenetv2_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mobilenetv2_110d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mobilenetv2_120d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mobilenetv2_140": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mobilenetv3_large_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mobilenetv3_large_100_miil": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mobilenetv3_large_100_miil_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "mobilenetv3_rw": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "nasnetalarge": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "nf_regnet_b1": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "nf_resnet50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "nfnet_l0": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "pit_b_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "pit_b_distilled_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "pit_s_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "pit_s_distilled_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "pit_ti_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "pit_ti_distilled_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "pit_xs_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "pit_xs_distilled_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "pnasnet5large": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_002": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_004": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_006": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_008": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_016": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_032": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_040": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_064": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_080": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_120": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_160": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnetx_320": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_002": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_004": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_006": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_008": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_016": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_032": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_040": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_064": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_080": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_120": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_160": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "regnety_320": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "repvgg_a2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "repvgg_b0": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "repvgg_b1": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "repvgg_b1g4": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "repvgg_b2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "repvgg_b2g4": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "repvgg_b3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "repvgg_b3g4": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "res2net50_14w_8s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "res2net50_26w_4s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "res2net50_26w_6s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "res2net50_26w_8s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "res2net50_48w_2s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "res2net101_26w_4s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "res2next50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resmlp_12_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resmlp_12_distilled_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resmlp_24_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resmlp_24_distilled_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resmlp_36_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resmlp_36_distilled_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resmlp_big_24_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resmlp_big_24_224_in22ft1k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resmlp_big_24_distilled_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet18": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet18d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet26": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet26d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet34": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet34d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet50d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet51q": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet101d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet152d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnet200d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetblur50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetrs50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetrs101": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetrs152": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetrs200": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetrs270": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetrs350": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetrs420": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_50x1_bit_distilled": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_50x1_bitm": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_50x1_bitm_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_50x3_bitm": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_50x3_bitm_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_101x1_bitm": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_101x1_bitm_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_101x3_bitm": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_101x3_bitm_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_152x2_bit_teacher": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_152x2_bit_teacher_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_152x2_bitm": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_152x2_bitm_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_152x4_bitm": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnetv2_152x4_bitm_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnext50_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnext50d_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "resnext101_32x8d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "selecsls42b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "selecsls60": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "selecsls60b": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "semnasnet_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "seresnet50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "seresnet152d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "seresnext26d_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "seresnext26t_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "seresnext50_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "spnasnet_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ssl_resnet18": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ssl_resnet50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ssl_resnext50_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ssl_resnext101_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ssl_resnext101_32x8d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "ssl_resnext101_32x16d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_base_patch4_window7_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_base_patch4_window7_224_in22k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_base_patch4_window12_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_base_patch4_window12_384_in22k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_large_patch4_window7_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_large_patch4_window7_224_in22k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_large_patch4_window12_384": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_large_patch4_window12_384_in22k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_small_patch4_window7_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swin_tiny_patch4_window7_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swsl_resnet18": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swsl_resnet50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swsl_resnext50_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swsl_resnext101_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swsl_resnext101_32x8d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "swsl_resnext101_32x16d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b0": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b0_ap": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b0_ns": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b1": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b1_ap": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b1_ns": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b2_ap": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b2_ns": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b3_ap": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b3_ns": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b4": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b4_ap": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b4_ns": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b5": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b5_ap": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b5_ns": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b6": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b6_ap": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b6_ns": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b7": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b7_ap": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b7_ns": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b8": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_b8_ap": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_cc_b0_4e": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_cc_b0_8e": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_cc_b1_8e": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_el": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_em": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_es": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_l2_ns": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_l2_ns_475": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_lite0": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_lite1": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_lite2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_lite3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnet_lite4": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_b0": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_b1": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_b2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_b3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_l": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_l_in21ft1k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_l_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_m": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_m_in21ft1k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_m_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_s_in21ft1k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_efficientnetv2_s_in21k": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_inception_v3": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_mixnet_l": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_mixnet_m": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_mixnet_s": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_mobilenetv3_large_075": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_mobilenetv3_large_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_mobilenetv3_large_minimal_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_mobilenetv3_small_075": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_mobilenetv3_small_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tf_mobilenetv3_small_minimal_100": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tnt_s_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tv_densenet121": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tv_resnet34": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tv_resnet50": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tv_resnet101": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tv_resnet152": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "tv_resnext50_32x4d": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "twins_pcpvt_base": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "twins_pcpvt_large": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "twins_pcpvt_small": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "twins_svt_base": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "twins_svt_large": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "twins_svt_small": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "vgg11": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "vgg11_bn": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "vgg13": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "vgg13_bn": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "vgg16": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "vgg16_bn": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "vgg19": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "vgg19_bn": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "visformer_small": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "vit_base_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_base_patch16_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_base_patch16_224_miil": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_base_patch16_224_miil_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_base_patch16_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_base_patch32_224": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_base_patch32_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_base_patch32_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_base_r50_s16_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_base_r50_s16_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_huge_patch14_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_large_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_large_patch16_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_large_patch16_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_large_patch32_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_large_patch32_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_large_r50_s32_224": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_large_r50_s32_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_large_r50_s32_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_patch16_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_patch16_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_patch32_224": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_patch32_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_patch32_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_r26_s32_224": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_r26_s32_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_r26_s32_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_tiny_patch16_224": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_tiny_patch16_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_tiny_patch16_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_tiny_r_s16_p8_224": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_tiny_r_s16_p8_224_in21k": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_tiny_r_s16_p8_384": {
+        "model": "timm.create_model",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "wide_resnet50_2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "wide_resnet101_2": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "xception": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "xception41": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "xception65": {
+        "model": "timm.create_model",
+        "nodes": []
+    },
+    "xception71": {
+        "model": "timm.create_model",
+        "nodes": []
+    }
+}
