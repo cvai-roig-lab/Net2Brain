@@ -1,83 +1,74 @@
-import warnings
-from .netsetbase import NetSetBase
-from .shared_functions import load_from_json
-import torchextractor as tx
+import cv2
+from PIL import Image
 
-from .implemented_models.places365_net import get_resnet50_places365
-from .implemented_models.semseg_models import get_semseg_model
-import os
+from torch.autograd import Variable as V
+from torchvision import transforms as trn
 
-
-class Toolbox(NetSetBase):
-
-    def __init__(self, model_name, device):
-        self.supported_data_types = ['image', 'video']
-        self.netset_name = "Toolbox"
-        self.model_name = model_name
-        self.device = device
-
-        # Set config path:
-        file_path = os.path.abspath(__file__)
-        directory_path = os.path.dirname(file_path)
-        self.config_path = os.path.join(directory_path, "configs/toolbox.json")
+from net2brain.architectures.implemented_models.places365_net import get_resnet50_places365
+from net2brain.architectures.implemented_models.semseg_models import get_semseg_model
 
 
-    def get_preprocessing_function(self, data_type):
-        if data_type == 'image':
-            return self.image_preprocessing
-        elif data_type == 'video':
-            warnings.warn("Models only support image-data. Will average video frames")
-            return self.video_preprocessing
-        else:
-            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
-        
+MODELS = {"Places365": get_resnet50_places365,
+          "SceneParsing": get_semseg_model}
 
-    def get_feature_cleaner(self, data_type):
-        if data_type == 'image':
-            return Toolbox.clean_extracted_features
-        elif data_type == 'video':
-            return Toolbox.clean_extracted_features
-        else:
-            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
-        
+MODEL_NODES = {"Places365": ["model.4", "model.5", "model.6", "model.7", "model.9"],
+               "SceneParsing": ['decoder.ppm_conv.2.2','decoder.ppm_conv.3.2','decoder.ppm_last_conv.2','decoder.fpn_out.2.0.2','decoder.conv_last.1']}
 
 
-    def get_model(self, pretrained):
+def preprocess(image, model_name, device):
+    """Preprocesses image according to the networks needs
 
-        # Load attributes from the json
-        model_attributes = load_from_json(self.config_path, self.model_name)
+    Args:
+        image (str/path): path to image
+        model_name (str): name of the model (sometimes needes to differenciate between model settings)
 
-        # Set the layers and model function from the attributes
-        self.layers = model_attributes["nodes"]
-        self.loaded_model = model_attributes["model_function"](pretrained=pretrained)
-
-        # Model to device
-        self.loaded_model.to(self.device)
-
-        # Randomize weights
-        if not pretrained:
-            self.loaded_model.apply(self.randomize_weights)
-
-        # Put in eval mode
-        self.loaded_model.eval()
-
-
-    def clean_extracted_features(self, features):
-        return features
+    Returns:
+        PIL-Image: Preprocesses PIL Image
+    """
+    
     
 
+    # Get image
+    transforms = trn.Compose([
+        trn.Resize((224, 224)),  # resize to 224 x 224 pixels
+        trn.ToTensor(),  # transform to tensor
+        # normalize according to ImageNet
+        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+
+    img = Image.open(image).convert('RGB')
+    img = V(transforms(img).unsqueeze(0))
+
+    if device == 'cuda':  # send to cudaa
+            img = img.cuda()
+
+    return img
+
+
+def preprocess_frame(frame, model_name, device):
+    """Preprocesses image according to the networks needs
+
+    Args:
+        frame (numpy array): array of frame
+        model_name (str): name of the model (sometimes needes to differenciate between model settings)
+
+    Returns:
+        PIL-Image: Preprocesses PIL Image
+    """
+    
+    centre_crop = trn.Compose([
+        trn.Resize((224, 224)),  # resize to 224 x 224 pixels
+        trn.ToTensor(),  # transform to tensor
+        # normalize according to ImageNet
+        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    pil_image = Image.fromarray(frame)
+    
+    pil_image = V(centre_crop(pil_image).unsqueeze(0))
+
+    if device == 'cuda':  # send to cudaa
+            pil_image = pil_image.cuda()
             
-    
-    def extraction_function(self, data, layers_to_extract=None):
-
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
-
-        # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
-
-        # Extract actual features
-        _, features = self.extractor_model(data)
-
-        return features
-
-         
+    return pil_image

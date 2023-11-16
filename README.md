@@ -13,8 +13,6 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
-# Tutorial and Workshop Notebooks
-Dive into the capabilities of __Net2Brain__  with our interactive tutorial and workshop notebooks, available for download [here](/notebooks/). The tutorial notebooks provide a comprehensive guide to the core functionalities of the Toolbox, offering step-by-step instructions to help you harness its full potential. The workshop notebooks, on the other hand, are designed to facilitate the replication of studies using __Net2Brain__, presenting practical examples and detailed workflows. Whether you're new to the Toolbox or looking to conduct your research, these resources are an invaluable starting point.
 
 
 # Key Functions

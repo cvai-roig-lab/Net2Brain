@@ -66,6 +66,7 @@ input_data/brain_data/78images/log.json
 *.mp4
 *.mat
 *.dat
+*.json
 .idea
 .git
 

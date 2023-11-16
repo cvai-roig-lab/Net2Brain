@@ -127,15 +127,18 @@ class CORnet_RT(nn.Module):
         return all_features
 
 
-def cornet_rt(pretrained=True, map_location=None, times=5):
-    #return get_model('rt', pretrained=pretrained, map_location=map_location, times=times)
-
-    model = CORnet_RT()
+def get_model(model_letter, pretrained=False, map_location=None, **kwargs):
+    model_letter = model_letter.upper()
+    model_hash = globals()[f'HASH_{model_letter}']
+    model = globals()[f'CORnet_{model_letter}'](**kwargs)
+    model = torch.nn.DataParallel(model)
+    model.feat_list = ['block1(V1)', 'block2(V2)', 'block3(V4)', 'block4(IT)', 'fc']
     if pretrained:
-        url = 'https://s3.amazonaws.com/cornet-models/cornet_rt-933c001c.pth'
-        checkpoint = torch.utils.model_zoo.load_url(url, map_location=map_location)
-        state_dict = checkpoint['state_dict']
-        state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
-        state_dict = {k.replace("decoder.linear.", "fc."): v for k, v in state_dict.items()}
-        model.load_state_dict(state_dict, strict=False)
+        url = f'https://s3.amazonaws.com/cornet-models/cornet_{model_letter.lower()}-{model_hash}.pth'
+        ckpt_data = torch.utils.model_zoo.load_url(url, map_location=map_location)
+        model.load_state_dict(ckpt_data['state_dict'])
     return model
+
+
+def cornet_rt(pretrained=True, map_location=None, times=5):
+    return get_model('rt', pretrained=pretrained, map_location=map_location, times=times)
