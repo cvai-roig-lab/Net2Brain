@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Model Zoo &mdash; Net2Brain 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Creating Your Own NetSet" href="adding_own_netsets.html" />
+    <link rel="prev" title="Evaluation" href="evaluation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Net2Brain
+          </a>
+              <div class="version">
+                0.1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="key_functions.html">Key Functions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Model Zoo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-a-netset">What is a Netset?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#available-netsets">Available Netsets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-your-own-models">Adding Your Own Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#discovering-models">Discovering Models</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Net2Brain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Model Zoo</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/existing_models.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="model-zoo">
+<h1>Model Zoo<a class="headerlink" href="#model-zoo" title="Permalink to this heading"></a></h1>
+<p class="linemarker linemarker-4"><strong>Net2Brain</strong> is an all-in-one solution that offers access to approximately 600 pre-trained neural networks across various visual tasks. These networks enable comprehensive experimental comparisons between human brain activity and artificial neural network activations. Moreover, users have the flexibility to incorporate their own models, making the toolkit highly adaptable and limitless in terms of architecture types.</p>
+<section id="what-is-a-netset">
+<h2>What is a Netset?<a class="headerlink" href="#what-is-a-netset" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-9">A Netset is a curated collection of neural network models from the same family but with potentially different training protocols or datasets. This organization allows for clear differentiation when multiple versions of a model, such as ResNet50, are available from various sources, ensuring clarity and ease of use.</p>
+</section>
+<section id="available-netsets">
+<h2>Available Netsets<a class="headerlink" href="#available-netsets" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-14"><strong>Net2Brain</strong> facilitates exploration and utilization of a vast range of Deep Neural Networks (DNNs) through its diverse netsets, which are libraries of different pre-trained models:</p>
+<ol class="arabic simple">
+<li><p class="linemarker linemarker-16"><strong>Standard torchvision</strong> (<cite>standard</cite>)
+A compendium of torchvision models catering to a spectrum of tasks from image classification to video classification. Detailed information can be found on the <a class="reference external" href="https://pytorch.org/vision/stable/models.html">torchvision models page</a>.</p></li>
+<li><p class="linemarker linemarker-19"><strong>Timm</strong> (<cite>timm</cite>)
+A library containing a rich array of advanced computer vision models developed by Ross Wightman. More details are available on the <a class="reference external" href="https://github.com/rwightman/pytorch-image-models#models">Timm GitHub repository</a>.</p></li>
+<li><p class="linemarker linemarker-22"><strong>PyTorch Hub</strong> (<cite>pytorch</cite>)
+This netset includes models for a variety of visual tasks accessible through the torch.hub API, not encompassed by torchvision. For more, see the <a class="reference external" href="https://pytorch.org/docs/stable/hub.html">PyTorch Hub documentation</a>.</p></li>
+<li><p class="linemarker linemarker-25"><strong>Unet</strong> (<cite>unet</cite>)
+Unet models are specialized for abnormality segmentation in brain MRI and are accessible through torch.hub. Learn more at the <a class="reference external" href="https://pytorch.org/hub/mateuszbuda_brain-segmentation-pytorch_unet/">Unet hub page</a>.</p></li>
+<li><p class="linemarker linemarker-28"><strong>Taskonomy</strong> (<cite>taskonomy</cite>)
+Networks trained for distinct visual tasks, instrumental in discerning relationships between various tasks. Insights can be gained from the <a class="reference external" href="https://github.com/StanfordVL/taskonomy">Taskonomy GitHub page</a>.</p></li>
+<li><p class="linemarker linemarker-31"><strong>Slowfast</strong> (<cite>pyvideo</cite>)
+These are top-tier video classification models from the Kinetics 400 dataset, available through torch.hub. Visit the <a class="reference external" href="https://github.com/facebookresearch/pytorchvideo">PyTorchVideo GitHub repository</a> for more.</p></li>
+<li><p class="linemarker linemarker-34"><strong>YOLO</strong> (<cite>yolo</cite>)
+YOLO models are renowned for their speed and accuracy in real-time object detection. Further information is on the <a class="reference external" href="https://github.com/ultralytics/yolov5">YOLO GitHub repository</a>.</p></li>
+<li><p class="linemarker linemarker-37"><strong>CLIP</strong> (<cite>clip</cite>)
+Multimodal neural networks combining vision and language, trained on diverse (image, text) pairs. Explore more at the <a class="reference external" href="https://github.com/openai/CLIP">CLIP GitHub repository</a>.</p></li>
+<li><p class="linemarker linemarker-40"><strong>CorNet</strong> (<cite>cornet</cite>)
+Networks that emulate the ventral visual pathway’s structure, incorporating recurrent connections. Discover more at the <a class="reference external" href="https://github.com/dicarlolab/CORnet">CORnet GitHub repository</a>.</p></li>
+<li><p class="linemarker linemarker-43"><strong>Detectron2</strong> (<cite>detectron2</cite>)
+A system from Facebook AI Research that implements leading object detection algorithms. Explore the <a class="reference external" href="https://github.com/facebookresearch/Detectron">Detectron2 GitHub page</a> for more.</p></li>
+<li><p class="linemarker linemarker-46"><strong>VISSL</strong> (<cite>vissl</cite>)
+A collection of self-supervision approaches with reference implementations. Delve into the <a class="reference external" href="https://github.com/facebookresearch/vissl">VISSL GitHub repository</a>.</p></li>
+</ol>
+</section>
+<section id="adding-your-own-models">
+<h2>Adding Your Own Models<a class="headerlink" href="#adding-your-own-models" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-51">In addition to the provided netsets, <strong>Net2Brain</strong> supports the integration of custom models. For guidance on incorporating your own neural networks, please refer to <a class="reference internal" href="adding_own_netsets.html#ownnetset"><span class="std std-ref">Creating Your Own NetSet</span></a> or <a class="reference internal" href="feature_extraction.html#customdnn"><span class="std std-ref">Using FeatureExtractor with a Custom DNN</span></a>.</p>
+</section>
+<section id="discovering-models">
+<h2>Discovering Models<a class="headerlink" href="#discovering-models" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-55">An extensive catalog of models is available for exploration within these netsets. To delve into the full array of models, consult the <a class="reference external" href="https://net2brain.readthedocs.io/en/latest/taxonomy.html">Model Taxonomy documentation</a>, which details the functions to view all available models.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="evaluation.html" class="btn btn-neutral float-left" title="Evaluation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="adding_own_netsets.html" class="btn btn-neutral float-right" title="Creating Your Own NetSet" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Domenic Bersch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loading Datasets &mdash; Net2Brain 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Feature Extraction" href="feature_extraction.html" />
+    <link rel="prev" title="Exploring the Toolbox - Model Taxonomy" href="taxonomy.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Net2Brain
+          </a>
+              <div class="version">
+                0.1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="key_functions.html">Key Functions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="taxonomy.html">Exploring the Toolbox - Model Taxonomy</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Loading Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="feature_extraction.html">Feature Extraction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rdm_creation.html">Creating Representational Dissimilarity Matrices (RDMs)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="existing_models.html">Model Zoo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Net2Brain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="key_functions.html">Key Functions</a></li>
+      <li class="breadcrumb-item active">Loading Datasets</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/datasets.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="loading-datasets">
+<h1>Loading Datasets<a class="headerlink" href="#loading-datasets" title="Permalink to this heading"></a></h1>
+<p class="linemarker linemarker-4">Before diving into feature extraction, we need to select an appropriate dataset. Net2Brain conveniently offers access to several datasets, each comprising a collection of stimulus images along with corresponding brain data. This data includes Representational Dissimilarity Matrices (RDMs) derived from fMRI and MEG measurements, providing a rich source for analysis.</p>
+<p class="linemarker linemarker-6">Currently, you can choose from the following datasets:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-8"><code class="docutils literal notranslate"><span class="pre">&quot;78images&quot;</span></code></p></li>
+<li><p class="linemarker linemarker-9"><code class="docutils literal notranslate"><span class="pre">&quot;92images&quot;</span></code></p></li>
+<li><p class="linemarker linemarker-10"><code class="docutils literal notranslate"><span class="pre">&quot;bonner_pnas2017&quot;</span></code></p></li>
+</ul>
+<p class="linemarker linemarker-12">Each dataset is uniquely identified by a name that can be used to load it with the <cite>load_dataset</cite> function. For example, to load the dataset from the study by Bonner et al. (2017), use the following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.utils.download_datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="c1"># Load stimuli and brain data from the specified dataset</span>
+<span class="n">stimuli_path</span><span class="p">,</span> <span class="n">roi_path</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;bonner_pnas2017&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="linemarker linemarker-20">This function returns the paths to the stimuli images and the region of interest (ROI) data, setting the stage for subsequent feature extraction and analysis.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="taxonomy.html" class="btn btn-neutral float-left" title="Exploring the Toolbox - Model Taxonomy" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="feature_extraction.html" class="btn btn-neutral float-right" title="Feature Extraction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Domenic Bersch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
