@@ -1,0 +1,32 @@
+{
+    "albert-base-v2": {
+        "model": "transformers.AlbertModel.from_pretrained",
+        "nodes": ["encoder.albert_layer_groups.0"
+        ]
+    },
+    "kakaobrain/align-base": {
+        "model": "transformers.AlignTextModel.from_pretrained",
+        "nodes": ["encoder.layer.0",
+                "encoder.layer.1",
+                "encoder.layer.2",
+                "encoder.layer.3",
+                "encoder.layer.4",
+                "encoder.layer.5",
+                "encoder.layer.6",
+                "encoder.layer.7",
+                "encoder.layer.8",
+                "encoder.layer.9",
+                "encoder.layer.10",
+                "encoder.layer.11"
+                ]
+    },
+    "facebook/bart-base":{
+        "model": "transformers.BartModel.from_pretrained",
+        "nodes": ["encoder.layers.0",
+        "encoder.layers.1",
+        "encoder.layers.2",
+        "encoder.layers.3",
+        "encoder.layers.4",
+        "encoder.layers.5"]
+    }
+}
