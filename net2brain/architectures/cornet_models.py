@@ -1,90 +1,74 @@
-import warnings
-from .netsetbase import NetSetBase
-from .shared_functions import load_from_json
-from .implemented_models.cornet_rt_model import cornet_rt
-from .implemented_models.cornet_s_model import cornet_s
-from .implemented_models.cornet_z_model import cornet_z
-import torchextractor as tx
-import os
+import cv2
+from torch.autograd import Variable as V
+from torchvision import transforms as trn
+from PIL import Image
+#import cornet
 
-class Cornet(NetSetBase):
+from net2brain.architectures.implemented_models.cornet_z import cornet_z
+from net2brain.architectures.implemented_models.cornet_rt import cornet_rt
+from net2brain.architectures.implemented_models.cornet_s import cornet_s
 
-    def __init__(self, model_name, device):
-        self.supported_data_types = ['image', 'video']
-        self.netset_name = "Cornet"
-        self.model_name = model_name
-        self.device = device
+MODELS = {"cornet_z": cornet_z,
+          "cornet_rt": cornet_rt,
+          "cornet_s": cornet_s}
 
-        # Set config path:
-        file_path = os.path.abspath(__file__)
-        directory_path = os.path.dirname(file_path)
-        self.config_path = os.path.join(directory_path, "configs/cornet.json")
+MODEL_NODES = {"cornet_z": ['V1', 'V2', 'V4', 'IT'],
+               "cornet_rt": ['V1', 'V2', 'V4', 'IT'],
+               "cornet_s": ['V1', 'V2', 'V4', 'IT']}
+               
 
+def preprocess(image, model_name, device):
+    """Preprocesses image according to the networks needs
 
-    def get_preprocessing_function(self, data_type):
-        if data_type == 'image':
-            return self.image_preprocessing
-        elif data_type == 'video':
-            warnings.warn("Models only support image-data. Will average video frames")
-            return self.video_preprocessing
-        else:
-            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
-        
+    Args:
+        image (str/path): path to image
+        model_name (str): name of the model (sometimes needes to differenciate between model settings)
 
-    def get_feature_cleaner(self, data_type):
-        if data_type == 'image':
-            return Cornet.clean_extracted_features
-        elif data_type == 'video':
-            return Cornet.clean_extracted_features
-        else:
-            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
-        
+    Returns:
+        PIL-Image: Preprocesses PIL Image
+    """
 
+    # Get image
+    transforms = trn.Compose([
+        trn.Resize((224, 224)),  # resize to 224 x 224 pixels
+        trn.ToTensor(),  # transform to tensor
+        # normalize according to ImageNet
+        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
 
-
-    def get_model(self, pretrained):
-
-        # Load attributes from the json
-        model_attributes = load_from_json(self.config_path, self.model_name)
-
-        # Set the layers and model function from the attributes
-        self.layers = model_attributes["nodes"]
-        self.loaded_model = model_attributes["model_function"](pretrained=pretrained)
-
-        # Model to device
-        self.loaded_model.to(self.device)
-
-        # Randomize weights
-        if not pretrained:
-            self.loaded_model.apply(self.randomize_weights)
-
-        # Put in eval mode
-        self.loaded_model.eval()
-
-    def clean_extracted_features(self, features):
-        if self.model_name == "cornet_rt":
-            clean_dict = {}
-            for A_key, subtuple in features.items():
-                keys = [A_key + "_A", A_key + "_B"]
-                for counter, key in enumerate(keys):
-                    clean_dict.update({key: subtuple[counter].cpu()})
-                    break  # we actually only want one key
-            return clean_dict
-        else:
-            return {key: value.cpu() for key, value in features.items()}
-
-            
+    img = Image.open(image).convert('RGB')
+    img = V(transforms(img).unsqueeze(0))
     
-    def extraction_function(self, data, layers_to_extract=None):
+    if device == 'cuda':  # send to cuda
+        img = img.cuda()
 
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+    return img
 
-        # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
 
-        # Extract actual features
-        _, features = self.extractor_model(data)
+def preprocess_frame(frame, model_name, device):
+    """Preprocesses image according to the networks needs
 
-        return features
+    Args:
+        frame (numpy array): array of frame
+        model_name (str): name of the model (sometimes needes to differenciate between model settings)
 
-         
+    Returns:
+        PIL-Image: Preprocesses PIL Image
+    """
+    
+    transforms = trn.Compose([
+        trn.Resize((224, 224)),  # resize to 224 x 224 pixels
+        trn.ToTensor(),  # transform to tensor
+        # normalize according to ImageNet
+        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    pil_image = Image.fromarray(frame)
+    
+    pil_image = V(transforms(pil_image).unsqueeze(0))
+    
+    if device == 'cuda':  # send to cuda
+            pil_image = pil_image.cuda()
+            
+    return pil_image
