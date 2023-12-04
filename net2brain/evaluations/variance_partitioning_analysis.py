@@ -249,7 +249,6 @@ class VPA():
         """
 
         # Open RDMs
-        dep_var = self.load_rdms(self.dependent_variable)
         ind_var_1 = self.load_rdms(self.independent_1)
         ind_var_2 = self.load_rdms(self.independent_2)
 
@@ -603,7 +602,7 @@ class VPA():
         self.average_models=average_models
 
         # Load dependent variable
-        dep_var = np.squeeze(self.load_rdms(self.dependent_variable))
+        dep_var = self.load_rdms(self.dependent_variable)[0]
 
         # Get Subjects and time from the dimensions (16, 100, 1225)
         num_subjects = dep_var.shape[0]
