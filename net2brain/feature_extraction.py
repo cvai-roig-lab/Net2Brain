@@ -40,9 +40,7 @@ class FeatureExtractor:
                  pretrained=True, 
                  preprocessor=None, 
                  extraction_function=None, 
-                 feature_cleaner=None,
-                 dim_reduction=None,
-                 n_components=50):
+                 feature_cleaner=None):
         # Parameters
         self.model_name = model
         self.device = device
@@ -52,8 +50,7 @@ class FeatureExtractor:
         self.preprocessor = preprocessor
         self.extraction_function = extraction_function
         self.feature_cleaner = feature_cleaner
-        self.dim_reduction = dim_reduction
-        self.n_components = n_components
+        
 
 
 
@@ -83,7 +80,7 @@ class FeatureExtractor:
 
 
 
-    def extract(self, data_path, layers_to_extract=None, save_path=None):
+    def extract(self, data_path, save_path=None, layers_to_extract=None, consolidate_per_layer=True, dim_reduction=None, n_components=50):
 
         # Create save_path:
         now = datetime.now()
@@ -91,6 +88,9 @@ class FeatureExtractor:
         self.save_path = save_path or os.path.join(os.getcwd(),"results", now_formatted)
         self._ensure_dir_exists(self.save_path)
 
+        # Specify new attributes:
+        self.dim_reduction = dim_reduction
+        self.n_components = n_components
 
         # Iterate over all files in the given data_path
         self.data_path = data_path
@@ -145,7 +145,9 @@ class FeatureExtractor:
             final_features = self.data_combiner(data_from_file_list)
 
             # Reduce dimension of feautres
+            # print("final_feats", len(final_features))
             final_features = self.reduce_dimensionality(final_features)
+
 
             # Convert the final_features dictionary to one that contains detached numpy arrays
             final_features = {key: value.detach().cpu().numpy() for key, value in final_features.items()}
@@ -156,6 +158,10 @@ class FeatureExtractor:
 
             # Clear variables to save RAM
             del data_from_file_list, final_features
+
+        if consolidate_per_layer:
+            print("Cosolidating data per layer...")
+            self.consolidate_per_layer()
 
 
     def _ensure_dir_exists(self, directory_path):
@@ -169,31 +175,32 @@ class FeatureExtractor:
 
 
     def consolidate_per_layer(self):
-        all_files = os.listdir(self.save_path)
+        # List all files, ignoring ones ending with "_consolidated.npz"
+        all_files = [f for f in os.listdir(self.save_path) if not f.endswith("_consolidated.npz")]
         if not all_files:
             print("No files to consolidate.")
             return
 
-        # Assuming that each file has the same set of layers.
+        # Assuming that each file has the same set of layers
         sample_file_path = os.path.join(self.save_path, all_files[0])
         with np.load(sample_file_path, allow_pickle=True) as data:
             layers = list(data.keys())
 
-        # Initialize a dictionary to hold all combined data for each layer
+        # Initialize a dictionary for combined data for each layer
         combined_data = {layer: {} for layer in layers}
 
         # Iterate over each file and update the combined_data structure
         for file_name in tqdm(all_files):
             file_path = os.path.join(self.save_path, file_name)
             with np.load(file_path, allow_pickle=True) as data:
-                if not data.keys():  # Check if the .npz file is empty
+                if not data.keys():
                     print(f"Error: The file {file_name} is empty.")
-                    continue  # Skip this file and continue with the next one
+                    continue
 
                 for layer in layers:
                     if layer not in data or data[layer].size == 0:
                         print(f"Error: The layer {layer} in file {file_name} is empty.")
-                        continue  # Skip this layer and continue with the next one
+                        continue
 
                     image_key = file_name.replace('.npz', '')
                     combined_data[layer][image_key] = data[layer]
@@ -203,11 +210,11 @@ class FeatureExtractor:
 
         # Save the consolidated data for each layer
         for layer, data in combined_data.items():
-            if not data:  # Check if the dictionary for this layer is empty
+            if not data:
                 print(f"Error: No data found to consolidate for layer {layer}.")
-                continue  # Skip saving this layer and continue with the next one
+                continue
 
-            output_file_path = os.path.join(self.save_path, f"{layer}.npz")
+            output_file_path = os.path.join(self.save_path, f"{layer}_consolidated.npz")
             np.savez_compressed(output_file_path, **data)
 
 
