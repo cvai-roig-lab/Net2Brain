@@ -97,7 +97,7 @@ def linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
                     corr_dict[layer_id][roi_name].append(r_lst)
                     if fold_ii == n_folds-1:
                         corr_dict[layer_id][roi_name] = np.mean(np.array(corr_dict[layer_id][roi_name], dtype=np.float16),axis=0)
-                    fold_dict[layer_id][roi_name].append(r)
+                fold_dict[layer_id][roi_name].append(r)
     all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
     for layer_id,layer_dict in fold_dict.items():
         for roi_name,r_lst in layer_dict.items():
