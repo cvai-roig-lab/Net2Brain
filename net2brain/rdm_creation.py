@@ -1,182 +1,109 @@
-import json
-import glob
-import os
-import numpy as np
-from tqdm import tqdm
-from sklearn.preprocessing import StandardScaler as SS
 from datetime import datetime
+from datetime import datetime
+from pathlib import Path
+from typing import Union, Optional, Callable
 
+import torch
+from tqdm.auto import tqdm
 
-def ensure_directory(path):
-    """Method to ensure directory exists
-
-    Args:
-        path (str): path to folder to create
-    """
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-
-def create_save_folder():
-    """Creates folder to save the features in. They are structured after daytime
-
-    Returns:
-        save_path(str): Path to save folder
-    """
-    # Get current time
-    now = datetime.now()
-    now_formatted = now.strftime("%d.%m.%y %H:%M:%S")
-
-    # Replace : through -
-    log_time = now_formatted.replace(":", "-")
-
-    # Combine to path
-    save_path = f"rdms/{log_time}"
-
-    # Create directory
-    ensure_directory("rdms")
-    ensure_directory(f"rdms/{log_time}")
-
-    return save_path
+from .rdm import dist, valid_distance_functions
+from .rdm.feature_iterator import FeatureIterator
+from .rdm.rdm import LayerRDM, RDMFileFormatType
 
 
 class RDMCreator:
-    """This class creates RDMs from the features that have been extracted witht the feature extraction
+    """
+    This class creates RDMs from the features that have been extracted with the feature extraction
     module
     """
 
-    def __init__(self, feat_path, save_path=None, distance="pearson"):
-        """Initiation for RDM Creation
+    def __init__(self,
+                 device: Union[str, torch.device] = 'cpu',
+                 verbose: bool = False
+                 ):
+        """
+        Args:
+            device: str or torch.device
+                The device to use for the RDM creation. If a string is given, it must be a valid device name.
+            verbose: bool
+                Whether to print progress bars or not.
+        """
+        self.device = torch.device(device)
+        if self.device.type == 'cuda' and not torch.cuda.is_available():
+            raise ValueError(f"Device {self.device} is not available.")
+
+        self.verbose = verbose
+
+    def __call__(self, *args, **kwargs):  # TODO: implement as Pipeline?
+        return
+
+    def _create_rdm(self,
+                    x: torch.Tensor,
+                    distance: Union[str, Callable] = 'pearson',
+                    chunk_size: Optional[int] = None,
+                    **kwargs) -> torch.Tensor:
+        """
+        Creates a RDM from the given features.
 
         Args:
-            feat_path (str): path where to find earlier generated features
-            save_path (str, optional): Path where to save RDMs Defaults to None.
-            distance (str, optional): Distance metric for RDM creation. Defaults to "pearson".
+            x: torch.Tensor
+                The features to create the RDM from. The shape of the tensor must be (num_stimuli, *), where * is the
+                shape of the feature vector that gets flattened.
+            distance: str or callable
+                The distance metric to use. If a string is given, it must be a valid distance function name. If a
+                callable is passed, it must define a custom distance function.
+            chunk_size: int or None
+                If not None, the RDM is created in chunks of the given size. This can be used to reduce the memory
+                consumption.
+            **kwargs: dict
+                Additional keyword arguments for the distance function.
         """
+        x = torch.flatten(x, start_dim=1)
+        return dist(x, metric=distance, device=self.device, verbose=self.verbose, chunk_size=chunk_size, **kwargs)
 
-        self.feat_path = feat_path
+    def create_rdms(self,
+                    feature_path: Union[str, Path],
+                    save_path: Optional[Union[str, Path]] = None,
+                    save_format: RDMFileFormatType = 'pt',
+                    distance: Union[str, Callable] = 'pearson',
+                    chunk_size: Optional[int] = None,
+                    **kwargs
+                    ) -> Path:
+        """
+        Creates RDMs from the given features and saves them to the given path.
 
-        # Create save_path
+        Args:
+            feature_path: str or Path
+                Path to the directory containing the feature files.
+            save_path: str or Path or None
+                Path to the directory where the RDMs should be saved. If None, the RDMs are saved to a directory named
+                `rdms` in the current working directory.
+            save_format: str
+                The format in which the RDMs should be saved. Choose from `pt` and `npz`.
+            distance: str or callable
+                The distance metric to use. If a string is given, it must be a valid distance function name. If a
+                callable is passed, it must define a custom distance function.
+            chunk_size: int or None
+                If not None, the RDM is created in chunks of the given size. This can be used to reduce the memory
+                consumption.
+            **kwargs: dict
+                Additional keyword arguments for the distance function.
+        """
         if save_path is None:
-            self.save_path = create_save_folder()
+            save_path = Path.cwd() / 'rdms' / datetime.now().strftime('%d-%m-%y_%H-%M-%S')
         else:
-            ensure_directory(save_path)
-            self.save_path = save_path
+            save_path = Path(save_path)
+        save_path.mkdir(parents=True, exist_ok=True)
 
-        self.distance_name = distance
-        # Create distance metric
-        if distance == "pearson":
-            self.distance = self.pearson_dist
+        iterator = FeatureIterator(feature_path)
+        with tqdm(total=len(iterator), desc='Creating RDMs', disable=not self.verbose) as bar:
+            for layer, stimuli, feats in iterator:
+                feats = torch.from_numpy(feats).to(self.device)
+                rdm_m = self._create_rdm(feats, distance=distance, chunk_size=chunk_size, **kwargs)
+                meta = dict(distance=distance)
 
-    def create_json(self):
-        """Saves arguments in json used for creating RDMs
-        """
+                rdm = LayerRDM(rdm=rdm_m, layer_name=layer, stimuli_name=stimuli, meta=meta)
+                rdm.save(save_path, file_format=save_format)
 
-        args_file = os.path.join(self.save_path, 'args.json')
-        args = {
-            "distance": self.distance_name,
-            "feat_dir": self.feat_path,
-            "save_dir": self.save_path}
-
-        with open(args_file, 'w') as fp:
-            json.dump(args, fp, sort_keys=True, indent=4)
-
-    def get_features(self, layer_id, i):
-        """Get avtivations of a certain layer for image i.
-        Returns flattened activations
-
-        Args:
-            layer_id (str): name of layer
-            i (int): from which image the layer is extracted
-
-        Returns:
-            numpy array: activations from layer
-        """
-
-        activations = glob.glob(self.feat_path + "/*" + ".npz")
-        activations.sort()
-        feat = np.load(activations[i], allow_pickle=True)[layer_id]
-
-        return feat.ravel()
-
-    def get_layers_ncondns(self):
-        """Function to return facts about the npz-file
-
-        Returns:
-            num_layers (int): Amount of layers
-            layer_list (list): List of layers
-            num_conds (int): Amount of images
-
-        """
-
-        activations = glob.glob(self.feat_path + "/*.npz")
-        num_condns = len(activations)
-        feat = np.load(activations[0], allow_pickle=True)
-
-        num_layers = 0
-        layer_list = []
-
-        for key in feat:
-            if "__" in key:  # key: __header__, __version__, __globals__
-                continue
-            else:
-                num_layers += 1
-                layer_list.append(key)  # collect all layer names
-
-        # Liste: ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'fc6', 'fc7', 'fc8']
-
-        return num_layers, layer_list, num_condns
-
-    def pearson_dist(self, activations):
-        """This function calculates the pearson distance between the activations
-
-        Args:
-            activations (array):flattened activations for each image (78, 193600)
-
-        Returns:
-           array: image x image array
-        """
-        r_scaled = SS().fit_transform(np.array(activations))  # list to npy array and normalize the values
-        rdm = 1 - np.corrcoef(r_scaled)  # Perform pearson correlation coefficient
-        rdm = np.array(rdm)
-        return rdm
-
-    def create_rdms(self):
-        """
-        Main function to create RDMs from before created features
-
-        Input:
-        feat_dir: Directory containing activations generated using generate_features.py
-        save_dir : directory to save the computed RDM
-        dist : dist used for computing RDM (e.g. 1-Pearson's R)
-
-        Output:
-        One RDM per Network Layer in npy-format
-        """
-
-        self.create_json()  # create json
-        num_layers, layer_list, num_condns = self.get_layers_ncondns()  # get number of layers and number of conditions(images) for RDM
-
-        # num_layers = 8
-        # layer_list = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'fc6', 'fc7', 'fc8']
-        # num_conds = 78 (amount of images)
-
-        cwd = os.getcwd()  # current working dir
-
-        for layer in range(num_layers):  # for each layer
-
-            os.chdir(cwd)  # go to current dir, otherwise we will have path errors
-            layer_id = layer_list[layer]  # current layer name
-            RDM_filename_fmri = os.path.join(self.save_path, layer_id + ".npz")  # the savepaths
-            activations = []
-
-            for i in tqdm(range(num_condns)):  # for each datafile for the current layer
-                feature_i = self.get_features(layer_id, i)  # get activations of the current layer
-                activations.append(feature_i)  # collect in a list
-
-            # Calculate distance of RDMs
-            rdm = self.distance(activations)
-
-            # saving RDM
-            np.savez(RDM_filename_fmri, rdm)
-            del rdm
+                bar.update()
+        return save_path

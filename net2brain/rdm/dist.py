@@ -110,6 +110,7 @@ def cosine(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
 
 
 @register_distance_function()
+@register_distance_function(name="pearson")
 def correlation(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
     """
     Computes the pairwise correlation distance between all vectors in `x`.

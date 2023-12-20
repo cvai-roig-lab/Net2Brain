@@ -7,6 +7,7 @@ import math
 from functools import partial
 from typing import Union, Callable, List, Optional, Tuple, Dict
 
+import numpy as np
 import torch
 from torch import Tensor
 from tqdm.auto import tqdm
@@ -81,7 +82,8 @@ def valid_distance_functions() -> List[str]:
     return list(DISTANCE_FUNCTIONS.keys())
 
 
-def check_dist_input(x: Tensor, y: Optional[Tensor] = None,
+def check_dist_input(x: Union[Tensor, np.ndarray],
+                     y: Optional[Union[Tensor, np.ndarray]] = None,
                      device: Optional[Union[str, torch.device]] = None,
                      dtype: Optional[torch.dtype] = None,
                      func: Optional[Callable] = None
@@ -91,9 +93,9 @@ def check_dist_input(x: Tensor, y: Optional[Tensor] = None,
 
     Parameters
     ----------
-    x : torch.Tensor
+    x : torch.Tensor or np.ndarray
         A 2D tensor of shape `[n, d]` where `n` is the number of vectors and `d` is the dimensionality of the vectors.
-    y : torch.Tensor, optional
+    y : torch.Tensor or np.ndarray, optional
         A 2D tensor of shape `[m, d]` where `m` is the number of vectors and `d` is the dimensionality of the vectors.
     device : str or torch.device, optional
         The device to move the input tensor to.
@@ -115,6 +117,9 @@ def check_dist_input(x: Tensor, y: Optional[Tensor] = None,
     """
 
     def _check_input(tensor):
+        if isinstance(tensor, np.ndarray):
+            tensor = torch.from_numpy(tensor)
+
         if not isinstance(tensor, Tensor):
             raise ValueError(f"Expected argument array to be a `torch.Tensor` but got {type(x)}.")
 
@@ -247,8 +252,27 @@ def to_distance_matrix(x: torch.Tensor) -> torch.Tensor:
     return out
 
 
-def dist(x: Tensor,
-         y: Optional[Tensor] = None,
+def is_condensed_1d(x: torch.Tensor) -> bool:
+    """
+    Checks whether the input is a 1d condensed distance vector.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Expects a 1D tenor of shape (n * (n - 1) / 2, ) to check whether it is a condensed distance vector.
+
+    Returns
+    -------
+    bool
+        Whether the input is a condensed distance vector.
+    """
+    shape = x.shape
+    d = math.ceil(math.sqrt(shape[-1] * 2))
+    return d * (d - 1) == shape[-1] * 2 and len(shape) == 1
+
+
+def dist(x: Union[Tensor, np.ndarray],
+         y: Optional[Union[Tensor, np.ndarray]] = None,
          chunk_size: Optional[int] = None,
          metric: Union[str, Callable] = "euclidean",
          **kwargs) -> Tensor:
@@ -259,11 +283,11 @@ def dist(x: Tensor,
 
     Parameters
     ----------
-    x : torch.Tensor
+    x : torch.Tensor or np.ndarray
         A 2D tensor of shape `[n, d]` where `n` is the number of vectors and `d` is the dimensionality of each vector or
         a 3D tensor of shape `[b, n, d]` where `b` is the batch size if the metric supports batched inputs.
 
-    y : torch.Tensor, optional
+    y : torch.Tensor or np.ndarray, optional
        A 2D tensor of shape `[m, d]` where `m` is the number of vectors and `d` is the dimensionality of each vector or
        a 3D tensor of shape `[b, m, d]` where `b` is the batch size. If `y` is `None`, then `y = x`.
 
@@ -292,6 +316,8 @@ def dist(x: Tensor,
         func = partial(_prepare_dist_func(metric), **kwargs)
     else:
         func = DISTANCE_FUNCTIONS[metric]
+
+    dist._output_condensed = getattr(func, "_output_condensed", False)
 
     inputs = check_dist_input(x, y, func=func, device=kwargs.pop("device", None), dtype=kwargs.pop("dtype", None))
     verbose = kwargs.pop("verbose", False)
