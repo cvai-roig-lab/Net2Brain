@@ -214,7 +214,7 @@ class FeatureExtractor:
                 print(f"Error: No data found to consolidate for layer {layer}.")
                 continue
 
-            output_file_path = os.path.join(self.save_path, f"{layer}_consolidated.npz")
+            output_file_path = os.path.join(self.save_path, f"{layer}.npz")
             np.savez_compressed(output_file_path, **data)
 
 
