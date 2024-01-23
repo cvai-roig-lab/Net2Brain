@@ -6,7 +6,7 @@ from net2brain.rdm import LayerRDM
 import torch.nn.functional as F
 
 
-@pytest.fixture(params=["case_1"])
+@pytest.fixture(params=["case3"])
 def case(request):
     return request.param
 
