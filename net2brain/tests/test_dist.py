@@ -14,11 +14,6 @@ def scipy_squareform_batched(x, batched=False):
         return distance.squareform(x, checks=False)
 
 
-@pytest.fixture(params=['cpu'] + (['cuda'] if torch.cuda.is_available() else []))
-def device(request):
-    return request.param
-
-
 @pytest.mark.parametrize('b', (None, 2, 8, 64))
 @pytest.mark.parametrize('size', (4, 32, 128, 256, 512))
 @pytest.mark.parametrize('dtype', (torch.float16, torch.float32, torch.float64))

@@ -1,7 +1,6 @@
 from datetime import datetime
-from datetime import datetime
 from pathlib import Path
-from typing import Union, Optional, Callable
+from typing import Union, Optional, Callable, List
 
 import torch
 from tqdm.auto import tqdm
@@ -33,6 +32,10 @@ class RDMCreator:
             raise ValueError(f"Device {self.device} is not available.")
 
         self.verbose = verbose
+
+    @staticmethod
+    def distance_functions() -> List[str]:
+        return valid_distance_functions()
 
     def __call__(self, *args, **kwargs):  # TODO: implement as Pipeline?
         return

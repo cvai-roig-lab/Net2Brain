@@ -312,6 +312,10 @@ def dist(x: Union[Tensor, np.ndarray],
         raise ValueError(
             f"Unknown distance metric {metric}. Use one of {valid_distance_functions()} or a custom callable."
         )
+
+    verbose = kwargs.pop("verbose", False)
+    device = kwargs.pop("device", None)
+
     if callable(metric):
         func = partial(_prepare_dist_func(metric), **kwargs)
     else:
@@ -319,8 +323,7 @@ def dist(x: Union[Tensor, np.ndarray],
 
     dist._output_condensed = getattr(func, "_output_condensed", False)
 
-    inputs = check_dist_input(x, y, func=func, device=kwargs.pop("device", None), dtype=kwargs.pop("dtype", None))
-    verbose = kwargs.pop("verbose", False)
+    inputs = check_dist_input(x, y, func=func, device=device, dtype=kwargs.pop("dtype", None))
 
     if chunk_size is None:
         return func(**inputs, **kwargs)

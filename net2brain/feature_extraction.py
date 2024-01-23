@@ -160,7 +160,7 @@ class FeatureExtractor:
             del data_from_file_list, final_features
 
         if consolidate_per_layer:
-            print("Cosolidating data per layer...")
+            print("Consolidating data per layer...")
             self.consolidate_per_layer()
 
 

@@ -4,21 +4,21 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from functools import lru_cache, cached_property
 from pathlib import Path
-from typing import Union, Tuple, List, Iterator, Dict, Type
+from typing import Union, Tuple, List, Iterator, Dict, Type, Iterable, Callable, Optional
 
 import numpy as np
 
 
-def natural_keys(text):
+def natural_keys(text: str) -> List[Union[int, str]]:
     """
     A function that sorts strings with numbers in a natural way.
     """
     return [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)]
 
 
-def nsorted(iterable, key=None, reverse=False):
+def nsorted(iterable: Iterable, key: Optional[Callable] = None, reverse: bool = False) -> List:
     """
-    Sorts an iterable in a natural way.
+    Sorts an iterable in a natural way by converting the strings to integers.
     """
     key = key or (lambda x: x)
     return sorted(iterable, key=lambda x: natural_keys(key(x)), reverse=reverse)
@@ -44,9 +44,8 @@ class FeatureFormat(Enum):
     HDF5 = 3
 
 
-@lru_cache(maxsize=32)
-def open_npz(path: Path):
-    """ Open any numpy file and cache it for faster access """
+@lru_cache(maxsize=16)
+def open_npz(path: Path) -> Dict[str, np.ndarray]:
     return np.load(path, allow_pickle=True)
 
 
@@ -63,9 +62,13 @@ def detect_feature_format(root: Union[str, Path]) -> FeatureFormat:
             The format of the feature files.
     """
     root = Path(root)
-    if root.is_dir():
+    if not root.exists():
+        raise FileNotFoundError(f"Directory {root} does not exist")
+    elif root.is_dir():
         dir_iter = root.iterdir()
         file = next(dir_iter)
+        if not file.is_file():
+            raise ValueError(f"Directory {root} does not contain any files.")
         if file.suffix == ".npz":
             shape = None
             for _, mat in open_npz(file).items():
@@ -78,6 +81,7 @@ def detect_feature_format(root: Union[str, Path]) -> FeatureFormat:
                     else:
                         # if the shape of the two arrays are the same, then the npz files are consolidated
                         return FeatureFormat.NPZ_CONSOLIDATED
+        raise ValueError(f"Invalid file suffix {file.suffix} for directory {root}. Only .npz files are supported.")
     elif root.is_file():
         if root.suffix in (".h5", ".hdf5", ".hdf", ".h5py"):
             return FeatureFormat.HDF5
@@ -160,19 +164,15 @@ class NPZConsolidateEngine(FeatureEngine):
     feature_format = FeatureFormat.NPZ_CONSOLIDATED
 
     def get_iterator(self) -> Iterator:
-        return filter(lambda x: x.suffix == '.npz', self.root.iterdir())
+        return filter(lambda x: x.suffix == '.npz', nsorted(self.root.iterdir(), key=lambda x: x.stem))
 
     @cached_property
     def num_layers(self) -> int:
         return len(list(self.get_iterator()))
 
-    @cached_property
-    def _stimuli(self) -> List[Path]:
-        return nsorted(self.get_iterator(), key=lambda x: x.stem)
-
     def next(self, item) -> Tuple[str, List[str], np.ndarray]:
         feat_npz = open_npz(item)
-        stimuli, feats = zip(*feat_npz.items())
+        stimuli, feats = zip(*nsorted(feat_npz.items(), key=lambda x: x[0]))
         layer = item.stem
         return layer, stimuli, np.stack(feats)
 
@@ -182,8 +182,9 @@ class NPZSeparateEngine(FeatureEngine):
     feature_format = FeatureFormat.NPZ_SEPARATE
 
     def get_iterator(self) -> Iterator:
-        return iter(open_npz(self._stimuli[0]))
+        return iter(nsorted(open_npz(self._stimuli[0])))
 
+    @cached_property
     def num_layers(self) -> int:
         return len(open_npz(self._stimuli[0]))
 
@@ -239,7 +240,7 @@ class FeatureIterator:
         self._iter = None
 
     def __len__(self) -> int:
-        return self.engine.num_layers()
+        return self.engine.num_layers
 
     def __iter__(self):
         self._iter = self.engine.get_iterator()

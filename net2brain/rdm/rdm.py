@@ -24,6 +24,9 @@ class RDM:
             rdm: torch.Tensor or np.ndarray
                 The RDM. Must be a square or condensed matrix.
         """
+        if not isinstance(rdm, (np.ndarray, torch.Tensor)):
+            raise ValueError(f"Incompatible type {type(rdm)} for RDM. Must be np.ndarray or torch.Tensor.")
+
         self.rdm = torch.from_numpy(rdm) if isinstance(rdm, np.ndarray) else rdm
         self.is_condensed = is_condensed_1d(self.rdm)
 
@@ -69,16 +72,19 @@ class LayerRDM(RDM):
         self.stimuli_name = stimuli_name
         self.meta = meta
 
-    def __repr__(self):
-        return f"LayerRDM(layer={self.layer_name}, num_stimuli={len(self.layer_name)}, condensed={self.is_condensed})"
+    def __len__(self) -> int:
+        return len(self.layer_name)
 
-    def __str__(self):
-        return f"RDM for layer {self.layer_name} with {len(self.layer_name)} stimuli"
+    def __repr__(self) -> str:
+        return f"LayerRDM(layer={self.layer_name}, num_stimuli={len(self)}, condensed={self.is_condensed})"
 
-    def __eq__(self, other):
+    def __str__(self) -> str:
+        return f"RDM for layer {self.layer_name} with {len(self)} stimuli"
+
+    def __eq__(self, other) -> bool:
         return self.rdm == other.rdm
 
-    def save(self, path: Union[str, Path], file_format: RDMFileFormatType = "pt"):
+    def save(self, path: Union[str, Path], file_format: RDMFileFormatType = "pt", force: bool = True) -> None:
         """
         Save the RDM to file. Always saves the RDM as condensed to save space.
 
@@ -89,6 +95,8 @@ class LayerRDM(RDM):
                 file.
             file_format: str
                 The format in which the RDM should be saved. Choose from `pt` and `npz`.
+            force: bool
+
         """
         # always save as condensed to save space
         rdm = to_condensed(self.rdm) if not self.is_condensed else self.rdm
@@ -98,11 +106,9 @@ class LayerRDM(RDM):
         data = dict(rdm=rdm, stimuli_name=self.stimuli_name, layer_name=self.layer_name, meta=self.meta)
 
         path = Path(path)
-        print(path)
         if path.is_dir():
             layer_name = self.layer_name.replace(".", "_") if self.layer_name is not None else uuid4().hex
             path = Path(path) / f"RDM_{layer_name}.{file_format}"
-            print(path)
         elif path.exists():
             raise FileExistsError(f"File {path} already exists. Cannot save RDM.")
         else:
@@ -128,6 +134,8 @@ class LayerRDM(RDM):
             data = torch.load(path)
         elif path.suffix == ".npz":
             data = np.load(path, allow_pickle=True)
+            # convert numpy object array to python object
+            data = dict(map(lambda x: (x[0], x[1].item() if x[1].ndim == 0 else x[1]), data.items()))
         else:
             s = f"File format `{path.suffix}` not supported. Choose from {RDMFileFormat}"
             raise ValueError(s)
