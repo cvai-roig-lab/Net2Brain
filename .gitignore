@@ -75,6 +75,7 @@ notebooks/*/*.npz
 notebooks/*/*.hdf5
 notebooks/*/*/*.npz
 notebooks/*/*/*.hdf5
+notebooks/bonner_pnas2017/*/*.*
 bonner_pnas2017/*/*.*
 notebooks/Workshops/*
 !notebooks/Workshops/*.ipynb

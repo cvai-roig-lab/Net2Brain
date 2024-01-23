@@ -6,7 +6,7 @@ from scipy import stats
 from sklearn.model_selection import KFold
 import rsatoolbox
 import pandas as pd
-
+from scipy.spatial.distance import squareform
 from .noiseceiling import NoiseCeiling
 from .eval_helper import *
 
@@ -69,6 +69,22 @@ class WRSA():
                     file_sets.append(f)
 
         return file_sets
+    
+    def check_squareform(self, rdm):
+        """Ensure that the RDM is in squareform.
+
+        Args:
+            rdm (numpy array): The RDM in either squareform or vector form.
+
+        Returns:
+            numpy array: The RDM in squareform.
+        """
+        # Check if the RDM is in squareform. If the array is 2D and square, it's already in squareform.
+        if rdm.ndim == 2 and rdm.shape[0] == rdm.shape[1]:
+            return rdm
+        else:
+            # Convert to squareform.
+            return squareform(rdm)
 
     def create_weighted_model(self, this_roi):
         """Create Weighted RSA model with all layers as training data
@@ -81,7 +97,10 @@ class WRSA():
         layers_upper = []
         for layer in self.model_rdms:
             layer_dict = load(op.join(self.model_rdms_path, layer))
-            layer_RDM = layer_dict["arr_0"]
+            key = list(layer_dict.keys())[0]  # You need to access the keys to open a npy file
+            layer_RDM = layer_dict[key]
+            layer_RDM = self.check_squareform(layer_RDM) # Check if rdm is squareform #TODO Remove soon after reimplementing RSA
+            
             layers_upper.append(self.get_uppertriangular(layer_RDM))
 
         """Do the same with the current ROI"""
