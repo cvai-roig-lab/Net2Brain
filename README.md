@@ -1,6 +1,6 @@
 
 
-# Net2Brain 🧠
+# Net2Brain (Update 01/24) 🧠
 
 Welcome to __Net2Brain__, a powerful toolbox designed to facilitate the comparison of human brain activity patterns with the activations of Deep Neural Networks (DNNs). With over 600 pre-trained DNNs available, Net2Brain empowers neuroscientists to explore and analyze the relationships between artificial and biological neural representations.
 
@@ -20,7 +20,8 @@ Net2Brain now has its own ReadTheDocs page including tutorials for
 - Taxonomy, Feature Extraction, RDM Creation, Evaluation
 - Adding your own models to the extractor
 - Adding your own netset
-=======
+
+
 # Tutorial and Workshop Notebooks
 Dive into the capabilities of __Net2Brain__  with our interactive tutorial and workshop notebooks, available for download [here](/notebooks/). The tutorial notebooks provide a comprehensive guide to the core functionalities of the Toolbox, offering step-by-step instructions to help you harness its full potential. The workshop notebooks, on the other hand, are designed to facilitate the replication of studies using __Net2Brain__, presenting practical examples and detailed workflows. Whether you're new to the Toolbox or looking to conduct your research, these resources are an invaluable starting point.
 
