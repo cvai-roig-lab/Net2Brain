@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creating Representational Dissimilarity Matrices (RDMs) &mdash; Net2Brain 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Evaluation" href="evaluation.html" />
+    <link rel="prev" title="Feature Extraction" href="feature_extraction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Net2Brain
+          </a>
+              <div class="version">
+                0.1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="key_functions.html">Key Functions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="taxonomy.html">Exploring the Toolbox - Model Taxonomy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="datasets.html">Loading Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="feature_extraction.html">Feature Extraction</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Creating Representational Dissimilarity Matrices (RDMs)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#generating-rdms-from-deep-neural-network-features">Generating RDMs from Deep Neural Network Features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#constructing-rdms-from-eeg-data">Constructing RDMs from EEG Data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="existing_models.html">Model Zoo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Net2Brain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="key_functions.html">Key Functions</a></li>
+      <li class="breadcrumb-item active">Creating Representational Dissimilarity Matrices (RDMs)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/rdm_creation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="creating-representational-dissimilarity-matrices-rdms">
+<h1>Creating Representational Dissimilarity Matrices (RDMs)<a class="headerlink" href="#creating-representational-dissimilarity-matrices-rdms" title="Permalink to this heading"></a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="linemarker linemarker-6">Run and test this code by using <a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/2_RDM_Creation.ipynb">this notebook</a>!</p>
+</div>
+<p class="linemarker linemarker-10">Representational Dissimilarity Matrices (RDMs) are powerful tools in understanding the complex processing patterns of neural network models. The RDMCreator class is designed to streamline the creation of RDMs by quantifying the distinctiveness of neural responses to different stimuli.</p>
+<section id="generating-rdms-from-deep-neural-network-features">
+<h2>Generating RDMs from Deep Neural Network Features<a class="headerlink" href="#generating-rdms-from-deep-neural-network-features" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-15">The <cite>RDMCreator</cite> transforms the high-dimensional activations of neural networks into a two-dimensional space, representing the dissimilarity between the responses to different inputs. This is crucial for comparing neural network processing to human brain activity.</p>
+<p class="linemarker linemarker-17">Prerequisites for <cite>RDMCreator</cite>:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-20"><strong>feat_path</strong>: A path to <cite>.npz</cite> files containing neural features for each stimulus, structured as <em>[Batch x Channels x Height x Width]</em>.</p></li>
+<li><p class="linemarker linemarker-21"><strong>save_path</strong>: (Optional) The target directory to save the generated RDMs.</p></li>
+<li><p class="linemarker linemarker-22"><strong>distance</strong>: (Optional) Which distance metric to use. Defaults to Pearson</p></li>
+</ul>
+<p class="linemarker linemarker-24">Functionality of <cite>RDMCreator</cite>:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-26">It outputs an RDM for each neural network layer, with dimensions <em>(#Stimuli x #Stimuli)</em>, providing a matrix of pairwise dissimilarity scores.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># AlexNet Example</span>
+<span class="kn">from</span> <span class="nn">net2brain.rdm_creation</span> <span class="kn">import</span> <span class="n">RDMCreator</span>
+
+<span class="n">feat_path</span> <span class="o">=</span> <span class="s2">&quot;path/to/AlexNet_Feat&quot;</span>
+<span class="n">save_path</span> <span class="o">=</span> <span class="s2">&quot;path/to/AlexNet_RDM&quot;</span>
+
+<span class="n">creator</span> <span class="o">=</span> <span class="n">RDMCreator</span><span class="p">(</span><span class="n">feat_path</span><span class="p">,</span> <span class="n">save_path</span><span class="p">)</span>
+<span class="n">creator</span><span class="o">.</span><span class="n">create_rdms</span><span class="p">()</span>  <span class="c1"># Creates and saves RDMs</span>
+</pre></div>
+</div>
+</section>
+<section id="constructing-rdms-from-eeg-data">
+<h2>Constructing RDMs from EEG Data<a class="headerlink" href="#constructing-rdms-from-eeg-data" title="Permalink to this heading"></a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="linemarker linemarker-45">Run and test this code by using <a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/Workshops/Net2Brain_EEG_Cutting_Edge_Workshop.ipynb">this notebook</a>!</p>
+</div>
+<p class="linemarker linemarker-48">The creation of RDMs from EEG data involves comparing neural responses to pairs of stimuli.
+A classifier is trained using cross-validation to determine the distinctiveness of EEG responses, which is then used to populate the RDM at every timepoint.</p>
+<p class="linemarker linemarker-51">Pseudo code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">timepoints</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="n">image</span> <span class="n">pairs</span>
+        <span class="n">accuracy_ij</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">number</span> <span class="n">of</span> <span class="n">instances</span>
+            <span class="n">trn_I</span> <span class="o">=</span> <span class="nb">all</span> <span class="n">EEG</span> <span class="n">instances</span> <span class="k">for</span> <span class="n">image</span> <span class="n">i</span> <span class="k">except</span> <span class="n">k</span>
+            <span class="n">trn_J</span> <span class="o">=</span> <span class="nb">all</span> <span class="n">EEG</span> <span class="n">instances</span> <span class="k">for</span> <span class="n">image</span> <span class="n">j</span> <span class="k">except</span> <span class="n">k</span>
+            <span class="n">tst_I</span> <span class="o">=</span> <span class="n">EEG</span> <span class="n">instance</span> <span class="n">k</span> <span class="k">for</span> <span class="n">image</span> <span class="n">i</span>
+            <span class="n">tst_J</span> <span class="o">=</span> <span class="n">EEG</span> <span class="n">instance</span> <span class="n">k</span> <span class="k">for</span> <span class="n">image</span> <span class="n">j</span>
+            <span class="n">LDA</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">trn_I</span><span class="p">,</span><span class="n">trn_J</span><span class="p">])</span>
+            <span class="n">accuracy_ij</span> <span class="o">+=</span> <span class="n">LDA</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="n">tst_I</span><span class="p">,</span><span class="n">tst_j</span><span class="p">])</span>
+        <span class="n">RDM</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">tt</span><span class="p">]</span> <span class="o">=</span> <span class="n">accuracy_ij</span>
+</pre></div>
+</div>
+<p class="linemarker linemarker-67">To use this approach, <strong>eeg_rdm</strong> function is provided, which requires:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-69"><strong>eeg</strong>: EEG-Data</p></li>
+<li><p class="linemarker linemarker-70"><strong>labels</strong>: Labels for EEG-Data</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.preprocess.rdm</span> <span class="kn">import</span> <span class="n">eeg_rdm</span>
+<span class="n">rdm</span> <span class="o">=</span> <span class="n">eeg_rdm</span><span class="p">(</span><span class="n">subj_data</span><span class="p">[</span><span class="s1">&#39;dat&#39;</span><span class="p">],</span><span class="n">subj_data</span><span class="p">[</span><span class="s1">&#39;lbl&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="feature_extraction.html" class="btn btn-neutral float-left" title="Feature Extraction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="evaluation.html" class="btn btn-neutral float-right" title="Evaluation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Domenic Bersch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

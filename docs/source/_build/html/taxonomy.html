@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exploring the Toolbox - Model Taxonomy &mdash; Net2Brain 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Loading Datasets" href="datasets.html" />
+    <link rel="prev" title="Key Functions" href="key_functions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Net2Brain
+          </a>
+              <div class="version">
+                0.1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="key_functions.html">Key Functions</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Exploring the Toolbox - Model Taxonomy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#viewing-all-models-and-architectures">Viewing All Models and Architectures</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#finding-a-specific-model">Finding a Specific Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#utilizing-the-model-taxonomy">Utilizing the Model Taxonomy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#searching-models-by-attributes">Searching Models by Attributes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-searches">Custom Searches</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="datasets.html">Loading Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="feature_extraction.html">Feature Extraction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rdm_creation.html">Creating Representational Dissimilarity Matrices (RDMs)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="existing_models.html">Model Zoo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adding_own_netsets.html">Creating Your Own NetSet</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Net2Brain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="key_functions.html">Key Functions</a></li>
+      <li class="breadcrumb-item active">Exploring the Toolbox - Model Taxonomy</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/taxonomy.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="exploring-the-toolbox-model-taxonomy">
+<h1>Exploring the Toolbox - Model Taxonomy<a class="headerlink" href="#exploring-the-toolbox-model-taxonomy" title="Permalink to this heading"></a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="linemarker linemarker-7">Run and test this code by using <a class="reference external" href="https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/0_Exploring_Net2Brain.ipynb">this notebook</a>!</p>
+</div>
+<p class="linemarker linemarker-9">Model Taxonomy serves as a comprehensive guide to navigate through the multitude of neural network models available in the toolbox. It provides a structured way to categorize models based on attributes like dataset, architecture, training method, and visual task. This aids users in selecting the most suitable model for their specific research requirements.</p>
+<p class="linemarker linemarker-11">The taxonomy is designed to simplify the process of model selection by categorizing models into a searchable framework. It helps users to:</p>
+<ul class="simple">
+<li><p class="linemarker linemarker-13">Identify models that fit their experimental needs.</p></li>
+<li><p class="linemarker linemarker-14">Compare models across different attributes.</p></li>
+<li><p class="linemarker linemarker-15">Save time by quickly locating models trained for specific tasks or datasets.</p></li>
+<li><p class="linemarker linemarker-16">Make informed decisions about which models may yield the most relevant insights for their research.</p></li>
+</ul>
+<p class="linemarker linemarker-18">By using the Model Taxonomy, researchers can efficiently scout through various models and select the one that best aligns with their study’s objectives.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">net2brain.feature_extraction</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">show_all_architectures</span><span class="p">,</span>
+    <span class="n">show_all_netsets</span><span class="p">,</span>
+    <span class="n">show_taxonomy</span><span class="p">,</span>
+    <span class="n">print_netset_models</span><span class="p">,</span>
+    <span class="n">find_model_like_name</span><span class="p">,</span>
+    <span class="n">find_model_by_dataset</span><span class="p">,</span>
+    <span class="n">find_model_by_training_method</span><span class="p">,</span>
+    <span class="n">find_model_by_visual_task</span><span class="p">,</span>
+    <span class="n">find_model_by_custom</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="viewing-all-models-and-architectures">
+<h2>Viewing All Models and Architectures<a class="headerlink" href="#viewing-all-models-and-architectures" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-37">To explore all available models and their corresponding netsets:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">show_all_architectures</span><span class="p">()</span>
+<span class="n">show_all_netsets</span><span class="p">()</span>
+</pre></div>
+</div>
+<p class="linemarker linemarker-44">For a closer look at the models within a specific netset:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">print_netset_models</span><span class="p">(</span><span class="s1">&#39;standard&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="finding-a-specific-model">
+<h2>Finding a Specific Model<a class="headerlink" href="#finding-a-specific-model" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-53">To find a model by its name:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">find_model_like_name</span><span class="p">(</span><span class="s1">&#39;ResNet&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="utilizing-the-model-taxonomy">
+<h2>Utilizing the Model Taxonomy<a class="headerlink" href="#utilizing-the-model-taxonomy" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-62">The toolbox offers a detailed taxonomy of models to streamline your search:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">show_taxonomy</span><span class="p">()</span>  <span class="c1"># Shows the model taxonomy</span>
+</pre></div>
+</div>
+</section>
+<section id="searching-models-by-attributes">
+<h2>Searching Models by Attributes<a class="headerlink" href="#searching-models-by-attributes" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-71">You can find models based on specific attributes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find models by the dataset they were trained on</span>
+<span class="n">find_model_by_dataset</span><span class="p">(</span><span class="s2">&quot;Taskonomy&quot;</span><span class="p">)</span>
+
+<span class="c1"># Discover models by their training method</span>
+<span class="n">find_model_by_training_method</span><span class="p">(</span><span class="s2">&quot;SimCLR&quot;</span><span class="p">)</span>
+
+<span class="c1"># Search for models trained for a particular visual task</span>
+<span class="n">find_model_by_visual_task</span><span class="p">(</span><span class="s2">&quot;Panoptic Segmentation&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="custom-searches">
+<h2>Custom Searches<a class="headerlink" href="#custom-searches" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-87">For tailored searches combining various attributes or focusing on a specific model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">find_model_by_custom</span><span class="p">([</span><span class="s2">&quot;COCO&quot;</span><span class="p">,</span> <span class="s2">&quot;Object Detection&quot;</span><span class="p">],</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;fpn&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="key_functions.html" class="btn btn-neutral float-left" title="Key Functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="datasets.html" class="btn btn-neutral float-right" title="Loading Datasets" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Domenic Bersch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

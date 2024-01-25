@@ -1,87 +1,80 @@
-import cv2
-from PIL import Image
-
+import warnings
+from .netsetbase import NetSetBase
+from .shared_functions import load_from_json
+import torchextractor as tx
 import torch
-from torch.autograd import Variable as V
-from torchvision import transforms as trn
+import os
 
 
-MODELS = {'deeplabv3_mobilenet_v3_large': torch.hub.load,
-          'deeplabv3_resnet101': torch.hub.load,
-          'deeplabv3_resnet50': torch.hub.load,
-          'fcn_resnet101': torch.hub.load,
-          'fcn_resnet50': torch.hub.load,
-          'lraspp_mobilenet_v3_large': torch.hub.load}
+class Pytorch(NetSetBase):
 
+    def __init__(self, model_name, device):
+        self.supported_data_types = ['image', 'video']
+        self.netset_name = "Pytorch"
+        self.model_name = model_name
+        self.device = device
 
-MODEL_NODES = {'deeplabv3_mobilenet_v3_large': ['backbone.1', 'backbone.2', 'backbone.3', 'backbone.4', 'backbone.5', 'backbone.6', 'backbone.7'
-                                                'backbone.8', 'backbone.9', 'backbone.10', 'backbone.11', 'backbone.12', 'backbone.13', 'backbone.14', 'backbone.15'
-                                                'backbone.16', 'classifier', 'classifier.1', 'classifier.2', 'classifier.3', 'classifier.4'],
-               'deeplabv3_resnet101': ['backbone.layer1', 'backbone.layer2', 'backbone.layer3', 'backbone.layer4',  'classifier', 'classifier.1',
-                                       'classifier.2', 'classifier.3', 'classifier.4'],
-               'deeplabv3_resnet50': ['backbone.layer1', 'backbone.layer2', 'backbone.layer3', 'backbone.layer4',  'classifier', 'classifier.1',
-                                       'classifier.2', 'classifier.3', 'classifier.4'],
-               'fcn_resnet101': ['backbone.layer1', 'backbone.layer2', 'backbone.layer3', 'backbone.layer4',  'classifier', 'classifier.1',
-                                 'classifier.2', 'classifier.3', 'classifier.4'],
-               'fcn_resnet50': ['backbone.layer1', 'backbone.layer2', 'backbone.layer3', 'backbone.layer4',  'classifier', 'classifier.1',
-                                 'classifier.2', 'classifier.3', 'classifier.4'],
-               'lraspp_mobilenet_v3_large': [ 'backbone.1', 'backbone.2', 'backbone.3', 'backbone.4', 'backbone.5', 'backbone.6', 'backbone.7'
-                                                'backbone.8', 'backbone.9', 'backbone.10', 'backbone.11', 'backbone.12', 'backbone.13', 'backbone.14', 'backbone.15'
-                                                'backbone.16',]}
+        # Set config path:
+        file_path = os.path.abspath(__file__)
+        directory_path = os.path.dirname(file_path)
+        self.config_path = os.path.join(directory_path, "configs/torchhub.json")
 
+    def get_preprocessing_function(self, data_type):
+        if data_type == 'image':
+            return self.image_preprocessing
+        elif data_type == 'video':
+            warnings.warn("Models only support image-data. Will average video frames")
+            return self.video_preprocessing
+        else:
+            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
+        
 
-def preprocess(image, model_name, device):
-    """Preprocesses image according to the networks needs
+    def get_feature_cleaner(self, data_type):
+        if data_type == 'image':
+            return Pytorch.clean_extracted_features
+        elif data_type == 'video':
+            return Pytorch.clean_extracted_features
+        else:
+            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
+        
 
-    Args:
-        image (str/path): path to image
-        model_name (str): name of the model (sometimes needes to differenciate between model settings)
+        
 
-    Returns:
-        PIL-Image: Preprocesses PIL Image
-    """
+    def get_model(self, pretrained):
 
-    centre_crop = trn.Compose([
-        trn.Resize((224, 224)),  # resize to 224 x 224 pixels
-        trn.ToTensor(),  # transform to tensor
-        # normalize according to ImageNet
-        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
+        # Load attributes from the json
+        model_attributes = load_from_json(self.config_path, self.model_name)
 
-    image = Image.open(image).convert('RGB')
+        # Set the layers and model function from the attributes
+        self.layers = model_attributes["nodes"]
+        self.loaded_model = model_attributes["model_function"]('pytorch/vision:v0.10.0', self.model_name, pretrained=pretrained)
+
+        # Model to device
+        self.loaded_model.to(self.device)
+
+        # Randomize weights
+        if not pretrained:
+            self.loaded_model.apply(self.randomize_weights)
+        
+        # Put in eval mode
+        self.loaded_model.eval()
+
+    def clean_extracted_features(self, features):
+        return features
     
-    image = V(centre_crop(image).unsqueeze(0))
 
-    if device == 'cuda':  # send to cudaa
-        image = image.cuda()
-
-    return image
-
-
-def preprocess_frame(frame, model_name, device):
-    """Preprocesses image according to the networks needs
-
-    Args:
-        frame (numpy array): array of frame
-        model_name (str): name of the model (sometimes needes to differenciate between model settings)
-
-    Returns:
-        PIL-Image: Preprocesses PIL Image
-    """
-    
-    centre_crop = trn.Compose([
-        trn.Resize((224, 224)),  # resize to 224 x 224 pixels
-        trn.ToTensor(),  # transform to tensor
-        # normalize according to ImageNet
-        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    pil_image = Image.fromarray(frame)
-    
-    pil_image = V(centre_crop(pil_image).unsqueeze(0))
-    
-    if device == 'cuda':  # send to cuda
-            pil_image = pil_image.cuda()
             
-    return pil_image
+    
+    def extraction_function(self, data, layers_to_extract=None):
+
+        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+
+        # Create a extractor instance
+        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+
+        # Extract actual features
+        _, features = self.extractor_model(data)
+
+        return features
+
+         

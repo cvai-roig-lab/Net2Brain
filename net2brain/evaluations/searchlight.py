@@ -3,6 +3,7 @@ import os.path as op
 
 import numpy as np
 from scipy import stats
+from scipy.spatial.distance import squareform
 import torch
 
 from .eval_helper import *
@@ -32,6 +33,22 @@ class Searchlight():
 
         if distance_metric.lower() == "pearson":
             self.distance = self.pearson_matrix
+
+    def check_squareform(self, rdm):
+        """Ensure that the RDM is in squareform.
+
+        Args:
+            rdm (numpy array): The RDM in either squareform or vector form.
+
+        Returns:
+            numpy array: The RDM in squareform.
+        """
+        # Check if the RDM is in squareform. If the array is 2D and square, it's already in squareform.
+        if rdm.ndim == 2 and rdm.shape[0] == rdm.shape[1]:
+            return rdm
+        else:
+            # Convert to squareform.
+            return squareform(rdm)
 
     def folderlookup(self, path):
         """Looks at the available files and returns the chosen one
@@ -271,6 +288,7 @@ class Searchlight():
             self.layer_counter = counter
 
             this_model_rdm = [np.load(op.join(self.model_rdms_path, layer))['arr_0']]
+            this_model_rdm = self.check_squareform(this_model_rdm) # Check if rdm is squareform #TODO Remove soon after reimplementing RSA
             self.evaluate_searchlight(noise_ceiling, this_model_rdm)
 
         return self.final_dict

@@ -4,12 +4,15 @@ import os.path as op
 import numpy as np
 import pandas as pd
 from scipy import stats
-
+from scipy.spatial.distance import squareform
 from .noiseceiling import NoiseCeiling
 from .eval_helper import *
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+
 
 
 class RSA():
@@ -86,6 +89,22 @@ class RSA():
                     file_sets.append(f)
 
         return file_sets
+    
+    def check_squareform(self, rdm):
+        """Ensure that the RDM is in squareform.
+
+        Args:
+            rdm (numpy array): The RDM in either squareform or vector form.
+
+        Returns:
+            numpy array: The RDM in squareform.
+        """
+        # Check if the RDM is in squareform. If the array is 2D and square, it's already in squareform.
+        if rdm.ndim == 2 and rdm.shape[0] == rdm.shape[1]:
+            return rdm
+        else:
+            # Convert to squareform.
+            return squareform(rdm)
 
     def rsa_meg(self, model_rdm, brain_rdm, layername):
         """Creates the output dictionary for MEG scans. Returns {layername: R², Significance}
@@ -101,6 +120,8 @@ class RSA():
         model_rdm = model_rdm[key]
         key = list(brain_rdm.keys())[0]  # You need to access the keys to open a npy file
         meg_rdm = brain_rdm[key]
+
+        model_rdm = self.check_squareform(model_rdm) # Check if rdm is squareform #TODO Remove soon after reimplementing RSA
 
         # returns list of corrcoefs, depending on amount of participants in brain rdm
         corr = np.mean([self.distance(model_rdm, rdms)for rdms in meg_rdm], 1)
@@ -135,8 +156,7 @@ class RSA():
         key = list(brain_rdm.keys())[0]  # You need to access the keys to open a npy file
         fmri_rdm = brain_rdm[key]
    
-
-
+        model_rdm = self.check_squareform(model_rdm) # Check if rdm is squareform #TODO Remove soon after reimplementing RSA
 
         # returns list of corrcoefs, depending on amount of participants in brain rdm
         corr = self.distance(model_rdm, fmri_rdm)

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creating Your Own NetSet &mdash; Net2Brain 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Model Zoo" href="existing_models.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Net2Brain
+          </a>
+              <div class="version">
+                0.1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="key_functions.html">Key Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="existing_models.html">Model Zoo</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Creating Your Own NetSet</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-copying-the-empty-netset">Step 1: Copying the Empty NetSet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-customizing-the-netset">Step 2: Customizing the NetSet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-3-creating-a-configuration-file">Step 3: Creating a Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-4-optional-modifications">Step 4: Optional Modifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-5-importing-your-netset">Step 5: Importing Your NetSet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Net2Brain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Creating Your Own NetSet</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/adding_own_netsets.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="creating-your-own-netset">
+<span id="ownnetset"></span><h1>Creating Your Own NetSet<a class="headerlink" href="#creating-your-own-netset" title="Permalink to this heading"></a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p class="linemarker linemarker-7">If you don’t want to create a whole netset but still want to use your own models, check <a class="reference internal" href="feature_extraction.html#customdnn"><span class="std std-ref">Using FeatureExtractor with a Custom DNN</span></a> out!</p>
+</div>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-14">Creating a custom NetSet into <strong>Net2Brain</strong> is really easy and only involves a few simple steps, including copying a template, adding data types, and configuring model settings. This guide will walk you through each step with examples to help you create your own NetSet.</p>
+</section>
+<section id="step-1-copying-the-empty-netset">
+<h2>Step 1: Copying the Empty NetSet<a class="headerlink" href="#step-1-copying-the-empty-netset" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-19">Start by copying our template-file <code class="docutils literal notranslate"><span class="pre">empty_netset.py</span></code>. This file contains a template class <cite>YOURNETSET</cite> which inherits from <cite>NetSetBase</cite>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">YOURNETSET</span><span class="p">(</span><span class="n">NetSetBase</span><span class="p">):</span>  <span class="c1"># Rename to your desired netset name</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>
+        <span class="c1"># Your code here</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-customizing-the-netset">
+<h2>Step 2: Customizing the NetSet<a class="headerlink" href="#step-2-customizing-the-netset" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-30">Rename the <cite>YOURNETSET</cite> class to the name of your netset. Define the supported data types and the netset name and the path to your config-file (step 3).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyCustomNetSet</span><span class="p">(</span><span class="n">NetSetBase</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">supported_data_types</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span> <span class="s1">&#39;audio&#39;</span><span class="p">]</span>  <span class="c1"># Example data types</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">netset_name</span> <span class="o">=</span> <span class="s2">&quot;MyCustomNetSet&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="s2">&quot;./&quot;</span><span class="p">)</span> <span class="c1"># Path to configuration file that lists all models &amp; functions to access it (see other configs)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-3-creating-a-configuration-file">
+<h2>Step 3: Creating a Configuration File<a class="headerlink" href="#step-3-creating-a-configuration-file" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-42">Create a JSON configuration file that lists all the models and their functions. The configuration files for the other architectures lie under <em>“/net2brain/architectures/configs”</em>. Feel free to take a look at them for inspiration.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;AlexNet&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;model_function&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;torchvision.models.alexnet&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;nodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;features.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="step-4-optional-modifications">
+<h2>Step 4: Optional Modifications<a class="headerlink" href="#step-4-optional-modifications" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-56">You may wish to add custom preprocessing or feature cleaning methods. These can be specified within the class methods. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_preprocessing_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">):</span>
+    <span class="c1"># Custom preprocessing steps</span>
+
+<span class="k">def</span> <span class="nf">get_feature_cleaner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">):</span>
+    <span class="c1"># Custom cleaning steps</span>
+</pre></div>
+</div>
+</section>
+<section id="step-5-importing-your-netset">
+<h2>Step 5: Importing Your NetSet<a class="headerlink" href="#step-5-importing-your-netset" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-69">Finally, import your new netset into <cite>feature_extractor.py</cite>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">my_custom_netset</span> <span class="kn">import</span> <span class="n">MyCustomNetSet</span>
+</pre></div>
+</div>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this heading"></a></h2>
+<p class="linemarker linemarker-78">You now have a custom NetSet ready for use with your feature extraction pipeline. Remember to test your NetSet thoroughly to ensure it functions as expected.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="existing_models.html" class="btn btn-neutral float-left" title="Model Zoo" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Domenic Bersch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

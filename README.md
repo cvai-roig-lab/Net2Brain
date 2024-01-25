@@ -1,10 +1,10 @@
 
 
-# Net2Brain 🧠
+# Net2Brain (Update 01/24) 🧠
 
 Welcome to __Net2Brain__, a powerful toolbox designed to facilitate the comparison of human brain activity patterns with the activations of Deep Neural Networks (DNNs). With over 600 pre-trained DNNs available, Net2Brain empowers neuroscientists to explore and analyze the relationships between artificial and biological neural representations.
 
-Net2Brain is a collaborative effort between CVAI and Radek Cichy's lab, aimed at providing a user-friendly toolbox for neural research with deep neural networks.
+Net2Brain is a collaborative effort between CVAI and Radek Cichy's lab, aimed at providing a user-friendly toolbox for neural research with deep neural networks. 
 
 ## All-in-One Solution
 Net2Brain offers an all-in-one solution by providing access to over 600 pretrained neural networks, specifically trained for various visual tasks. This extensive collection allows researchers to extract features from a diverse range of models, including pretrained and random architectures. Moreover, Net2Brain offers flexibility by allowing users to integrate their own models, thereby expanding the scope of experiments that can be conducted to evaluate brain responses.
@@ -14,6 +14,26 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
 
+# Documentation (NEW!)
+Net2Brain now has its own ReadTheDocs page including tutorials for
+- Installation
+- Taxonomy, Feature Extraction, RDM Creation, Evaluation
+- Adding your own models to the extractor
+- Adding your own netset
+
+
+# Tutorial and Workshop Notebooks
+Dive into the capabilities of __Net2Brain__  with our interactive tutorial and workshop notebooks, available for download [here](/notebooks/). The tutorial notebooks provide a comprehensive guide to the core functionalities of the Toolbox, offering step-by-step instructions to help you harness its full potential. The workshop notebooks, on the other hand, are designed to facilitate the replication of studies using __Net2Brain__, presenting practical examples and detailed workflows. Whether you're new to the Toolbox or looking to conduct your research, these resources are an invaluable starting point.
+
+
+See [here](https://net2brain.readthedocs.io/en/latest/index.html) for an detailed documentation of the toolbox. Below you will find a subset of the tutorials.
+
+
+# Example Notebooks and Datasets (NEW!)
+
+Net2Brain provides a set of [example notebooks](notebooks) that demonstrate the various functionalities of the toolbox. These notebooks are designed to guide users through the process of model taxonomy exploration, feature extraction, RDM creation, and evaluation. 
+
+To further facilitate your exploration, we also offer pre-downloaded datasets that you can use in conjunction with the example notebooks. These datasets allow you to immediately dive into the experimentation process and gain hands-on experience with Net2Brain. Simply follow the instructions provided in the notebooks to access and utilize the datasets effectively.
 
 # Key Functions
 
@@ -58,11 +78,7 @@ find_model_by_custom(["COCO", "Object Detection"], model_name="fpn")
 This taxonomy system provides a convenient way to search for models that align with specific research requirements.
 
 
-# Example Notebooks and Datasets
 
-Net2Brain provides a set of [example notebooks](notebooks) that demonstrate the various functionalities of the toolbox. These notebooks are designed to guide users through the process of model taxonomy exploration, feature extraction, RDM creation, and evaluation. 
-
-To further facilitate your exploration, we also offer pre-downloaded datasets that you can use in conjunction with the example notebooks. These datasets allow you to immediately dive into the experimentation process and gain hands-on experience with Net2Brain. Simply follow the instructions provided in the notebooks to access and utilize the datasets effectively.
 
 
 
@@ -90,26 +106,30 @@ pip install -U git+https://github.com/cvai-roig-lab/Net2Brain
 
 ## Feature Extraction
 
+> Note: For more detailed instructions and customization options, refer to the provided notebooks and documentation.
+
 Net2Brain allows you to extract features from a variety of pretrained models or your own custom models. This feature extraction process is crucial for analyzing neural network representations and comparing them with human brain activity patterns.
 
 To extract features using Net2Brain, follow these steps:
 
 ```python
 from net2brain.feature_extraction import FeatureExtractor
-
-# Initialize the FeatureExtractor with a pretrained model
-fx = FeatureExtractor(model='AlexNet', netset='standard', device='cpu')
+fx = FeatureExtractor(model='AlexNet', netset='Standard', device='cpu')
 
 # Extract features from a dataset
-fx.extract(dataset_path=stimuli_path, save_format='npz', save_path='AlexNet_Feat')
-```
-In this example, we use the FeatureExtractor class to extract features from the AlexNet model. The extracted features are saved in the specified format, such as NumPy .npz format, using the given save path.
+fx.extract(data_path=stimuli_path, save_path='AlexNet_Feat')
 
-Net2Brain provides flexibility in selecting models, choosing layers for feature extraction, and saving the extracted features. Refer to the provided notebooks and documentation for more detailed examples and customization options.
+# Consolidate features per layer (Optional)
+fx.consolidate_per_layer()
+```
+In this example, we use the FeatureExtractor class to extract features from the AlexNet model. The extracted features are saved in a .npz file.
+
+Net2Brain provides flexibility in selecting models, choosing layers for feature extraction, and saving the extracted features.
 
 
 ## Creating RDMs
 
+> Note: For more detailed instructions and customization options, refer to the provided notebooks and documentation.
 
 After feature extraction, the next step is to create Representational Dissimilarity Matrices (RDMs) using Net2Brain's RDM Creator.
 
@@ -118,26 +138,26 @@ To generate RDMs, follow these steps:
 ```python
 from net2brain.rdm_creation import RDMCreator
 
-# Define the paths
 feat_path = "AlexNet_Feat"
 save_path = "AlexNet_RDM"
 
-# Create an instance of RDMCreator
-creator = RDMCreator(feat_path, save_path)
 
-# Generate and save the RDMs
-creator.create_rdms()
+# Call the Class with the path to the features
+creator = RDMCreator(verbose=True, device='cpu') 
+save_path = creator.create_rdms(feature_path=feat_path, save_path=save_path, save_format='npz') 
+
 ```
 In this example, the RDMCreator class is used to create RDMs from previously extracted features using the AlexNet model. The extracted features are located at feat_path, and the resulting RDMs will be saved at save_path.
 
 The RDM Creator calculates dissimilarities between neural representations of different images and generates RDMs with a shape of (#Images, #Images) for each specified layer. These RDMs provide insights into the similarities and differences in neural representations.
 
-For more detailed instructions and customization options, refer to the provided notebooks and documentation.
+
 
 
 
 
 ## Evaluation: RSA and Plotting
+> Note: For more detailed instructions and customization options, refer to the provided notebooks and documentation.
 
 Net2Brain provides powerful evaluation capabilities to analyze and compare the representations of neural networks. One of the key evaluation metrics available is RSA (Representational Similarity Analysis). Additionally, the toolbox offers integrated plotting functionality to visualize evaluation results.
 RSA Evaluation
@@ -246,12 +266,13 @@ We hope Net2Brain proves to be a valuable resource in your neuroscientific inves
 
 ## Contributors of Net2Brain
 
-- B.Sc. Domenic Bersch
+- M.Sc. Domenic Bersch
 - Dr. Sari Saba-Sadiya
 - M. Sc. Martina Vilas
 - M. Sc. Timothy Schaumlöffel
 - Dr. Kshitij Dwivedi
 - Dr. Radoslaw Martin Cichy
+- Prof. Dr. Gemma Roig
 
 
 ## Citing Net2Brain

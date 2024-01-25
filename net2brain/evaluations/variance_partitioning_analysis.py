@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from scipy.stats import ttest_1samp
+from scipy.spatial.distance import squareform
 import statsmodels.stats.multitest
 
 class VPA():
@@ -156,6 +157,22 @@ class VPA():
         return rdm[np.triu_indices(num_conditions,1)]
     
 
+    def check_squareform(self, rdm):
+        """Ensure that the RDM is in squareform.
+
+        Args:
+            rdm (numpy array): The RDM in either squareform or vector form.
+
+        Returns:
+            numpy array: The RDM in squareform.
+        """
+        # Check if the RDM is in squareform. If the array is 2D and square, it's already in squareform.
+        if rdm.ndim == 2 and rdm.shape[0] == rdm.shape[1]:
+            return rdm
+        else:
+            # Convert to squareform.
+            return squareform(rdm)
+
 
     def load_rdms(self, rdm_paths):
         """Function to load the RDMs for VPA depending on the type of RDM
@@ -199,6 +216,8 @@ class VPA():
                     this_rdm = this_rdm['arr_0']
                 else:
                     raise ValueError(f"The RDM file does not contain 'rdm' or 'arr_0' keys.")
+                
+                this_rdm = self.check_squareform(this_rdm) # Check if rdm is squareform #TODO Remove soon after reimplementing RSA
         
                 rdm_list.append(self.get_uppertriangular(this_rdm))
 
@@ -249,7 +268,6 @@ class VPA():
         """
 
         # Open RDMs
-        dep_var = self.load_rdms(self.dependent_variable)
         ind_var_1 = self.load_rdms(self.independent_1)
         ind_var_2 = self.load_rdms(self.independent_2)
 
@@ -603,7 +621,7 @@ class VPA():
         self.average_models=average_models
 
         # Load dependent variable
-        dep_var = np.squeeze(self.load_rdms(self.dependent_variable))
+        dep_var = self.load_rdms(self.dependent_variable)[0]
 
         # Get Subjects and time from the dimensions (16, 100, 1225)
         num_subjects = dep_var.shape[0]

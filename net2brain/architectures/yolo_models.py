@@ -1,144 +1,85 @@
-import cv2
-from PIL import Image
+import warnings
+from .netsetbase import NetSetBase
+from .shared_functions import load_from_json
+import torchextractor as tx
+import os
 
-import torch
-from torch.autograd import Variable as V
-from torchvision import transforms as trn
+class Yolo(NetSetBase):
 
-MODELS = {'yolov5l': torch.hub.load,
-          'yolov5l6': torch.hub.load,
-          'yolov5m': torch.hub.load,
-          'yolov5m6': torch.hub.load,
-          'yolov5n': torch.hub.load,
-          'yolov5n6': torch.hub.load,
-          'yolov5s': torch.hub.load,
-          'yolov5s6': torch.hub.load,
-          'yolov5x': torch.hub.load,
-          'yolov5x6': torch.hub.load}
+    def __init__(self, model_name, device):
+        self.supported_data_types = ['image', 'video']
+        self.netset_name = "Yolo"
+        self.model_name = model_name
+        self.device = device
 
+        # Set config path:
+        file_path = os.path.abspath(__file__)
+        directory_path = os.path.dirname(file_path)
+        self.config_path = os.path.join(directory_path, "configs/yolo.json")
 
-MODEL_NODES = {'yolov5l': ['model.model.0', 'model.model.1', 'model.model.2',
-                           'model.model.3', 'model.model.4', 'model.model.5',
-                           'model.model.6', 'model.model.7', 'model.model.8',
-                           'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                           'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                           'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24'],
-               'yolov5l6': ['model.model.0', 'model.model.1', 'model.model.2',
-                            'model.model.3', 'model.model.4', 'model.model.5',
-                            'model.model.6', 'model.model.7', 'model.model.8',
-                            'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                            'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                            'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24'],
-               'yolov5m': ['model.model.0', 'model.model.1', 'model.model.2',
-                           'model.model.3', 'model.model.4', 'model.model.5',
-                           'model.model.6', 'model.model.7', 'model.model.8',
-                           'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                           'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                           'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24'],
-               'yolov5m6': ['model.model.0', 'model.model.1', 'model.model.2',
-                            'model.model.3', 'model.model.4', 'model.model.5',
-                            'model.model.6', 'model.model.7', 'model.model.8',
-                            'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                            'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                            'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24', 'model.model.25',
-                            'model.model.26', 'model.model.27', 'model.model.28', 'model.model.29', 'model.model.30', 'model.model.31', 'model.model.32',
-                            'model.model.33'],
-               'yolov5n': ['model.model.0', 'model.model.1', 'model.model.2',
-                           'model.model.3', 'model.model.4', 'model.model.5',
-                           'model.model.6', 'model.model.7', 'model.model.8',
-                           'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                           'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                           'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24'],
-               'yolov5n6': ['model.model.0', 'model.model.1', 'model.model.2',
-                            'model.model.3', 'model.model.4', 'model.model.5',
-                            'model.model.6', 'model.model.7', 'model.model.8',
-                            'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                            'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                            'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24', 'model.model.25',
-                            'model.model.26', 'model.model.27', 'model.model.28', 'model.model.29', 'model.model.30', 'model.model.31', 'model.model.32',
-                            'model.model.33'],
-               'yolov5s': ['model.model.0', 'model.model.1', 'model.model.2',
-                           'model.model.3', 'model.model.4', 'model.model.5',
-                           'model.model.6', 'model.model.7', 'model.model.8',
-                           'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                           'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                           'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24'],
-               'yolov5s6': ['model.model.0', 'model.model.1', 'model.model.2',
-                            'model.model.3', 'model.model.4', 'model.model.5',
-                            'model.model.6', 'model.model.7', 'model.model.8',
-                            'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                            'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                            'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24', 'model.model.25',
-                            'model.model.26', 'model.model.27', 'model.model.28', 'model.model.29', 'model.model.30', 'model.model.31', 'model.model.32',
-                            'model.model.33'],
-               'yolov5x': ['model.model.0', 'model.model.1', 'model.model.2',
-                           'model.model.3', 'model.model.4', 'model.model.5',
-                           'model.model.6', 'model.model.7', 'model.model.8',
-                           'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                           'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                           'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24'],
-               'yolov5x6': ['model.model.0', 'model.model.1', 'model.model.2',
-                            'model.model.3', 'model.model.4', 'model.model.5',
-                            'model.model.6', 'model.model.7', 'model.model.8',
-                            'model.model.9', 'model.model.10', 'model.model.11', 'model.model.12', 'model.model.13',
-                            'model.model.14', 'model.model.15', 'model.model.16', 'model.model.17', 'model.model.18',
-                            'model.model.19', 'model.model.20', 'model.model.21', 'model.model.22', 'model.model.23', 'model.model.24', 'model.model.25',
-                            'model.model.26', 'model.model.27', 'model.model.28', 'model.model.29', 'model.model.30', 'model.model.31', 'model.model.32',
-                            'model.model.33']}
+    def get_preprocessing_function(self, data_type):
+        if data_type == 'image':
+            return self.image_preprocessing
+        elif data_type == 'video':
+            warnings.warn("Models only support image-data. Will average video frames")
+            return self.video_preprocessing
+        else:
+            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
+        
+
+    def get_feature_cleaner(self, data_type):
+        if data_type == 'image':
+            return Yolo.clean_extracted_features
+        elif data_type == 'video':
+            return Yolo.clean_extracted_features
+        else:
+            raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
+        
+
+    def get_model(self, pretrained):
+
+        # Load attributes from the json
+        model_attributes = load_from_json(self.config_path, self.model_name)
+
+        # Set the layers and model function from the attributes
+        self.layers = model_attributes["nodes"]
+        self.loaded_model = model_attributes["model_function"]('ultralytics/yolov5', 
+                                                               self.model_name, 
+                                                               pretrained=pretrained)
+
+        # Model to device
+        self.loaded_model.to(self.device)
+
+        # Randomize weights
+        if not pretrained:
+            self.loaded_model.apply(self.randomize_weights)
+
+        # Put in eval mode
+        self.loaded_model.eval()
 
 
-def preprocess(image, model_name, device):
-    """Preprocesses image according to the networks needs
-
-    Args:
-        image (str/path): path to image
-        model_name (str): name of the model (sometimes needes to differenciate between model settings)
-
-    Returns:
-        PIL-Image: Preprocesses PIL Image
-    """
-
-    centre_crop = trn.Compose([
-        trn.Resize((224, 224)),  # resize to 224 x 224 pixels
-        trn.ToTensor(),  # transform to tensor
-        # normalize according to ImageNet
-        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-    image = Image.open(image).convert('RGB')
+    def clean_extracted_features(self, features):
+        cleaned_features = {}
+        for layer, output in features.items():
+            # Check if the output is a tuple
+            if isinstance(output, tuple):
+                # Extract the tensor from the tuple
+                tensor = output[0]
+            else:
+                tensor = output
+            cleaned_features[layer] = tensor
+        return cleaned_features
     
-    image = V(centre_crop(image).unsqueeze(0))
+    def extraction_function(self, data, layers_to_extract=None):
 
-    if device == 'cuda':  # send to cuda
-        image = image.cuda()
+        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
-    return image
+        # Create a extractor instance
+        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
 
+        # Extract actual features
+        _, features = self.extractor_model(data)
 
-def preprocess_frame(frame, model_name, device):
-    """Preprocesses image according to the networks needs
+        return features
 
-    Args:
-        frame (numpy array): array of frame
-        model_name (str): name of the model (sometimes needes to differenciate between model settings)
-
-    Returns:
-        PIL-Image: Preprocesses PIL Image
-    """
-    
-    centre_crop = trn.Compose([
-        trn.Resize((224, 224)),  # resize to 224 x 224 pixels
-        trn.ToTensor(),  # transform to tensor
-        # normalize according to ImageNet
-        trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    pil_image = Image.fromarray(frame)
-    
-    pil_image = V(centre_crop(pil_image).unsqueeze(0))
-    
-    if device == 'cuda':  # send to cuda
-            pil_image = pil_image.cuda()
-            
-    return pil_image
+         
