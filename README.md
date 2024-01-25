@@ -105,6 +105,8 @@ pip install -U git+https://github.com/cvai-roig-lab/Net2Brain
 
 ## Feature Extraction
 
+> Note: For more detailed instructions and customization options, refer to the provided notebooks and documentation.
+
 Net2Brain allows you to extract features from a variety of pretrained models or your own custom models. This feature extraction process is crucial for analyzing neural network representations and comparing them with human brain activity patterns.
 
 To extract features using Net2Brain, follow these steps:
@@ -121,11 +123,12 @@ fx.consolidate_per_layer()
 ```
 In this example, we use the FeatureExtractor class to extract features from the AlexNet model. The extracted features are saved in a .npz file.
 
-Net2Brain provides flexibility in selecting models, choosing layers for feature extraction, and saving the extracted features. Refer to the provided notebooks and documentation for more detailed examples and customization options.
+Net2Brain provides flexibility in selecting models, choosing layers for feature extraction, and saving the extracted features.
 
 
 ## Creating RDMs
 
+> Note: For more detailed instructions and customization options, refer to the provided notebooks and documentation.
 
 After feature extraction, the next step is to create Representational Dissimilarity Matrices (RDMs) using Net2Brain's RDM Creator.
 
@@ -134,23 +137,26 @@ To generate RDMs, follow these steps:
 ```python
 from net2brain.rdm_creation import RDMCreator
 
-feat_path = "path/to/AlexNet_Feat"
-save_path = "path/to/AlexNet_RDM"
+feat_path = "AlexNet_Feat"
+save_path = "AlexNet_RDM"
 
-creator = RDMCreator(feat_path, save_path)
-creator.create_rdms()  # Creates and saves RDMs
+
+# Call the Class with the path to the features
+creator = RDMCreator(verbose=True, device='cpu') 
+save_path = creator.create_rdms(feature_path=feat_path, save_path=save_path, save_format='npz') 
 
 ```
 In this example, the RDMCreator class is used to create RDMs from previously extracted features using the AlexNet model. The extracted features are located at feat_path, and the resulting RDMs will be saved at save_path.
 
 The RDM Creator calculates dissimilarities between neural representations of different images and generates RDMs with a shape of (#Images, #Images) for each specified layer. These RDMs provide insights into the similarities and differences in neural representations.
 
-For more detailed instructions and customization options, refer to the provided notebooks and documentation.
+
 
 
 
 
 ## Evaluation: RSA and Plotting
+> Note: For more detailed instructions and customization options, refer to the provided notebooks and documentation.
 
 Net2Brain provides powerful evaluation capabilities to analyze and compare the representations of neural networks. One of the key evaluation metrics available is RSA (Representational Similarity Analysis). Additionally, the toolbox offers integrated plotting functionality to visualize evaluation results.
 RSA Evaluation
