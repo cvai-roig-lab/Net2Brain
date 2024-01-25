@@ -39,11 +39,14 @@ The RDM Creator outputs an RDM for each specified neural network layer, with dim
 
 
 The default distance function is the correlation distance. To use a different distance function, we can specify the distance function in the **distance** parameter. The available distance functions can been seen by calling the **distance_functions** method of the RDMCreator. We created synonyms for the distance functions to make it easier to use them (i.e. l2 == euclidean). The available distance functions are:
+
 .. code-block:: python
+    
     creator.distance_functions()
 
 
 You can also use custom distance functions by passing a function to the **distance** parameter. The function should take one argument `x` of shape `(N, D)`, which represents the features (dimension `D`) of the `N` images and return a pairwise distance matrix of shape `(N, N)`. For example, we can use the cosine distance function as follows:
+
 .. code-block:: python
     
     import torch.nn.functional as F
