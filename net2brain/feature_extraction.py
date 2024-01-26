@@ -95,24 +95,30 @@ class FeatureExtractor:
         # Iterate over all files in the given data_path
         self.data_path = data_path
 
-        # Get all datafiles:
-        data_files = [i for i in Path(self.data_path).iterdir()]
+        # Flatten the list of supported extensions from DataTypeLoader
+        DataWrapper = DataTypeLoader(self.netset)
+        all_supported_extensions = [ext for extensions in DataWrapper.supported_extensions.values() for ext in extensions]
+
+        # Filter data_files to include only files with supported extensions
+        data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
         data_files.sort()
 
-        # Detect data type
-        data_loader, self.data_type, self.data_combiner = self._get_dataloader(data_files[0])
-
-        if self.data_type not in self.netset.supported_data_types:
-                raise ValueError(f"{self.netset_name} does not support data type: {self.data_type}")
         
-        # Select preprocessor
-        if self.preprocessor == None:
-            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
 
         for data_file in tqdm(data_files):
 
             # Get datapath
             file_name = str(data_file).split(os.sep)[-1]
+
+            # Detect data type for the current file
+            data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_file)
+
+            if self.data_type not in self.netset.supported_data_types:
+                continue  # Skip unsupported data types
+
+            # Select preprocessor
+            if self.preprocessor == None:
+                self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
 
             # Load data
             data_from_file = data_loader(data_file)
@@ -264,34 +270,34 @@ class FeatureExtractor:
         # Use the dynamic loading and registration mechanism
         return NetSetBase._registry.get(netset_name, None)
 
-    def _get_dataloader(self, data_path):
-        # Logic to detect and return the correct DataType derived class
-        file_extension = os.path.splitext(data_path)[1].lower()
+    # def _get_dataloader(self, data_path):
+    #     # Logic to detect and return the correct DataType derived class
+    #     file_extension = os.path.splitext(data_path)[1].lower()
     
-        if file_extension in ['.jpg', '.jpeg', '.png']:
-            data_loader = self.netset.load_image_data
-            data_type = "image"
-            data_combiner = self.netset.combine_image_data
-            return data_loader, data_type, data_combiner
+    #     if file_extension in ['.jpg', '.jpeg', '.png']:
+    #         data_loader = self.netset.load_image_data
+    #         data_type = "image"
+    #         data_combiner = self.netset.combine_image_data
+    #         return data_loader, data_type, data_combiner
         
-        elif file_extension in ['.mp4', '.avi']:
-            data_loader = self.netset.load_video_data
-            data_type = "video"
-            data_combiner = self.netset.combine_video_data
-            return data_loader, data_type, data_combiner
+    #     elif file_extension in ['.mp4', '.avi']:
+    #         data_loader = self.netset.load_video_data
+    #         data_type = "video"
+    #         data_combiner = self.netset.combine_video_data
+    #         return data_loader, data_type, data_combiner
         
-        elif file_extension in ['.wav', '.mp3']:
-            data_loader = self.netset.load_audio_data
-            data_type = "audio"
-            data_combiner = self.netset.combine_audio_data
-            return data_loader, data_type, data_combiner
-        elif file_extension in ['.txt']:
-            data_loader = self.netset.load_text_data
-            data_type = "text"
-            data_combiner = self.netset.combine_text_data
-            return data_loader, data_type, data_combiner
-        else:
-            raise ValueError(f"Unsupported file format: {file_extension}")
+    #     elif file_extension in ['.wav', '.mp3']:
+    #         data_loader = self.netset.load_audio_data
+    #         data_type = "audio"
+    #         data_combiner = self.netset.combine_audio_data
+    #         return data_loader, data_type, data_combiner
+    #     elif file_extension in ['.txt']:
+    #         data_loader = self.netset.load_text_data
+    #         data_type = "text"
+    #         data_combiner = self.netset.combine_text_data
+    #         return data_loader, data_type, data_combiner
+    #     else:
+    #         raise ValueError(f"Unsupported file format: {file_extension}")
         
 
 
@@ -326,6 +332,29 @@ class FeatureExtractor:
             reduced_features[layer] = torch.tensor(reduced_tensor).view(original_tensor.size(0), -1)
         return reduced_features
         
+
+
+
+class DataTypeLoader:
+    def __init__(self, netset):
+        self.netset = netset
+        self.supported_extensions = {
+            'image': ['.jpg', '.jpeg', '.png'],
+            'video': ['.mp4', '.avi'],
+            'audio': ['.wav', '.mp3'],
+            'text': ['.txt']
+        }
+
+    def _get_dataloader(self, data_path):
+        file_extension = os.path.splitext(data_path)[1].lower()
+
+        for data_type, extensions in self.supported_extensions.items():
+            if file_extension in extensions:
+                data_loader = getattr(self.netset, f'load_{data_type}_data')
+                data_combiner = getattr(self.netset, f'combine_{data_type}_data')
+                return data_loader, data_type, data_combiner
+
+        raise ValueError(f"Unsupported file format: {file_extension}")
 
 
 
