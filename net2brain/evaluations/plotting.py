@@ -21,7 +21,8 @@ class Plotting:
         
         # Check if dataframes is a single dataframe with the required columns
         if isinstance(dataframes, pd.DataFrame):
-            required_columns = ['Name', 'Values', 'Significance', 'Color']
+            required_columns = ['Variable', 'Description', 'Values', 'Significance', 'Color']
+            
             if all(col in dataframes.columns for col in required_columns):
                 self.dataframes = dataframes
                 return
@@ -165,7 +166,10 @@ class Plotting:
         time_points = range(len(sample_value))
 
         # Define a color palette
-        palette = sns.color_palette("husl", n_colors=len(dataframe))
+        print(dataframe)
+        print(len(dataframe))
+        palette = sns.color_palette("husl", n_colors=len(dataframe)+2)
+        print(palette)
 
         # Initialize the plot
         plt.figure(figsize=(10, 6))
@@ -174,10 +178,11 @@ class Plotting:
 
         # Plot lines for each model
         for index, row in dataframe.iterrows():
-            name = row["Name"]
+            name = row["Description"]
             model_values = row["Values_plotting"]
             model_significance = row["Significance"]
             model_std = row["Std"]
+            print("index", index)
             color = row.get("Color") or palette[index]
 
             # Plot values
