@@ -173,6 +173,9 @@ The requirements for VPA are:
 - **independent_variable**: An array of arrays, each containing RDM paths belonging to a specific group.
 - **variable_names**: The labels for the independent variables, integral for visualization.
 
+Returns:
+- **dataframe**: Contains all unique and shared variances. Dataframe can be filtered to only contain relevant information
+
 
 
 .. code-block:: python
@@ -184,6 +187,10 @@ The requirements for VPA are:
 
     VPA_eval = VPA(dependent_variable, independent_variables, variable_names)
     dataframe = VPA_eval.evaluate(average_models=True)
+
+    # Filter the dataframe to include only the unique variances and the shared variance by all variables
+    dataframe = dataframe.query("Variable in ['y1234', 'y1', 'y2', 'y3', 'y4']").reset_index(drop=True)
+
 
 
 
