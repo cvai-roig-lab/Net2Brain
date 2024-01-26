@@ -245,12 +245,17 @@ VPA_eval = VPA(dependent_variable, independent_variables, variable_names)
 # average_models=True would average all data within each independent variable
 dataframe = VPA_eval.evaluate(average_models=False)
 
+# Filter the dataframe to include only specific variance components
+dataframe = dataframe.query("Variable in ['y1234', 'y1', 'y2', 'y3', 'y4']").reset_index(drop=True)
+
 # For plotting:
 from net2brain.evaluations.plotting import Plotting
 
 plotter = Plotting(dataframe)
 plotter.plotting_over_time(add_std=True)
 ```
+
+
 
 
 

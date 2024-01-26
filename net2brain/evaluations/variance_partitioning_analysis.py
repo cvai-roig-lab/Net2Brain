@@ -292,7 +292,7 @@ class VPA():
         y1 = R1 - y12
         y2 = R2 - y12
 
-        return y12, y1, y2
+        return {'R1': R1, 'R2': R2, 'R12': R12, 'y12': y12, 'y1': y1, 'y2': y2}
 
 
 
@@ -345,7 +345,7 @@ class VPA():
         y2 = R2 - y12 - y23 - y123
         y3 = R3 - y13 - y23 - y123
 
-        return y123, y1, y2, y3
+        return {'R1': R1, 'R2': R2, 'R3': R3, 'R12': R12, 'R13': R13, 'R23': R23, 'R123': R123, 'y123': y123, 'y12': y12, 'y13': y13, 'y23': y23, 'y1': y1, 'y2': y2, 'y3': y3}
     
 
 
@@ -418,7 +418,14 @@ class VPA():
         y3 = R3 - y13 - y23 - y34 - y123 - y234 - y134 - y1234
         y4 = R4 - y14 - y24 - y34 - y124 - y134 - y234 - y1234
 
-        return y1234, y1, y2, y3, y4
+        return {
+        'R1': R1, 'R2': R2, 'R3': R3, 'R4': R4,
+        'R12': R12, 'R13': R13, 'R14': R14, 'R23': R23, 'R24': R24, 'R34': R34,
+        'R123': R123, 'R124': R124, 'R134': R134, 'R234': R234, 'R1234': R1234,
+        'y1234': y1234, 'y123': y123, 'y124': y124, 'y134': y134, 'y234': y234,
+        'y12': y12, 'y13': y13, 'y14': y14, 'y23': y23, 'y24': y24, 'y34': y34,
+        'y1': y1, 'y2': y2, 'y3': y3, 'y4': y4}
+
     
 
 
@@ -434,51 +441,64 @@ class VPA():
             all_variances_df: Pandas dataframe with results
         """
 
-        all_variances_df = pd.DataFrame(columns=['Name', 'Values', 'Significance', 'Color'])
+        all_variances_df = pd.DataFrame(columns=['Variable', 'Description', 'Values', 'Significance', 'Color'])
 
-        R_ind_1 = np.zeros((num_subjects, eeg_time))
-        R_ind_2 = np.zeros((num_subjects, eeg_time))
-        R_all = np.zeros((num_subjects, eeg_time))
+        # Initialize arrays for storing values
+        R1_values = np.zeros((num_subjects, eeg_time))
+        R2_values = np.zeros((num_subjects, eeg_time))
+        R12_values = np.zeros((num_subjects, eeg_time))
+        y12_values = np.zeros((num_subjects, eeg_time))
+        y1_values = np.zeros((num_subjects, eeg_time))
+        y2_values = np.zeros((num_subjects, eeg_time))
+
         R_un = np.zeros(eeg_time)
         R_ln = np.zeros(eeg_time)
-
 
         for time in range(eeg_time):
             R_un[time] = self.get_uppernoiseceiling(np.squeeze(dep_var[:,time]))
             R_ln[time] = self.get_lowernoiseceiling(np.squeeze(dep_var[:,time]))
 
             for i in range(num_subjects):
-            
                 this_dep_var = np.squeeze(dep_var[i,time,:])
-                r_all, r_ind_1, r_ind_2 = self.VPA_2(this_dep_var)
-                R_all[i,time] = r_all
-                R_ind_1[i,time] = r_ind_1
-                R_ind_2[i,time] = r_ind_2
+                results = self.VPA_2(this_dep_var)
+                R1_values[i, time] = results['R1']
+                R2_values[i, time] = results['R2']
+                R12_values[i, time] = results['R12']
+                y12_values[i, time] = results['y12']
+                y1_values[i, time] = results['y1']
+                y2_values[i, time] = results['y2']
 
-        # Calculate significance
-        sig_r_all = self.calculate_p_values(R_all)
-        sig_ind_1 = self.calculate_p_values(R_ind_1)
-        sig_ind_2 = self.calculate_p_values(R_ind_2)
+        # Calculate significance for all values
+        sig_R1 = self.calculate_p_values(R1_values)
+        sig_R2 = self.calculate_p_values(R2_values)
+        sig_R12 = self.calculate_p_values(R12_values)
+        sig_y12 = self.calculate_p_values(y12_values)  # Calculate significance for y12
+        sig_y1 = self.calculate_p_values(y1_values)
+        sig_y2 = self.calculate_p_values(y2_values)
 
-        # Store in the dataframe
-        names = self.variable_names + ['All Variables']
-        values = [R_ind_1, R_ind_2, R_all]
-        significances = [sig_ind_1, sig_ind_2, sig_r_all]
-
+        # Define naming convention for the dataframe
+        variables = ['R1', 'R2', 'R12', 'y12', 'y1', 'y2']  # Include y12 in the list
+        descriptions = [self.variable_names[0] + ' Influence', self.variable_names[1] + ' Influence', 
+                        'Combined Influence', 'Shared Variance', 'Unique ' + self.variable_names[0], 'Unique ' + self.variable_names[1]]
+        values = [R1_values, R2_values, R12_values, y12_values, y1_values, y2_values]
+        significances = [sig_R1, sig_R2, sig_R12, sig_y12, sig_y1, sig_y2]
 
         data_to_append = []
 
-        for name, val, sig in zip(names, values, significances):
+        for var, desc, val, sig in zip(variables, descriptions, values, significances):
             data_to_append.append({
-                'Name': name,
+                'Variable': var,
+                'Description': desc,
                 'Values': val,
                 'Significance': sig,
-                'Color': None
+                'Color': None  # Assign colors if desired for visualization
             })
 
         all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
 
         return all_variances_df
+
+
 
 
     def evaluate_3(self, dep_var, num_subjects, eeg_time):
@@ -493,15 +513,26 @@ class VPA():
             all_variances_df: Pandas dataframe with results
         """
 
-        all_variances_df = pd.DataFrame(columns=['Name', 'Values', 'Significance', 'Color'])
+        all_variances_df = pd.DataFrame(columns=['Variable', 'Description', 'Values', 'Significance', 'Color'])
 
-        R_ind_1 = np.zeros((num_subjects, eeg_time))
-        R_ind_2 = np.zeros((num_subjects, eeg_time))
-        R_ind_3 = np.zeros((num_subjects, eeg_time))
-        R_all = np.zeros((num_subjects, eeg_time))
+        # Initialize arrays for storing values
+        R1_values = np.zeros((num_subjects, eeg_time))
+        R2_values = np.zeros((num_subjects, eeg_time))
+        R3_values = np.zeros((num_subjects, eeg_time))
+        R12_values = np.zeros((num_subjects, eeg_time))
+        R13_values = np.zeros((num_subjects, eeg_time))
+        R23_values = np.zeros((num_subjects, eeg_time))
+        R123_values = np.zeros((num_subjects, eeg_time))
+        y123_values = np.zeros((num_subjects, eeg_time))
+        y12_values = np.zeros((num_subjects, eeg_time))
+        y13_values = np.zeros((num_subjects, eeg_time))
+        y23_values = np.zeros((num_subjects, eeg_time))
+        y1_values = np.zeros((num_subjects, eeg_time))
+        y2_values = np.zeros((num_subjects, eeg_time))
+        y3_values = np.zeros((num_subjects, eeg_time))
+
         R_un = np.zeros(eeg_time)
         R_ln = np.zeros(eeg_time)
-
 
         for time in range(eeg_time):
             R_un[time] = self.get_uppernoiseceiling(np.squeeze(dep_var[:,time]))
@@ -509,38 +540,55 @@ class VPA():
 
             for i in range(num_subjects):
                 this_dep_var = np.squeeze(dep_var[i,time,:])
-                r_all, r_ind_1, r_ind_2, r_ind_3 = self.VPA_3(this_dep_var)
-                R_all[i,time] = r_all
-                R_ind_1[i,time] = r_ind_1
-                R_ind_2[i,time] = r_ind_2
-                R_ind_3[i,time] = r_ind_3
+                results = self.VPA_3(this_dep_var)
+                R1_values[i, time], R2_values[i, time], R3_values[i, time], R12_values[i, time], R13_values[i, time], R23_values[i, time], R123_values[i, time], y123_values[i, time], y12_values[i, time], y13_values[i, time], y23_values[i, time], y1_values[i, time], y2_values[i, time], y3_values[i, time] = results
 
-        # Calculate significance
-        sig_r_all = self.calculate_p_values(R_all)
-        sig_ind_1 = self.calculate_p_values(R_ind_1)
-        sig_ind_2 = self.calculate_p_values(R_ind_2)
-        sig_ind_3 = self.calculate_p_values(R_ind_3)
+        # Calculate significance for all values
+        sig_R1 = self.calculate_p_values(R1_values)
+        sig_R2 = self.calculate_p_values(R2_values)
+        sig_R3 = self.calculate_p_values(R3_values)
+        sig_R12 = self.calculate_p_values(R12_values)
+        sig_R13 = self.calculate_p_values(R13_values)
+        sig_R23 = self.calculate_p_values(R23_values)
+        sig_R123 = self.calculate_p_values(R123_values)
+        sig_y123 = self.calculate_p_values(y123_values)
+        sig_y12 = self.calculate_p_values(y12_values)
+        sig_y13 = self.calculate_p_values(y13_values)
+        sig_y23 = self.calculate_p_values(y23_values)
+        sig_y1 = self.calculate_p_values(y1_values)
+        sig_y2 = self.calculate_p_values(y2_values)
+        sig_y3 = self.calculate_p_values(y3_values)
 
-
-        # Store in the dataframe
-        names = self.variable_names + ['All Variables']
-        values = [R_ind_1, R_ind_2, R_ind_3, R_all]
-        significances = [sig_ind_1, sig_ind_2, sig_ind_3, sig_r_all]
+        # Define naming convention for the dataframe
+        variables = ['R1', 'R2', 'R3', 'R12', 'R13', 'R23', 'R123', 'y123', 'y12', 'y13', 'y23', 'y1', 'y2', 'y3']
+        descriptions = [
+            self.variable_names[0] + ' Influence', self.variable_names[1] + ' Influence', self.variable_names[2] + ' Influence',
+            'Combined ' + self.variable_names[0] + ' and ' + self.variable_names[1] + ' Influence',
+            'Combined ' + self.variable_names[0] + ' and ' + self.variable_names[2] + ' Influence',
+            'Combined ' + self.variable_names[1] + ' and ' + self.variable_names[2] + ' Influence',
+            'Combined All Variables Influence',
+            'Shared Variance All', 'Shared Variance ' + self.variable_names[0] + ' and ' + self.variable_names[1],
+            'Shared Variance ' + self.variable_names[0] + ' and ' + self.variable_names[2],
+            'Shared Variance ' + self.variable_names[1] + ' and ' + self.variable_names[2],
+            'Unique ' + self.variable_names[0], 'Unique ' + self.variable_names[1], 'Unique ' + self.variable_names[2]
+        ]
+        values = [R1_values, R2_values, R3_values, R12_values, R13_values, R23_values, R123_values, y123_values, y12_values, y13_values, y23_values, y1_values, y2_values, y3_values]
+        significances = [sig_R1, sig_R2, sig_R3, sig_R12, sig_R13, sig_R23, sig_R123, sig_y123, sig_y12, sig_y13, sig_y23, sig_y1, sig_y2, sig_y3]
 
         data_to_append = []
 
-        for name, val, sig in zip(names, values, significances):
+        for var, desc, val, sig in zip(variables, descriptions, values, significances):
             data_to_append.append({
-                'Name': name,
+                'Variable': var,
+                'Description': desc,
                 'Values': val,
                 'Significance': sig,
-                'Color': None
+                'Color': None  # Assign colors if desired for visualization
             })
 
         all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
 
         return all_variances_df
-
 
 
 
@@ -556,13 +604,20 @@ class VPA():
             all_variances_df: Pandas dataframe with results
         """
 
-        all_variances_df = pd.DataFrame(columns=['Name', 'Values', 'Significance', 'Color'])
+        all_variances_df = pd.DataFrame(columns=['Variable', 'Description', 'Values', 'Significance', 'Color'])
 
-        R_ind_1 = np.zeros((num_subjects, eeg_time))
-        R_ind_2 = np.zeros((num_subjects, eeg_time))
-        R_ind_3 = np.zeros((num_subjects, eeg_time))
-        R_ind_4 = np.zeros((num_subjects, eeg_time))
-        R_all = np.zeros((num_subjects, eeg_time))
+        # Initialize arrays for storing values, including combined R values
+        R_values = {f'R{i+1}': np.zeros((num_subjects, eeg_time)) for i in range(4)}
+        for i in range(4):
+            for j in range(i+1, 4):
+                R_values[f'R{i+1}{j+1}'] = np.zeros((num_subjects, eeg_time))
+        R_values['R1234'] = np.zeros((num_subjects, eeg_time))
+        y_values = {f'y{i+1}': np.zeros((num_subjects, eeg_time)) for i in range(4)}
+        for i in range(3):
+            for j in range(i+1, 4):
+                y_values[f'y{i+1}{j+1}'] = np.zeros((num_subjects, eeg_time))
+        y_values['y1234'] = np.zeros((num_subjects, eeg_time))
+
         R_un = np.zeros(eeg_time)
         R_ln = np.zeros(eeg_time)
 
@@ -571,40 +626,44 @@ class VPA():
             R_ln[time] = self.get_lowernoiseceiling(np.squeeze(dep_var[:,time]))
 
             for i in range(num_subjects):
-            
                 this_dep_var = np.squeeze(dep_var[i,time,:])
-                r_all, r_ind_1, r_ind_2, r_ind_3, r_ind_4 = self.VPA_4(this_dep_var)
-                R_all[i,time] = r_all
-                R_ind_1[i,time] = r_ind_1
-                R_ind_2[i,time] = r_ind_2
-                R_ind_3[i,time] = r_ind_3
-                R_ind_4[i,time] = r_ind_4
+                results = self.VPA_4(this_dep_var)
+                for key, value in results.items():
+                    if key in R_values:
+                        R_values[key][i, time] = value
+                    elif key in y_values:
+                        y_values[key][i, time] = value
 
-        # Calculate significance
-        sig_r_all = self.calculate_p_values(R_all)
-        sig_ind_1 = self.calculate_p_values(R_ind_1)
-        sig_ind_2 = self.calculate_p_values(R_ind_2)
-        sig_ind_3 = self.calculate_p_values(R_ind_3)
-        sig_ind_4 = self.calculate_p_values(R_ind_4)
+        # Calculate significance for all R and y values
+        sig_values = {}
+        for key, value in {**R_values, **y_values}.items():
+            sig_values[key] = self.calculate_p_values(value)
 
-        # Store in the dataframe
-        names = self.variable_names + ['All Variables']
-        values = [R_ind_1, R_ind_2, R_ind_3, R_ind_4, R_all]
-        significances = [sig_ind_1, sig_ind_2, sig_ind_3, sig_ind_4, sig_r_all]
-
+        # Define naming convention for the dataframe
         data_to_append = []
-
-        for name, val, sig in zip(names, values, significances):
+        for key, value in R_values.items():
+            desc = ' and '.join(key[1:]) + ' Influence' if len(key) > 2 else self.variable_names[int(key[1])-1] + ' Influence'
             data_to_append.append({
-                'Name': name,
-                'Values': val,
-                'Significance': sig,
+                'Variable': key,
+                'Description': desc,
+                'Values': value,
+                'Significance': sig_values[key],
+                'Color': None
+            })
+        for key, value in y_values.items():
+            desc = 'Shared Variance of ' + ' and '.join(key[1:]) if len(key) > 4 else 'Unique Variance ' + self.variable_names[int(key[1])-1]
+            data_to_append.append({
+                'Variable': key,
+                'Description': desc,
+                'Values': value,
+                'Significance': sig_values[key],
                 'Color': None
             })
 
         all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
 
         return all_variances_df
+
 
 
 
