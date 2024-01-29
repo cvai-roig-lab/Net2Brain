@@ -270,37 +270,6 @@ class FeatureExtractor:
         # Use the dynamic loading and registration mechanism
         return NetSetBase._registry.get(netset_name, None)
 
-    # def _get_dataloader(self, data_path):
-    #     # Logic to detect and return the correct DataType derived class
-    #     file_extension = os.path.splitext(data_path)[1].lower()
-    
-    #     if file_extension in ['.jpg', '.jpeg', '.png']:
-    #         data_loader = self.netset.load_image_data
-    #         data_type = "image"
-    #         data_combiner = self.netset.combine_image_data
-    #         return data_loader, data_type, data_combiner
-        
-    #     elif file_extension in ['.mp4', '.avi']:
-    #         data_loader = self.netset.load_video_data
-    #         data_type = "video"
-    #         data_combiner = self.netset.combine_video_data
-    #         return data_loader, data_type, data_combiner
-        
-    #     elif file_extension in ['.wav', '.mp3']:
-    #         data_loader = self.netset.load_audio_data
-    #         data_type = "audio"
-    #         data_combiner = self.netset.combine_audio_data
-    #         return data_loader, data_type, data_combiner
-    #     elif file_extension in ['.txt']:
-    #         data_loader = self.netset.load_text_data
-    #         data_type = "text"
-    #         data_combiner = self.netset.combine_text_data
-    #         return data_loader, data_type, data_combiner
-    #     else:
-    #         raise ValueError(f"Unsupported file format: {file_extension}")
-        
-
-
 
     def reduce_dimensionality(self, features):
         if self.dim_reduction == None:
