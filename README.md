@@ -311,3 +311,7 @@ This toolbox is inspired by the Algonauts Project and contains collections of ar
 - **Image Models:** Ross Wightman, PyTorch Image Models(2019), 10.5281/zenodo.4414861, https://github.com/rwightman/pytorch-image-models
 - **Detectron2:** Yuxin Wu and Alexander Kirillov and Francisco Massa and Wan-Yen Lo and Ross Girshick, Detectron2 (2019), https://github.com/facebookresearch/detectron2
 - **SlowFast:** Haoqi Fan and Yanghao Li and Bo Xiong and Wan-Yen Lo and Christoph Feichtenhofer, PySlowFast(2020), https://github.com/facebookresearch/slowfast
+
+
+## Funding
+The project is supported by hessian.ai Connectom Networking and Innovation Fund 2023 and by the German Research Foundation (DFG) - DFG Research Unit FOR 5368. 
