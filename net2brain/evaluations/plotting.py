@@ -144,6 +144,8 @@ class Plotting:
 
 
     def plot_all_layers(self, metric='R2', columns_per_row=4):
+        for dataframe in self.dataframes:
+            dataframe = self.prepare_dataframe(dataframe, metric)
         rois = pd.concat(self.dataframes)['ROI'].unique()
         n_rois = len(rois)
         rows = int(np.ceil(n_rois / columns_per_row))
