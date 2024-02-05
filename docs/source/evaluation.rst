@@ -63,6 +63,9 @@ Required for plotting:
     # Single DataFrame plotting
     single_plotter = Plotting([results_df])
     single_plotter.plot()
+
+    # Plotting all layers
+    single_plotter.plot_all_layers()
     
     # Multiple DataFrames plotting
     multiple_plotter = Plotting([results_df, another_results_df])
