@@ -168,31 +168,36 @@ class Plotting:
             base_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']  # Example base colors
             base_colors = base_colors[:n_models]  # Ensure we have enough colors for the models
 
+            centers = []
             for j, model in enumerate(models):
+                print(model)
                 model_df = roi_df[roi_df['Model'] == model]
 
                 # Generate darker shades for the layers within the model's base color
                 layer_colors = sns.dark_palette(base_colors[j], n_colors=n_layers + 2, reverse=True)[1:-1]
 
                 for k, layer in enumerate(layers):
+                    print(layer)
                     layer_df = model_df[model_df['Layer'] == layer]
 
                     # Calculate x position for each bar within the group
                     x_pos = j * (n_layers * bar_width + bar_width) + k * bar_width
 
                     if not layer_df.empty:
-                        ax.bar(x_pos, layer_df[metric].values, width=bar_width, label=f'{layer}' if i == 0 else "", color=layer_colors[k])
+                        bar = ax.bar(x_pos, layer_df[metric].values, width=bar_width, label=f'{layer}' if i == 0 else "", color=layer_colors[k])
                         ax.errorbar(x_pos, layer_df[metric].values, yerr=layer_df['SEM'].values, fmt='none', ecolor='black', capsize=5, capthick=2)
 
                         if layer_df['Significance'].values < 0.05:
                             ax.text(x_pos, layer_df[metric].values + layer_df['SEM'].values, '*', ha='center', va='bottom', color='black')
+                centers.append(bar[0].get_x() + bar_width / 2 - ((k / 2) * bar_width))
 
             # Noise ceiling lines for the entire ROI
             lnc, unc = roi_df[['LNC', 'UNC']].iloc[0]
             ax.hlines(y=lnc, xmin=ax.get_xlim()[0], xmax=ax.get_xlim()[1], colors='grey', linestyles='dotted', alpha=0.7, label='LNC' if i == 0 else "")
             ax.hlines(y=unc, xmin=ax.get_xlim()[0], xmax=ax.get_xlim()[1], colors='grey', linestyles='dashed', alpha=0.7, label='UNC' if i == 0 else "")
 
-            ax.set_xticks(np.arange(n_models) * (n_layers * bar_width + bar_width))
+            # ax.set_xticks(np.arange(n_models) * (n_layers * bar_width + bar_width))
+            ax.set_xticks(centers)
             ax.set_xticklabels(models)
             ax.set_title(f'All Layers for {roi}')
             ax.set_xlabel('Model')
