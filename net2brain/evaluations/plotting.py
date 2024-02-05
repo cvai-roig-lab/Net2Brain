@@ -170,14 +170,12 @@ class Plotting:
 
             centers = []
             for j, model in enumerate(models):
-                print(model)
                 model_df = roi_df[roi_df['Model'] == model]
 
                 # Generate darker shades for the layers within the model's base color
                 layer_colors = sns.dark_palette(base_colors[j], n_colors=n_layers + 2, reverse=True)[1:-1]
 
                 for k, layer in enumerate(layers):
-                    print(layer)
                     layer_df = model_df[model_df['Layer'] == layer]
 
                     # Calculate x position for each bar within the group
