@@ -59,6 +59,8 @@ class Pytorch(NetSetBase):
         # Put in eval mode
         self.loaded_model.eval()
 
+        return self.loaded_model
+
     def clean_extracted_features(self, features):
         return features
     

@@ -69,6 +69,8 @@ class Timm(NetSetBase):
         # Put in eval mode
         self.loaded_model.eval()
 
+        return self.loaded_model
+
     
     def image_preprocessing(self, image, model_name, device):
         preprocesser = self.create_preprocess()

@@ -200,12 +200,12 @@ class FeatureExtractor:
             file_path = os.path.join(self.save_path, file_name)
             with np.load(file_path, allow_pickle=True) as data:
                 if not data.keys():
-                    print(f"Error: The file {file_name} is empty.")
+                    #print(f"Error: The file {file_name} is empty.")
                     continue
 
                 for layer in layers:
                     if layer not in data or data[layer].size == 0:
-                        print(f"Error: The layer {layer} in file {file_name} is empty.")
+                        #print(f"Error: The layer {layer} in file {file_name} is empty.")
                         continue
 
                     image_key = file_name.replace('.npz', '')

@@ -63,6 +63,8 @@ class Clip(NetSetBase):
         # Put in eval mode
         self.loaded_model.eval()
 
+        return self.loaded_model
+
 
     def image_preprocessing(self, image, model_name, device):
         image = super().image_preprocessing(image, model_name, device)

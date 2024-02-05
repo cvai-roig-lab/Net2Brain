@@ -96,6 +96,8 @@ class Pyvideo(NetSetBase):
         # Put in eval mode
         self.loaded_model.eval()
 
+        return self.loaded_model
+
 
     def preprocess_slowfast(self, video_path, device):
         """Preprocessing according to slowfast video model
