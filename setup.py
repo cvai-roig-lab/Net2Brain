@@ -33,7 +33,7 @@ setup(
         'pytorchvideo == 0.1.5',
         'scikit_learn',
         'scipy',
-        'torch == 1.11.0',
+        'torch',
         'tqdm',
         'visualpriors == 0.3.5',
         'timm == 0.4.12',
