@@ -17,7 +17,7 @@
             "visual.layer4"
         ]
     },
-    "ViT-B_-_32": {
+    "ViT-B/32": {
         "model": "clip.load",
         "nodes": [
             "visual.transformer.resblocks.0",
@@ -34,7 +34,7 @@
             "visual.transformer.resblocks.11"
         ]
     },
-    "ViT-B_-_16": {
+    "ViT-B/16": {
         "model": "clip.load",
         "nodes": [
             "visual.transformer.resblocks.0",
@@ -51,7 +51,7 @@
             "visual.transformer.resblocks.11"
         ]
     },
-    "ViT-L_-_14": {
+    "ViT-L/14": {
         "model": "clip.load",
         "nodes": [
             "visual.transformer.resblocks.0",
