@@ -67,6 +67,8 @@ class YOURNETSET(NetSetBase):  # Rename to your desired netset name
         # Put in eval mode
         self.loaded_model.eval()
 
+        return self.loaded_model
+
 
     def clean_extracted_features(self, features):
         # TODO: If you need to clean the extracted feautures you can do it here

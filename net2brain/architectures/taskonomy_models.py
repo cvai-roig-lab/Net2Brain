@@ -65,6 +65,8 @@ class Taskonomy(NetSetBase):
         else:
             self.loaded_model.apply(self.randomize_weights)
 
+        return self.loaded_model
+
 
 
     def image_preprocessing(self, image, model_name, device):
