@@ -121,7 +121,7 @@ class CORnet_S(nn.Module):
 
         x = self.conv2(x)
         x = self.norm2(x)
-        x1 = self.relu2(x)
+        x1 = self.V1(x)
 
         x2 = self.V2(x1)
         x3 = self.V4(x2)
@@ -131,7 +131,7 @@ class CORnet_S(nn.Module):
         x = x.view(x.size(0), -1)
         x5 = self.fc(x)
 
-        return [x1, x2, x3, x4, x5]
+        return x5
 
 
 # get instance of cornet_s() to get model with loaded pretrained weights

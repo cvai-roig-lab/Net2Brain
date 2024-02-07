@@ -124,7 +124,7 @@ class CORnet_RT(nn.Module):
 
         all_features.append(out)  # add fc layer
 
-        return all_features
+        return out
 
 
 def cornet_rt(pretrained=True, map_location=None, times=5):
