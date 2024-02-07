@@ -124,7 +124,7 @@ class CORnet_RT(nn.Module):
 
         all_features.append(out)  # add fc layer
 
-        return all_features
+        return out
 
 
 def cornet_rt(pretrained=True, map_location=None, times=5):
@@ -133,7 +133,7 @@ def cornet_rt(pretrained=True, map_location=None, times=5):
     model = CORnet_RT()
     if pretrained:
         url = 'https://s3.amazonaws.com/cornet-models/cornet_rt-933c001c.pth'
-        checkpoint = torch.utils.model_zoo.load_url(url, map_location=map_location)
+        checkpoint = torch.utils.model_zoo.load_url(url, map_location="cpu")
         state_dict = checkpoint['state_dict']
         state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
         state_dict = {k.replace("decoder.linear.", "fc."): v for k, v in state_dict.items()}

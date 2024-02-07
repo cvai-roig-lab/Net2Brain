@@ -78,7 +78,7 @@ class CORnet_Z(nn.Module):
         x = x.view(x.size(0), -1)
         x5 = self.fc(x)
 
-        return [x1, x2, x3, x4, x5]
+        return x5
 
 
 def cornet_z(pretrained=False, **kwargs):

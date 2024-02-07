@@ -70,7 +70,6 @@ class Cornet(NetSetBase):
                 keys = [A_key + "_A", A_key + "_B"]
                 for counter, key in enumerate(keys):
                     clean_dict.update({key: subtuple[counter].cpu()})
-                    break  # we actually only want one key
             return clean_dict
         else:
             return {key: value.cpu() for key, value in features.items()}
