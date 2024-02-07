@@ -92,7 +92,7 @@ class CORnet_S(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.norm2 = nn.BatchNorm2d(64)
-        self.relu = nn.ReLU(inplace=True)
+        self.V1 = nn.ReLU(inplace=True)
 
         # V2, V4, IT, fc
         self.V2 = CORblock_S(64, 128, times=2)
@@ -121,7 +121,7 @@ class CORnet_S(nn.Module):
 
         x = self.conv2(x)
         x = self.norm2(x)
-        x1 = self.relu(x)
+        x1 = self.relu2(x)
 
         x2 = self.V2(x1)
         x3 = self.V4(x2)
@@ -150,5 +150,5 @@ def cornet_s(pretrained=False, **kwargs):
         state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
         state_dict = {k.replace("V1.", ""): v for k, v in state_dict.items()}
         state_dict = {k.replace("decoder.linear.", "fc."): v for k, v in state_dict.items()}
-        model.load_state_dict(state_dict, strict=False)
+        model.load_state_dict(state_dict, strict=True)
     return model
