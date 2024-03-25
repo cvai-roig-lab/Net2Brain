@@ -235,6 +235,11 @@ class FeatureExtractor:
         Returns:
         - None
         """
+        
+        # Create new dir
+        if not os.path.exists(os.path.join(self.save_path, "sentences")):
+            os.mkdir(os.path.join(self.save_path, "sentences"))
+
         # List all files in the given directory
         files = [f for f in os.listdir(self.save_path) if f.endswith('.npz')]
 
@@ -256,7 +261,7 @@ class FeatureExtractor:
                 sentence_features = {key: values[0][i] for key, values in data.items()}
 
                 # Save features for the current sentence to a new file
-                np.savez(os.path.join(self.save_path, new_file_name), **sentence_features)
+                np.savez(os.path.join(self.save_path, "sentences", new_file_name), **sentence_features)
 
 
 

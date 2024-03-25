@@ -3,7 +3,7 @@ from .netsetbase import NetSetBase
 from .shared_functions import load_from_json
 import torchextractor as tx
 import os
-from transformers import AutoTokenizer, BartModel, AlignTextModel, AlbertModel
+from transformers import AutoTokenizer, BartModel, AlignTextModel, AlbertModel, GPT2Tokenizer, GPT2Model
 import transformers
 import torch
 
@@ -44,16 +44,22 @@ class Huggingface(NetSetBase):
         # Set the layers and model function from the attributes
         self.layers = model_attributes["nodes"]
         self.loaded_model = model_attributes["model_function"](self.model_name)
+        self.tokenizer = model_attributes["tokenizer"](self.model_name)
 
-        # Model to device
-        self.loaded_model.to(self.device)
+        
+        try:
+            # Model to device
+            self.loaded_model.to(self.device)
+            # Put in eval mode
+            self.loaded_model.eval()
+        except:
+            pass
 
         # Randomize weights
         if not pretrained:
             self.loaded_model.apply(self.randomize_weights)
 
-        # Put in eval mode
-        self.loaded_model.eval()
+        
 
         return self.loaded_model
 
@@ -70,12 +76,15 @@ class Huggingface(NetSetBase):
         """
         cleaned_features = {}
         for layer, tensor_tuple in features.items():
-            # Unpack the tuple and extract the tensor
+            # We only want the first tensor because the rest is attention
             tensor = tensor_tuple[0]
+            
             # Check if the tensor requires grad, and detach if needed
             tensor = tensor.detach() if tensor.requires_grad else tensor
-            # Convert to CPU and numpy
+
+            # Bring back to CPU
             tensor_numpy = tensor.cpu().numpy()
+            
             cleaned_features[layer] = torch.tensor(tensor_numpy)
         return cleaned_features
 
@@ -86,8 +95,7 @@ class Huggingface(NetSetBase):
         self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Tokenizer for text
-        tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        inputs = tokenizer(data, return_tensors="pt")
+        inputs = self.tokenizer(data, return_tensors="pt")
 
         # Create a extractor instance
         self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
