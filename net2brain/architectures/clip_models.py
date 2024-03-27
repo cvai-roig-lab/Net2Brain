@@ -10,7 +10,7 @@ import os
 class Clip(NetSetBase):
 
     def __init__(self, model_name, device):
-        self.supported_data_types = ['image', 'video']
+        self.supported_data_types = ['image', 'video', 'multimodal']
         self.netset_name = "Clip"
         self.model_name = model_name
         self.device = device
@@ -28,6 +28,8 @@ class Clip(NetSetBase):
         elif data_type == 'video':
             warnings.warn("Models only support image-data. Will average video frames")
             return self.video_preprocessing
+        elif data_type == "multimodal":
+            return self.multimodal_preprocessing
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
         
@@ -36,6 +38,8 @@ class Clip(NetSetBase):
         if data_type == 'image':
             return Clip.clean_extracted_features
         elif data_type == 'video':
+            return Clip.clean_extracted_features
+        elif data_type == 'multimodal':
             return Clip.clean_extracted_features
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
@@ -69,7 +73,6 @@ class Clip(NetSetBase):
     def image_preprocessing(self, image, model_name, device):
         image = super().image_preprocessing(image, model_name, device)
         text = torch.cat([clip.tokenize("a photo of a word")])
-
         
         # Send to device
         if device == 'cuda':
@@ -85,9 +88,25 @@ class Clip(NetSetBase):
         # Send to device
         if device == 'cuda':
             image = image.cuda()
+            
             text = text.cuda()
 
         return [image, text]
+    
+    
+    def multimodal_preprocessing(self, tuple_path, model_name, device):
+        loaded_image, loaded_text = tuple_path
+        image = super().image_preprocessing(loaded_image, model_name, device)
+        text_raw = super().text_preprocessing(loaded_text, model_name, device)
+        text = torch.cat([clip.tokenize(text_raw)])
+        
+        # Send to device
+        if device == 'cuda':
+            image = image.cuda()
+            text = text.cuda()
+
+        return [image, text]
+        
 
 
     def clean_extracted_features(self, features):
