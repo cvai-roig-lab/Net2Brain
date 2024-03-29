@@ -183,7 +183,7 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y):
 
 
 
-def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, batch_size=100, just_corr=True, return_correlations = False,random_state=14):
+def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, batch_size=100, just_corr=True, return_correlations = False,random_state=14, save_path="Linear_Encoding_Results"):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -224,17 +224,25 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
                                             just_corr=just_corr, 
                                             return_correlations=return_correlations,
                                             random_state=random_state)
-
         
+
         # Collect dataframes in list
         list_dataframes.append(result_dataframe[0])
     
     # If just one dataframe, return it as it is
     if len(list_dataframes) == 1:
-        return list_dataframes[0]
+        final_df = list_dataframes[0]
     else:
-        aggregated_df = aggregate_layers(list_dataframes)
-        return aggregated_df
+        final_df = aggregate_layers(list_dataframes)
+        
+    # Create the output folder if it doesn't exist
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        
+    csv_file_path = f"{save_path}/{model_name}.csv"
+    final_df.to_csv(csv_file_path, index=False)
+    
+    return final_df
         
         
         
@@ -297,11 +305,13 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
             
             # Encode the current layer using PCA and split into training and testing sets
             pca_trn,pca_tst = encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path)
-            
+
             for roi_path in roi_paths:
             
                 # Process each ROI's fMRI data
                 roi_files = glob.glob(roi_path+'/*.npy')
+                if len(roi_files) == 0:
+                    print(f"No roi_files found in {roi_path}")
                 for roi_file in roi_files:
                     roi_name = os.path.basename(roi_file)[:-4]
                     if roi_name not in fold_dict[layer_id].keys():
