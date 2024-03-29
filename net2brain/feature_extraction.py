@@ -372,7 +372,6 @@ class DataTypeLoader:
         return multimodal_files, single_modal_files
 
     def _get_dataloader(self, folder_path):
-        print(folder_path)
         modalities = self._get_modalities_in_folder(folder_path)
         multimodal_files, single_modal_files = self._check_modalities(modalities)
 
