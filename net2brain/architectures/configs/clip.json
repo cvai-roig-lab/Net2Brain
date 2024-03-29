@@ -5,7 +5,19 @@
             "visual.layer1",
             "visual.layer2",
             "visual.layer3",
-            "visual.layer4"
+            "visual.layer4",
+            "transformer.resblocks.0",
+            "transformer.resblocks.1",
+            "transformer.resblocks.2",
+            "transformer.resblocks.3",
+            "transformer.resblocks.4",
+            "transformer.resblocks.5",
+            "transformer.resblocks.6",
+            "transformer.resblocks.7",
+            "transformer.resblocks.8",
+            "transformer.resblocks.9",
+            "transformer.resblocks.10",
+            "transformer.resblocks.11"
         ]
     },
     "RN101": {
@@ -14,7 +26,19 @@
             "visual.layer1",
             "visual.layer2",
             "visual.layer3",
-            "visual.layer4"
+            "visual.layer4",
+            "transformer.resblocks.0",
+            "transformer.resblocks.1",
+            "transformer.resblocks.2",
+            "transformer.resblocks.3",
+            "transformer.resblocks.4",
+            "transformer.resblocks.5",
+            "transformer.resblocks.6",
+            "transformer.resblocks.7",
+            "transformer.resblocks.8",
+            "transformer.resblocks.9",
+            "transformer.resblocks.10",
+            "transformer.resblocks.11"
         ]
     },
     "ViT-B/32": {
@@ -31,7 +55,19 @@
             "visual.transformer.resblocks.8",
             "visual.transformer.resblocks.9",
             "visual.transformer.resblocks.10",
-            "visual.transformer.resblocks.11"
+            "visual.transformer.resblocks.11",
+            "transformer.resblocks.0",
+            "transformer.resblocks.1",
+            "transformer.resblocks.2",
+            "transformer.resblocks.3",
+            "transformer.resblocks.4",
+            "transformer.resblocks.5",
+            "transformer.resblocks.6",
+            "transformer.resblocks.7",
+            "transformer.resblocks.8",
+            "transformer.resblocks.9",
+            "transformer.resblocks.10",
+            "transformer.resblocks.11"
         ]
     },
     "ViT-B/16": {
@@ -48,7 +84,19 @@
             "visual.transformer.resblocks.8",
             "visual.transformer.resblocks.9",
             "visual.transformer.resblocks.10",
-            "visual.transformer.resblocks.11"
+            "visual.transformer.resblocks.11",
+            "transformer.resblocks.0",
+            "transformer.resblocks.1",
+            "transformer.resblocks.2",
+            "transformer.resblocks.3",
+            "transformer.resblocks.4",
+            "transformer.resblocks.5",
+            "transformer.resblocks.6",
+            "transformer.resblocks.7",
+            "transformer.resblocks.8",
+            "transformer.resblocks.9",
+            "transformer.resblocks.10",
+            "transformer.resblocks.11"
         ]
     },
     "ViT-L/14": {
@@ -77,7 +125,20 @@
             "visual.transformer.resblocks.20",
             "visual.transformer.resblocks.21",
             "visual.transformer.resblocks.22",
-            "visual.transformer.resblocks.23"
+            "visual.transformer.resblocks.23",
+            "transformer.resblocks.0",
+            "transformer.resblocks.1",
+            "transformer.resblocks.2",
+            "transformer.resblocks.3",
+            "transformer.resblocks.4",
+            "transformer.resblocks.5",
+            "transformer.resblocks.6",
+            "transformer.resblocks.7",
+            "transformer.resblocks.8",
+            "transformer.resblocks.9",
+            "transformer.resblocks.10",
+            "transformer.resblocks.11"
+            
         ]
     }
 }

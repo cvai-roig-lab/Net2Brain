@@ -5,12 +5,14 @@ import torchextractor as tx
 import clip
 import torch
 import os
+import numpy as np
+from PIL import Image
 
 
 class Clip(NetSetBase):
 
     def __init__(self, model_name, device):
-        self.supported_data_types = ['image', 'video', 'multimodal']
+        self.supported_data_types = ['image', 'video', 'multimodal', 'text']
         self.netset_name = "Clip"
         self.model_name = model_name
         self.device = device
@@ -24,10 +26,15 @@ class Clip(NetSetBase):
 
     def get_preprocessing_function(self, data_type):
         if data_type == 'image':
+            warnings.warn("This is a multimodal model. With unimodal input the text-transformer layers will have the same activations throughout all images.")
             return self.image_preprocessing
         elif data_type == 'video':
+            warnings.warn("This is a multimodal model. With unimodal input the text-transformer layers will have the same activations throughout all images.")
             warnings.warn("Models only support image-data. Will average video frames")
             return self.video_preprocessing
+        elif data_type == 'text':
+            warnings.warn("This is a multimodal model. With unimodal input the vision-transformer layers will have the same activations throughout all text files.")
+            return self.text_preprocessing
         elif data_type == "multimodal":
             return self.multimodal_preprocessing
         else:
@@ -40,6 +47,8 @@ class Clip(NetSetBase):
         elif data_type == 'video':
             return Clip.clean_extracted_features
         elif data_type == 'multimodal':
+            return Clip.clean_extracted_features
+        elif data_type == 'text':
             return Clip.clean_extracted_features
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
@@ -89,6 +98,25 @@ class Clip(NetSetBase):
         if device == 'cuda':
             image = image.cuda()
             
+            text = text.cuda()
+
+        return [image, text]
+    
+    
+    def text_preprocessing(self, text, model_name, device):
+        
+        # Create random dummy image
+        dummy_image = dummy_image_data = np.random.rand(224, 224, 3) * 255 
+        dummy_image = Image.fromarray(dummy_image_data.astype('uint8'), 'RGB')
+        
+        # Load in text
+        image = super().image_preprocessing(dummy_image, model_name, device)
+        text_raw = super().text_preprocessing(text, model_name, device)
+        text = torch.cat([clip.tokenize(text_raw)])
+        
+        # Send to device
+        if device == 'cuda':
+            image = image.cuda()
             text = text.cuda()
 
         return [image, text]
