@@ -151,7 +151,7 @@ class Plotting:
         n_rois = len(rois)
         rows = int(np.ceil((n_rois + 1) / columns_per_row))
 
-        fig, axes = plt.subplots(rows, columns_per_row, figsize=(columns_per_row * 5, rows * 5), squeeze=False)
+        fig, axes = plt.subplots(rows, columns_per_row, figsize=(columns_per_row * 15, rows * 5), squeeze=False)
         axes = axes.flatten()
 
         for i, roi in enumerate(rois):
@@ -202,15 +202,41 @@ class Plotting:
         for j in range(i + 1, rows * columns_per_row):
             axes[j].axis('off')
 
-        # Add a legend outside the plot to indicate layer colors with their exact names
-        # Use the last subplot for the legend
-        legend_ax = axes[-1]  # Select the last subplot for the legend
-        handles, labels = axes[0].get_legend_handles_labels()  # Get handles and labels from one of the plots
-        legend_ax.legend(handles, labels, loc='center', title='Model Layers')
-        legend_ax.axis('off')  # Hide axes for the legend subplot
+        # Determine the number of columns for the legend based on the number of models
+        legend_columns = n_models
+
+        # Calculate the size of the legend subplot to match other subplots
+        legend_ax = plt.subplot(rows, columns_per_row, rows * columns_per_row)  # Position the legend in the last subplot area
+
+        # Collect handles and labels for the legend from one of the plots
+        handles, labels = axes[0].get_legend_handles_labels()
+
+        # Organize labels and handles by network for clarity
+        network_handles = {}
+        for handle, label in zip(handles, labels):
+            model_name = label.split()[0]  # Assuming the model name is the first part of the label
+            if model_name not in network_handles:
+                network_handles[model_name] = []
+            network_handles[model_name].append((handle, label))
+
+        # Create new handles and labels lists, sorted by network and then by layer
+        new_handles = []
+        new_labels = []
+        for model_name in sorted(network_handles.keys()):
+            model_handles_labels = network_handles[model_name]
+            for handle, label in sorted(model_handles_labels, key=lambda x: int(x[1].split()[1].split('.')[-1])):  # Sort by layer number
+                new_handles.append(handle)
+                new_labels.append(label)
+
+        # Add the legend to the plot
+        legend = legend_ax.legend(new_handles, new_labels, loc='center', ncol=legend_columns, fontsize='small', title='Model Layers')
+        legend_ax.axis('off')  # Hide the axes of the legend subplot
 
         plt.tight_layout()
         plt.show()
+
+        # plt.tight_layout()
+        # plt.show()
 
 
 
