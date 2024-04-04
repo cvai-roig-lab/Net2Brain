@@ -133,32 +133,41 @@ def encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path
     - pca_tst (numpy.ndarray): PCA-encoded features of the test set.
     """
     activations = []
-    feat_files = glob.glob(feat_path+'/*.npz')
-    feat_files.sort() # Ensure consistent order
-    pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
-    
-    # Train PCA on the training set
-    for jj,ii in enumerate(trn_Idx):  # for each datafile for the current layer
-        feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
-        activations.append(np.mean(feat[layer_id], axis=1).flatten())
-        #activations.append(feat[layer_id].flatten())  # collect in a list
+    feat_files = glob.glob(feat_path + '/*.npz')
+    feat_files.sort()  # Ensure consistent order
+
+    # Load a sample feature to check its dimensions after processing
+    sample_feat = np.load(feat_files[0], allow_pickle=True)[layer_id]
+    processed_sample_feat = np.mean(sample_feat, axis=1).flatten()
+
+    # Determine whether to use PCA based on the dimensionality of the processed features
+    use_pca = processed_sample_feat.ndim > 1 or (processed_sample_feat.ndim == 1 and processed_sample_feat.shape[0] > 1)
+
+    if use_pca:
+        pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
+        for jj,ii in enumerate(trn_Idx):  # for each datafile for the current layer
+            feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
+            activations.append(np.mean(feat[layer_id], axis=1).flatten())
         
-        # Partially fit the PCA model in batches
-        if ((jj+1) % batch_size) == 0:
-            pca.partial_fit(np.stack(activations[-batch_size:],axis=0))
-            
-    # Transform the training set using the trained PCA model
-    pca_trn = pca.transform(np.stack(activations,axis=0))
-    
-    # Repeat the process for the test set
-    activations = []
-    for ii in tst_Idx:  # for each datafile for the current layer
-        feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
-        #activations.append(feat[layer_id].flatten())  # collect in a list
-        activations.append(np.mean(feat[layer_id], axis=1).flatten())
-    pca_tst = pca.transform(np.stack(activations,axis=0))
-    
-    return pca_trn,pca_tst
+            # Partially fit the PCA model in batches
+            if ((jj+1) % batch_size) == 0:
+                pca.partial_fit(np.stack(activations[-batch_size:],axis=0))
+                
+        # Transform the training set using the trained PCA model
+        pca_trn = pca.transform(np.stack(activations,axis=0))
+        
+        # Repeat the process for the test set
+        activations = []
+        for ii in tst_Idx:  # for each datafile for the current layer
+            feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
+            activations.append(np.mean(feat[layer_id], axis=1).flatten())
+        pca_tst = pca.transform(np.stack(activations,axis=0))
+    else:
+        # Directly use the activations without PCA transformation and ensure they are reshaped to 2D arrays
+        pca_trn = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in trn_Idx]).reshape(-1, 1)
+        pca_tst = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in tst_Idx]).reshape(-1, 1)
+
+    return pca_trn, pca_tst
 
 
 def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y):
@@ -307,11 +316,24 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
             pca_trn,pca_tst = encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path)
 
             for roi_path in roi_paths:
+                roi_files = []
             
+                 # Check if the roi_path is a file or a directory
+                if os.path.isfile(roi_path) and roi_path.endswith('.npy'):
+                    # If it's a file, directly use it
+                    roi_files.append(roi_path)
+                elif os.path.isdir(roi_path):
+                    # If it's a directory, list all .npy files within it
+                    roi_files.extend(glob.glob(os.path.join(roi_path, '*.npy')))
+                else:
+                    print(f"Invalid ROI path: {roi_path}")
+                    continue  # Skip this roi_path if it's neither a valid file nor a directory
+
                 # Process each ROI's fMRI data
-                roi_files = glob.glob(roi_path+'/*.npy')
-                if len(roi_files) == 0:
+                if not roi_files:
                     print(f"No roi_files found in {roi_path}")
+                    continue  # Skip to the next roi_path if no ROI files were found
+
                 for roi_file in roi_files:
                     roi_name = os.path.basename(roi_file)[:-4]
                     if roi_name not in fold_dict[layer_id].keys():
