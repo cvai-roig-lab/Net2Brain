@@ -108,9 +108,9 @@ class Clip(NetSetBase):
         # Create random dummy image
         dummy_image = dummy_image_data = np.random.rand(224, 224, 3) * 255 
         dummy_image = Image.fromarray(dummy_image_data.astype('uint8'), 'RGB')
-        
-        # Load in text
         image = super().image_preprocessing(dummy_image, model_name, device)
+        
+        # Loading text
         text_raw = super().text_preprocessing(text, model_name, device)
         text = torch.cat([clip.tokenize(text_raw)])
         
