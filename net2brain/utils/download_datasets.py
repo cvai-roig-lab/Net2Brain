@@ -8,6 +8,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from PIL import Image
+import re
 
 class DatasetError(Exception):
     pass
@@ -22,6 +23,9 @@ class BaseDataset:
     def download_and_extract_zip(self):
         if self.dataset_name not in self.DATASET_URLS:
             raise ValueError(f"Unknown dataset: {self.dataset_name}.")
+        
+        print(self.path)
+        print(self.dataset_folder)
         
         url = self.DATASET_URLS[self.dataset_name]
 
@@ -113,7 +117,6 @@ class WorkshopCuttingGardens(BaseDataset):
 
 
 
-
 class DatasetNSD(BaseDataset):
     dataset_name = "NSD Dataset"
     DATASET_URLS = {
@@ -122,6 +125,7 @@ class DatasetNSD(BaseDataset):
 
 
     def __init__(self, path=None):
+        print(path, "Hello")
         super().__init__(path)
 
     def _load(self):
@@ -178,89 +182,103 @@ class DatasetNSD(BaseDataset):
 
     def Download_COCO_Images(self, nsd_image_folder, target_folder, NSD_path="NSD Dataset"):
         coco_csv_path = os.path.join(NSD_path, "coco.csv")
-        annotations_path = os.path.join(NSD_path, "instances_train2017.json")
-        
-        # Check if NSD_path and required files exist
-        if not os.path.exists(NSD_path) or not os.path.exists(coco_csv_path) or not os.path.exists(annotations_path):
-            raise DatasetError(f"The NSD dataset folder or required files within it were not found at '{NSD_path}'. Please download the dataset using 'DatasetNSD.load_dataset()' and ensure the correct path is specified with 'NSD_path = path'.")
         
         # Load the NSD to COCO mapping
-        df = pd.read_csv(coco_csv_path)
-        
+        df = pd.read_csv(coco_csv_path, dtype={'nsdId': str, 'cocoId': str, 'cocoSplit': str})  # Treat IDs as strings
+
         # Ensure target folder exists
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
         
-        # Initialize COCO API
-        coco = COCO(annotations_path)
+        # Preload COCO API instances for both splits
+        train_annotations_path = os.path.join(NSD_path, "instances_train2017.json")
+        val_annotations_path = os.path.join(NSD_path, "instances_val2017.json")
+
+        coco_train = COCO(train_annotations_path) if os.path.exists(train_annotations_path) else None
+        coco_val = COCO(val_annotations_path) if os.path.exists(val_annotations_path) else None
 
         # Iterate through NSD image files and collect NSD IDs
-        nsd_ids = [int(filename.split('.')[0]) for filename in os.listdir(nsd_image_folder) if filename.endswith(('.png', '.jpg', '.jpeg'))]
-        
-        # Convert NSD IDs to COCO IDs
-        coco_ids = df[df['nsdId'].isin(nsd_ids)]['cocoId'].tolist()
+        for filename in tqdm(os.listdir(nsd_image_folder)):
+            if filename.endswith(('.png', '.jpg', '.jpeg')):
+                # Extract NSD ID from the filename
+                nsd_id_match = re.search(r'nsd-(\d+)', filename)
+                nsd_id = nsd_id_match.group(1).lstrip('0') if nsd_id_match else filename.split('.')[0].lstrip('0')
+                
+                # Check if nsd_id exists in the DataFrame and get the corresponding coco_id and split
+                if nsd_id in df['nsdId'].values:
+                    row = df[df['nsdId'] == nsd_id].iloc[0]
+                    coco_id = int(row['cocoId'])  # coco_id should be an integer for COCO API
+                    coco_split = row['cocoSplit']
 
-        # Download COCO images corresponding to COCO IDs
-        for coco_id in tqdm(coco_ids):
-            img_info = coco.loadImgs(coco_id)[0]  # Assuming each ID returns a single image
-            img_url = img_info['coco_url']
-            
-            # Strip leading zeros from coco_id for the filename
-            filename_no_leading_zeros = str(coco_id).lstrip('0') + os.path.splitext(os.path.basename(img_url))[1]
-            img_filename = os.path.join(target_folder, filename_no_leading_zeros)
+                    # Select the correct COCO instance based on the split
+                    coco = coco_train if coco_split == 'train2017' else coco_val
 
-            # Download the image
-            urllib.request.urlretrieve(img_url, img_filename)
+                    # Fetch image info and URL
+                    img_info = coco.loadImgs(coco_id)[0]
+                    img_url = img_info['coco_url']
+
+                    # Download the image
+                    img_filename = os.path.join(target_folder, f"{coco_id}.png")  # Replace file extension with 'png'
+                    urllib.request.urlretrieve(img_url, img_filename)
+                else:
+                    print(f"No COCO ID found for NSD ID {nsd_id}")
 
         print("All specified COCO images have been downloaded to the target folder.")
+
     
     
-    
+        
     def Download_COCO_Segmentation_Masks(self, nsd_image_folder, target_folder, NSD_path="NSD Dataset"):
         coco_csv_path = os.path.join(NSD_path, "coco.csv")
-        annotations_path = os.path.join(NSD_path, "instances_train2017.json")
-        
-        # Check if NSD_path and required files exist
-        if not os.path.exists(NSD_path) or not os.path.exists(coco_csv_path) or not os.path.exists(annotations_path):
-            raise DatasetError(f"The NSD dataset folder or required files within it were not found at '{NSD_path}'. Please download the dataset using 'DatasetNSD.load_dataset()' and ensure the correct path is specified with 'NSD_path = path'.")
         
         # Load the NSD to COCO mapping
-        df = pd.read_csv(coco_csv_path)
-        
+        df = pd.read_csv(coco_csv_path, dtype={'nsdId': str, 'cocoId': str, 'cocoSplit': str})  # Treat IDs as strings
+
         # Ensure target folder exists
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
-        
-        # Initialize COCO API
-        coco = COCO(annotations_path)
 
-        # Iterate through NSD image files and collect NSD IDs
-        nsd_ids = [int(filename.split('.')[0]) for filename in os.listdir(nsd_image_folder) if filename.endswith(('.png', '.jpg', '.jpeg'))]
-        
-        # Convert NSD IDs to COCO IDs
-        coco_ids = df[df['nsdId'].isin(nsd_ids)]['cocoId'].tolist()
+        # Preload COCO API instances for both splits
+        train_annotations_path = os.path.join(NSD_path, "instances_train2017.json")
+        val_annotations_path = os.path.join(NSD_path, "instances_val2017.json")
+        coco_train = COCO(train_annotations_path) if os.path.exists(train_annotations_path) else None
+        coco_val = COCO(val_annotations_path) if os.path.exists(val_annotations_path) else None
 
-        # Download COCO segmentation masks corresponding to COCO IDs
-        for coco_id in tqdm(coco_ids):
-            annIds = coco.getAnnIds(imgIds=coco_id, iscrowd=None)
-            anns = coco.loadAnns(annIds)
+        # Iterate through NSD image files and collect NSD IDs, handling both naming conventions
+        for filename in tqdm(os.listdir(nsd_image_folder)):
+            if filename.endswith(('.png', '.jpg', '.jpeg')):
+                # Extract NSD ID from the filename
+                nsd_id_match = re.search(r'nsd-(\d+)', filename)
+                nsd_id = nsd_id_match.group(1).lstrip('0') if nsd_id_match else filename.split('.')[0].lstrip('0')
 
-            # Initialize a mask for the whole image
-            img_info = coco.loadImgs(coco_id)[0]
-            composite_mask = np.zeros((img_info['height'], img_info['width']))
+                # Convert NSD ID to COCO ID and fetch the split information
+                if nsd_id in df['nsdId'].values:
+                    row = df[df['nsdId'] == nsd_id].iloc[0]
+                    coco_id = int(row['cocoId'])
+                    coco_split = row['cocoSplit']
 
-            for ann in anns:
-                # Generate segmentation mask for the current annotation
-                mask = coco.annToMask(ann)
-                
-                # Update the composite mask
-                # Note: This logic simply overlays masks. If you need to differentiate overlapping objects, you might need a more complex approach.
-                composite_mask = np.maximum(composite_mask, mask * ann['category_id'])
+                    coco = coco_train if coco_split == 'train2017' else coco_val
 
-            # Convert the composite mask to an image and save it
-            mask_img = Image.fromarray(np.uint8(composite_mask))
-            mask_filename = os.path.join(target_folder, f"{coco_id}.png")
-            mask_img.save(mask_filename)
+                    annIds = coco.getAnnIds(imgIds=coco_id, iscrowd=None)
+                    anns = coco.loadAnns(annIds)
+
+                    # Initialize a mask for the whole image
+                    img_info = coco.loadImgs(coco_id)[0]
+                    composite_mask = np.zeros((img_info['height'], img_info['width']))
+
+                    for ann in anns:
+                        # Generate segmentation mask for the current annotation
+                        mask = coco.annToMask(ann)
+                        
+                        # Update the composite mask
+                        composite_mask = np.maximum(composite_mask, mask * ann['category_id'])
+
+                    # Convert the composite mask to an image and save it
+                    mask_img = Image.fromarray(np.uint8(composite_mask))
+                    mask_filename = os.path.join(target_folder, f"{coco_id}.png")  # Replace file extension with 'png'
+                    mask_img.save(mask_filename)
+                else:
+                    print(f"No COCO ID found for NSD ID {nsd_id}")
 
         print("All specified COCO segmentation masks have been downloaded to the target folder.")
         
@@ -269,40 +287,53 @@ class DatasetNSD(BaseDataset):
 
     def Download_COCO_Captions(self, nsd_image_folder, target_folder, NSD_path="NSD Dataset"):
         coco_csv_path = os.path.join(NSD_path, "coco.csv")
-        captions_path = os.path.join(NSD_path, "captions_train2017.json")
+        train_captions_path = os.path.join(NSD_path, "captions_train2017.json")
+        val_captions_path = os.path.join(NSD_path, "captions_val2017.json")
         
         # Check if NSD_path and required files exist
-        if not os.path.exists(NSD_path) or not os.path.exists(coco_csv_path) or not os.path.exists(captions_path):
-            raise DatasetError(f"The NSD dataset folder or required files within it were not found at '{NSD_path}'. Please download the dataset using 'DatasetNSD.load_dataset()' and ensure the correct path is specified with 'NSD_path = path'.")
+        if not os.path.exists(coco_csv_path) or not os.path.exists(train_captions_path) or not os.path.exists(val_captions_path):
+            raise DatasetError(f"Required files within '{NSD_path}' were not found. Please download the dataset using 'DatasetNSD.load_dataset()' and ensure the correct path is specified with 'NSD_path = path'.")
         
         # Load the NSD to COCO mapping
-        df = pd.read_csv(coco_csv_path)
+        df = pd.read_csv(coco_csv_path, dtype={'nsdId': str, 'cocoId': str, 'cocoSplit': str})  # Ensure IDs and splits are read as strings
         
         # Ensure target folder exists
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
         
-        # Initialize COCO API for captions
-        coco_captions = COCO(captions_path)
+        # Initialize COCO API for captions for both train and val splits
+        coco_captions_train = COCO(train_captions_path)
+        coco_captions_val = COCO(val_captions_path)
 
-        # Iterate through NSD image files and collect NSD IDs
-        nsd_ids = [int(filename.split('.')[0]) for filename in os.listdir(nsd_image_folder) if filename.endswith(('.png', '.jpg', '.jpeg'))]
-        
-        # Convert NSD IDs to COCO IDs
-        coco_ids = df[df['nsdId'].isin(nsd_ids)]['cocoId'].tolist()
+        # Fetch and save the first available COCO caption corresponding to COCO IDs
+        for filename in tqdm(os.listdir(nsd_image_folder)):
+            if filename.endswith(('.png', '.jpg', '.jpeg')):
+                # Extract NSD ID from the filename
+                nsd_id_match = re.search(r'nsd-(\d+)', filename)
+                if nsd_id_match:
+                    nsd_id = nsd_id_match.group(1).lstrip('0')  # Remove leading zeros
+                else:
+                    nsd_id = filename.split('.')[0].lstrip('0')  # Remove leading zeros
+                
+                if nsd_id in df['nsdId'].values:
+                    row = df[df['nsdId'] == nsd_id].iloc[0]
+                    coco_id = row['cocoId']
+                    coco_split = row['cocoSplit']
 
-        # Fetch and save COCO captions corresponding to COCO IDs
-        for coco_id in tqdm(coco_ids):
-            annIds = coco_captions.getAnnIds(imgIds=coco_id)
-            anns = coco_captions.loadAnns(annIds)
-            captions = [ann['caption'] for ann in anns]
+                    coco_captions = coco_captions_train if coco_split == 'train2017' else coco_captions_val
 
-            # Create a .txt file per image with all captions
-            with open(os.path.join(target_folder, f"{coco_id}.txt"), 'w') as f:
-                for caption in captions:
-                    f.write(f"{caption}\n")
+                    annIds = coco_captions.getAnnIds(imgIds=int(coco_id))
+                    anns = coco_captions.loadAnns(annIds)
+
+                    if anns:
+                        caption = anns[0]['caption']
+                        with open(os.path.join(target_folder, f"{coco_id}.txt"), 'w') as f:
+                            f.write(f"{caption}\n")
+                else:
+                    print(f"No NSD ID found for {filename}")
 
         print("All specified COCO captions have been downloaded to the target folder.")
+
         
         
         
@@ -365,6 +396,8 @@ class DatasetNSD(BaseDataset):
                     # Save the final image
                     save_path = os.path.join(target_folder, filename)
                     final_image.save(save_path)
+                else:
+                    print(coco_id)
 
         print("Processing complete. Cropped images are saved in:", target_folder)
 
@@ -382,9 +415,16 @@ class DatasetNSD(BaseDataset):
                         'dining', 'window', 'desk', 'toilet', 'door', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell', 'microwave', 'oven', 
                         'toaster', 'sink', 'refrigerator', 'blender', 'book', 'clock', 'vase', 'scissors', 'teddy', 'hair', 'toothbrush', 'hair']
         
-        # Load the original image
-        image_path = os.path.join(image_folder, f"{image_id}.jpg")
-        original_image = Image.open(image_path)
+         # Check for both JPG and PNG formats and load the one that exists
+        jpg_image_path = os.path.join(image_folder, f"{image_id}.jpg")
+        png_image_path = os.path.join(image_folder, f"{image_id}.png")
+
+        if os.path.exists(jpg_image_path):
+            original_image = Image.open(jpg_image_path)
+        elif os.path.exists(png_image_path):
+            original_image = Image.open(png_image_path)
+        else:
+            raise FileNotFoundError(f"No image found for ID {image_id} in {image_folder} in JPG or PNG format.")
 
         # Load the mask
         mask_path = os.path.join(mask_folder, f"{image_id}.png")
@@ -439,23 +479,29 @@ class DatasetNSD(BaseDataset):
         
 
     def RenameToCOCO(self, folder, coco_path="NSD Dataset/coco.csv"):
-        
         # Check if the file exists
         if not os.path.exists(coco_path):
-            raise DatasetError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
+            raise FileNotFoundError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
 
         # Load the NSD to COCO mapping
         df = pd.read_csv(coco_path, dtype={'nsdId': str, 'cocoId': str})  # Ensure IDs are read as strings
-        
+
         # Iterate through the files in the folder
         for filename in tqdm(os.listdir(folder)):
             basename, extension = os.path.splitext(filename)
-            
-            # Check if the basename is in the nsdId column
-            if basename in df['nsdId'].values:
+
+            # Extract NSD ID from the filename
+            nsd_id_match = re.search(r'nsd-(\d+)', basename)
+            if nsd_id_match:
+                nsd_id = nsd_id_match.group(1)
+            else:
+                nsd_id = basename
+
+            # Check if the nsd_id is in the nsdId column
+            if nsd_id in df['nsdId'].values:
                 # Find the corresponding COCO ID
-                coco_id = df[df['nsdId'] == basename]['cocoId'].values[0]
-                
+                coco_id = df[df['nsdId'] == nsd_id]['cocoId'].values[0]
+
                 # Rename the file
                 new_filename = f"{coco_id}{extension}"
                 os.rename(os.path.join(folder, filename), os.path.join(folder, new_filename))
@@ -484,10 +530,67 @@ class DatasetNSD(BaseDataset):
                 # Rename the file
                 new_filename = f"{nsd_id_formatted}{extension}"
                 os.rename(os.path.join(folder, filename), os.path.join(folder, new_filename))
+                
+                
+                
+    def RenameAlgonautsToNSD(self,folder_path):
+        # Regular expression to match the NSD ID pattern in the filenames
+        nsd_id_pattern = re.compile(r'nsd-(\d+)')
+
+        for filename in os.listdir(folder_path):
+            # Search for the NSD ID pattern in the filename
+            match = nsd_id_pattern.search(filename)
+            if match:
+                nsd_id = match.group(1)  # Extract the NSD ID
+                file_extension = os.path.splitext(filename)[1]  # Get the file extension
+                new_filename = f"{nsd_id}{file_extension}"  # Construct the new filename with NSD ID and extension
+
+                # Construct full paths for the old and new filenames
+                old_file_path = os.path.join(folder_path, filename)
+                new_file_path = os.path.join(folder_path, new_filename)
+
+                # Rename the file
+                os.rename(old_file_path, new_file_path)
+                print(f"Renamed '{filename}' to '{new_filename}'")
+
+        print("Finished renaming files.")
+
+
 
 
         
     
 
+class DatasetAlgonauts_NSD(DatasetNSD):
+    dataset_name = "Algonauts_NSD"
+    DATASET_URLS = {
+        dataset_name: "https://drive.google.com/uc?export=download&id=1OCKE7efSojxwDlNTE93yybEZZl_wJ7mX"
+    }
+
+    def __init__(self, path=None):
+        super().__init__(path)
+
+    def _load(self):
+        self.download_and_extract_zip()
+        # Dictionary to store folder names and their paths
+        folder_paths = {}
+
+        # Iterate over items in the dataset folder
+        for item in os.listdir(self.dataset_folder):
+            item_path = os.path.join(self.dataset_folder, item)
+            # Check if the item is a directory
+            if os.path.isdir(item_path):
+                folder_paths[item] = item_path
+
+                # Specifically add the path to the training_images subfolder for each subject
+                training_images_path = os.path.join(item_path, "training_split", "training_images")
+                if os.path.exists(training_images_path):
+                    folder_paths[f"{item}_images"] = training_images_path
+                    
+                brain_data_path =  os.path.join(item_path, "training_split", "training_rois")
+                if os.path.exists(training_images_path):
+                    folder_paths[f"{item}_rois"] = brain_data_path
+
+        return folder_paths
 
 
