@@ -367,7 +367,7 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
             "Layer": layer_id,
             "Model": model_name,
             "R": [R],
-            "%R2": [np.nan],
+            "%R2": [R ** 2],
             "Significance": [significance],
             "SEM": [np.nan],
             "LNC": [np.nan],
