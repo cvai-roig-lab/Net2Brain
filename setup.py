@@ -29,6 +29,7 @@ setup(
         'Pillow',
         'prettytable',
         'gdown',
+        'pycocotools',
         'pytest',
         'pytorchvideo == 0.1.5',
         'scikit_learn',

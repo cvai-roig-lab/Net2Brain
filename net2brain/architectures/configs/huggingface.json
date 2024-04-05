@@ -1,11 +1,13 @@
 {
     "albert-base-v2": {
         "model": "transformers.AlbertModel.from_pretrained",
+        "tokenizer": "transformers.AutoTokenizer.from_pretrained", 
         "nodes": ["encoder.albert_layer_groups.0"
         ]
     },
     "kakaobrain/align-base": {
         "model": "transformers.AlignTextModel.from_pretrained",
+        "tokenizer": "transformers.AutoTokenizer.from_pretrained", 
         "nodes": ["encoder.layer.0",
                 "encoder.layer.1",
                 "encoder.layer.2",
@@ -22,11 +24,75 @@
     },
     "facebook/bart-base":{
         "model": "transformers.BartModel.from_pretrained",
+        "tokenizer": "transformers.AutoTokenizer.from_pretrained", 
         "nodes": ["encoder.layers.0",
         "encoder.layers.1",
         "encoder.layers.2",
         "encoder.layers.3",
         "encoder.layers.4",
         "encoder.layers.5"]
+    },
+    "gpt2": {
+        "model": "transformers.GPT2Model.from_pretrained",
+        "tokenizer": "transformers.GPT2Tokenizer.from_pretrained",
+        "nodes": ["h.0",
+                  "h.1",
+                  "h.2",
+                  "h.3",
+                  "h.4",
+                  "h.5",
+                  "h.6",
+                  "h.7",
+                  "h.8",
+                  "h.9",
+                  "h.10",
+                  "h.11"
+        ]
+    },
+    "bert-large-cased-whole-word-masking": {
+        "model": "transformers.BertModel.from_pretrained",
+        "tokenizer": "transformers.BertTokenizer.from_pretrained",
+        "nodes": ["encoder.layer.0",
+                    "encoder.layer.1",
+                    "encoder.layer.2",
+                    "encoder.layer.3",
+                    "encoder.layer.4",
+                    "encoder.layer.5",
+                    "encoder.layer.6",
+                    "encoder.layer.7",
+                    "encoder.layer.8",
+                    "encoder.layer.9",
+                    "encoder.layer.10",
+                    "encoder.layer.11",
+                    "encoder.layer.12",
+                    "encoder.layer.13",
+                    "encoder.layer.14",
+                    "encoder.layer.15",
+                    "encoder.layer.16",
+                    "encoder.layer.17",
+                    "encoder.layer.18",
+                    "encoder.layer.19",
+                    "encoder.layer.20",
+                    "encoder.layer.21",
+                    "encoder.layer.22",
+                    "encoder.layer.23"
+        ]
+    },
+    "bert-base-uncased": {
+        "model": "transformers.BertModel.from_pretrained",
+        "tokenizer": "transformers.BertTokenizer.from_pretrained",
+        "nodes": ["encoder.layer.0",
+                    "encoder.layer.1",
+                    "encoder.layer.2",
+                    "encoder.layer.3",
+                    "encoder.layer.4",
+                    "encoder.layer.5",
+                    "encoder.layer.6",
+                    "encoder.layer.7",
+                    "encoder.layer.8",
+                    "encoder.layer.9",
+                    "encoder.layer.10",
+                    "encoder.layer.11"
+        ]
     }
 }

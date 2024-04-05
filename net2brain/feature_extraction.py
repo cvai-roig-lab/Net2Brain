@@ -1,5 +1,6 @@
 from .architectures.netsetbase import NetSetBase
 import os
+from collections import defaultdict
 import numpy as np
 from tqdm import tqdm
 from .architectures.pytorch_models import Standard
@@ -103,22 +104,24 @@ class FeatureExtractor:
         data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
         data_files.sort()
 
+        # Detect data type for the current file
+        data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
+        
+        if self.data_type == "multimodal":
+            data_files = self._pair_modalities(data_files)
+
+        # Select preprocessor
+        if self.preprocessor == None:
+            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
+            
+        if self.data_type not in self.netset.supported_data_types:
+            raise ValueError(f"Datatype {self.data_type} not supported by current model")
         
 
         for data_file in tqdm(data_files):
 
             # Get datapath
-            file_name = str(data_file).split(os.sep)[-1]
-
-            # Detect data type for the current file
-            data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_file)
-
-            if self.data_type not in self.netset.supported_data_types:
-                continue  # Skip unsupported data types
-
-            # Select preprocessor
-            if self.preprocessor == None:
-                self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
+            file_name = str(data_file).split(os.sep)[-1].split(".")[0]
 
             # Load data
             data_from_file = data_loader(data_file)
@@ -235,6 +238,11 @@ class FeatureExtractor:
         Returns:
         - None
         """
+        
+        # Create new dir
+        if not os.path.exists(os.path.join(self.save_path, "sentences")):
+            os.mkdir(os.path.join(self.save_path, "sentences"))
+
         # List all files in the given directory
         files = [f for f in os.listdir(self.save_path) if f.endswith('.npz')]
 
@@ -256,7 +264,7 @@ class FeatureExtractor:
                 sentence_features = {key: values[0][i] for key, values in data.items()}
 
                 # Save features for the current sentence to a new file
-                np.savez(os.path.join(self.save_path, new_file_name), **sentence_features)
+                np.savez(os.path.join(self.save_path, "sentences", new_file_name), **sentence_features)
 
 
 
@@ -264,6 +272,26 @@ class FeatureExtractor:
         """Returns all possible layers for extraction."""
 
         return tx.list_module_names(self.netset.loaded_model)
+    
+    
+    def _pair_modalities(self, files):
+        # Dictionary to hold base names and their associated files
+        base_names = defaultdict(list)
+        
+        # Iterate over files to group by base name
+        for file in files:
+            base_name = os.path.splitext(file)[0]
+            base_names[base_name].append(file)
+        
+        # Create tuples from the grouped files
+        paired_files = [tuple(files) for files in base_names.values() if len(files) > 1]
+        
+        # Check if all groups have more than one modality, otherwise raise an error
+        single_modality_bases = [base for base, files in base_names.items() if len(files) == 1]
+        if single_modality_bases:
+            raise ValueError(f"Missing modalities for: {', '.join(single_modality_bases)}")
+        
+        return paired_files
 
 
     def _initialize_netset(self, netset_name):
@@ -303,7 +331,6 @@ class FeatureExtractor:
         
 
 
-
 class DataTypeLoader:
     def __init__(self, netset):
         self.netset = netset
@@ -314,16 +341,54 @@ class DataTypeLoader:
             'text': ['.txt']
         }
 
-    def _get_dataloader(self, data_path):
-        file_extension = os.path.splitext(data_path)[1].lower()
+    def _get_modalities_in_folder(self, folder_path):
+        """Check which modalities exist in the folder."""
+        files = os.listdir(folder_path)
+        modalities = defaultdict(list)
+        for file in files:
+            file_extension = os.path.splitext(file)[1].lower()
+            for modality, extensions in self.supported_extensions.items():
+                if file_extension in extensions:
+                    base_name = os.path.splitext(file)[0]
+                    modalities[base_name].append(modality)
+                    break
+        return modalities
 
-        for data_type, extensions in self.supported_extensions.items():
-            if file_extension in extensions:
-                data_loader = getattr(self.netset, f'load_{data_type}_data')
-                data_combiner = getattr(self.netset, f'combine_{data_type}_data')
-                return data_loader, data_type, data_combiner
+    def _check_modalities(self, modalities):
+        """Check for multimodal files and their completeness."""
+        multimodal_files = {}
+        single_modal_files = {}
+        for base_name, mods in modalities.items():
+            if len(mods) > 1:
+                multimodal_files[base_name] = mods
+            else:
+                single_modal_files[base_name] = mods[0]
 
-        raise ValueError(f"Unsupported file format: {file_extension}")
+        # Ensure that multimodal files have counterparts in each modality
+        for base_name, mods in multimodal_files.items():
+            if len(set(mods)) != len(mods):  # Duplicate modality found
+                raise ValueError(f"Multiple files for the same modality found for {base_name}. Expected one file per modality.")
+
+        return multimodal_files, single_modal_files
+
+    def _get_dataloader(self, folder_path):
+        modalities = self._get_modalities_in_folder(folder_path)
+        multimodal_files, single_modal_files = self._check_modalities(modalities)
+
+        if multimodal_files and not single_modal_files:
+            # If all files are multimodal
+            data_loader = getattr(self.netset, 'load_multimodal_data')
+            data_combiner = getattr(self.netset, 'combine_multimodal_data')
+            return data_loader, 'multimodal', data_combiner
+        elif single_modal_files and not multimodal_files:
+            # If all files are single modal
+            modality = next(iter(single_modal_files.values()))
+            data_loader = getattr(self.netset, f'load_{modality}_data')
+            data_combiner = getattr(self.netset, f'combine_{modality}_data')
+            return data_loader, modality, data_combiner
+        else:
+            raise ValueError("Mixed single and multimodal files found in the folder. Ensure all files are either single or multimodal.")
+
 
 
 

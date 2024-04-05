@@ -1,6 +1,7 @@
 from torchvision import transforms as trn
 import torchextractor as tx
 from PIL import Image
+import os
 import cv2
 import librosa
 import torch
@@ -168,7 +169,48 @@ class NetSetBase:
     def combine_text_data(self, feature_list):
         return feature_list[0]
     
+    
+    def combine_multimodal_data(self, feature_list):
+        return feature_list[0]
+    
 
+    def load_multimodal_data(self, multimodal_data_tuple):
+        # Define the order and corresponding loading functions for each modality
+        modalities_order = ['image', 'video', 'text', 'audio']
+        loading_functions = {
+            'image': self.load_image_data,
+            'video': self.load_video_data,
+            'text': self.load_text_data,
+            'audio': self.load_audio_data,
+        }
+        
+        # Extension to modality mapping
+        extension_to_modality = {
+            '.jpg': 'image', '.jpeg': 'image', '.png': 'image',  # Image extensions
+            '.mp4': 'video', '.avi': 'video',  # Video extensions
+            '.txt': 'text',  # Text extensions
+            '.wav': 'audio', '.mp3': 'audio',  # Audio extensions
+        }
+
+        # Initialize a dictionary to store loaded data with modality as key
+        loaded_data_by_modality = {}
+
+        for data_path in multimodal_data_tuple:
+            file_extension = os.path.splitext(data_path)[1].lower()
+            modality = extension_to_modality.get(file_extension)
+
+            if not modality:
+                raise ValueError(f"Unsupported file extension: {file_extension}")
+
+            # Call the corresponding loading function for the modality
+            loaded_data_by_modality[modality] = loading_functions[modality](data_path)[0]  # Assuming loaders return a list with a single element
+
+        # Organize the loaded data according to the predefined order and include only the available modalities
+        ordered_loaded_data = tuple(loaded_data_by_modality[mod] for mod in modalities_order if mod in loaded_data_by_modality)
+
+        return [ordered_loaded_data]
+
+    
 
     def load_image_data(self, data_path):
         return [Image.open(data_path).convert('RGB')]

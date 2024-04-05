@@ -141,61 +141,58 @@ class Plotting:
 
         # Noise ceiling
         self.add_noise_ceiling(ax, plotting_df)
-
+        
+        
 
     def plot_all_layers(self, metric='R2', columns_per_row=4):
         for dataframe in self.dataframes:
             dataframe = self.prepare_dataframe(dataframe, metric)
         rois = pd.concat(self.dataframes)['ROI'].unique()
         n_rois = len(rois)
-        rows = int(np.ceil(n_rois / columns_per_row))
+        rows = int(np.ceil((n_rois + 1) / columns_per_row))
 
-        fig, axes = plt.subplots(rows, columns_per_row, figsize=(columns_per_row * 5, rows * 5), squeeze=False)
+        fig, axes = plt.subplots(rows, columns_per_row, figsize=(columns_per_row * 15, rows * 5), squeeze=False)
         axes = axes.flatten()
-
-        bar_width = 0.15  # Define the width for each bar
 
         for i, roi in enumerate(rois):
             ax = axes[i]
             roi_df = pd.concat([df[df['ROI'] == roi] for df in self.dataframes])
+            
+            roi_df['Layer_num'] = roi_df['Layer'].str.extract('(\d+)').astype(int)
+            roi_df.sort_values(['Model', 'Layer_num'], inplace=True)
 
             models = roi_df['Model'].unique()
             layers = roi_df['Layer'].unique()
             n_models = len(models)
             n_layers = len(layers)
 
-            # Select base colors for models and generate darker shades for layers
-            base_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']  # Example base colors
-            base_colors = base_colors[:n_models]  # Ensure we have enough colors for the models
+            bar_width = 0.8 / n_layers  # Adjust bar width based on the number of layers
 
-            centers = []
+            # Calculate positions for each bar and the middle position for each model's group
+            model_positions = []
             for j, model in enumerate(models):
                 model_df = roi_df[roi_df['Model'] == model]
+                model_layers = model_df['Layer'].unique()
+                start_pos = j * (n_layers + 1) * bar_width  # Starting position of the model's group
+                end_pos = start_pos + (len(model_layers) - 1) * bar_width  # Ending position of the model's group
+                middle_pos = (start_pos + end_pos) / 2  # Middle position of the model's group
+                model_positions.append(middle_pos)
 
-                # Generate darker shades for the layers within the model's base color
-                layer_colors = sns.dark_palette(base_colors[j], n_colors=n_layers + 2, reverse=True)[1:-1]
+                layer_colors = sns.dark_palette(sns.color_palette("tab10")[j % len(sns.color_palette("tab10"))], n_colors=len(model_layers) + 2)[1:-1]
 
-                for k, layer in enumerate(layers):
+                for k, layer in enumerate(model_layers):
                     layer_df = model_df[model_df['Layer'] == layer]
-
-                    # Calculate x position for each bar within the group
-                    x_pos = j * (n_layers * bar_width + bar_width) + k * bar_width
+                    x_pos = start_pos + k * bar_width
 
                     if not layer_df.empty:
-                        bar = ax.bar(x_pos, layer_df[metric].values, width=bar_width, label=f'{layer}' if i == 0 else "", color=layer_colors[k])
+                        bar = ax.bar(x_pos, layer_df[metric].values, width=bar_width, label=f'{model} {layer}' if i == 0 else "", color=layer_colors[k])
                         ax.errorbar(x_pos, layer_df[metric].values, yerr=layer_df['SEM'].values, fmt='none', ecolor='black', capsize=5, capthick=2)
 
                         if layer_df['Significance'].values < 0.05:
                             ax.text(x_pos, layer_df[metric].values + layer_df['SEM'].values, '*', ha='center', va='bottom', color='black')
-                centers.append(bar[0].get_x() + bar_width / 2 - ((k / 2) * bar_width))
 
-            # Noise ceiling lines for the entire ROI
-            lnc, unc = roi_df[['LNC', 'UNC']].iloc[0]
-            ax.hlines(y=lnc, xmin=ax.get_xlim()[0], xmax=ax.get_xlim()[1], colors='grey', linestyles='dotted', alpha=0.7, label='LNC' if i == 0 else "")
-            ax.hlines(y=unc, xmin=ax.get_xlim()[0], xmax=ax.get_xlim()[1], colors='grey', linestyles='dashed', alpha=0.7, label='UNC' if i == 0 else "")
-
-            # ax.set_xticks(np.arange(n_models) * (n_layers * bar_width + bar_width))
-            ax.set_xticks(centers)
+            # Set x-ticks to the middle of each model's group of bars
+            ax.set_xticks(model_positions)
             ax.set_xticklabels(models)
             ax.set_title(f'All Layers for {roi}')
             ax.set_xlabel('Model')
@@ -205,12 +202,44 @@ class Plotting:
         for j in range(i + 1, rows * columns_per_row):
             axes[j].axis('off')
 
-        # Add a legend outside the plot
+        # Determine the number of columns for the legend based on the number of models
+        legend_columns = n_models
+
+        # Calculate the size of the legend subplot to match other subplots
+        legend_ax = plt.subplot(rows, columns_per_row, rows * columns_per_row)  # Position the legend in the last subplot area
+
+        # Collect handles and labels for the legend from one of the plots
         handles, labels = axes[0].get_legend_handles_labels()
-        fig.legend(handles, labels, title='Layers & Noise Ceiling', loc='upper right', bbox_to_anchor=(1.05, 1), ncol=1)
+
+        # Organize labels and handles by network for clarity
+        network_handles = {}
+        for handle, label in zip(handles, labels):
+            model_name = label.split()[0]  # Assuming the model name is the first part of the label
+            if model_name not in network_handles:
+                network_handles[model_name] = []
+            network_handles[model_name].append((handle, label))
+
+        # Create new handles and labels lists, sorted by network and then by layer
+        new_handles = []
+        new_labels = []
+        for model_name in sorted(network_handles.keys()):
+            model_handles_labels = network_handles[model_name]
+            for handle, label in sorted(model_handles_labels, key=lambda x: int(x[1].split()[1].split('.')[-1])):  # Sort by layer number
+                new_handles.append(handle)
+                new_labels.append(label)
+
+        # Add the legend to the plot
+        legend = legend_ax.legend(new_handles, new_labels, loc='center', ncol=legend_columns, fontsize='small', title='Model Layers')
+        legend_ax.axis('off')  # Hide the axes of the legend subplot
 
         plt.tight_layout()
         plt.show()
+
+        # plt.tight_layout()
+        # plt.show()
+
+
+
 
 
 
