@@ -24,9 +24,6 @@ class BaseDataset:
         if self.dataset_name not in self.DATASET_URLS:
             raise ValueError(f"Unknown dataset: {self.dataset_name}.")
         
-        print(self.path)
-        print(self.dataset_folder)
-        
         url = self.DATASET_URLS[self.dataset_name]
 
         if not os.path.exists(self.dataset_folder):
@@ -117,7 +114,7 @@ class WorkshopCuttingGardens(BaseDataset):
 
 
 
-class DatasetNSD(BaseDataset):
+class DatasetNSD_872(BaseDataset):
     dataset_name = "NSD Dataset"
     DATASET_URLS = {
         dataset_name: "https://drive.google.com/uc?export=download&id=1OCKE7efSojxwDlNTE93yybEZZl_wJ7mX"
@@ -125,7 +122,6 @@ class DatasetNSD(BaseDataset):
 
 
     def __init__(self, path=None):
-        print(path, "Hello")
         super().__init__(path)
 
     def _load(self):
@@ -327,8 +323,10 @@ class DatasetNSD(BaseDataset):
 
                     if anns:
                         caption = anns[0]['caption']
-                        with open(os.path.join(target_folder, f"{coco_id}.txt"), 'w') as f:
-                            f.write(f"{caption}\n")
+                        new_name = filename.split(".")[0]
+                        with open(os.path.join(target_folder, f"{new_name}.txt"), 'w') as f:
+                            f.write(f"{caption.strip()}\n")  # Use strip() to remove leading/trailing whitespace and new lines
+
                 else:
                     print(f"No NSD ID found for {filename}")
 
@@ -396,8 +394,6 @@ class DatasetNSD(BaseDataset):
                     # Save the final image
                     save_path = os.path.join(target_folder, filename)
                     final_image.save(save_path)
-                else:
-                    print(coco_id)
 
         print("Processing complete. Cropped images are saved in:", target_folder)
 
@@ -551,7 +547,6 @@ class DatasetNSD(BaseDataset):
 
                 # Rename the file
                 os.rename(old_file_path, new_file_path)
-                print(f"Renamed '{filename}' to '{new_filename}'")
 
         print("Finished renaming files.")
 
@@ -561,7 +556,7 @@ class DatasetNSD(BaseDataset):
         
     
 
-class DatasetAlgonauts_NSD(DatasetNSD):
+class DatasetAlgonauts_NSD(DatasetNSD_872):
     dataset_name = "Algonauts_NSD"
     DATASET_URLS = {
         dataset_name: "https://drive.google.com/uc?export=download&id=1OCKE7efSojxwDlNTE93yybEZZl_wJ7mX"
