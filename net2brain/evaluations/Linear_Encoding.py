@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import IncrementalPCA
 from sklearn.linear_model import LinearRegression
-from scipy.stats import pearsonr, ttest_1samp
+from scipy.stats import pearsonr, ttest_1samp, sem
 
 
 from scipy.stats import ttest_1samp
@@ -363,13 +363,14 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
             # Compute statistical significance of the correlations
             significance = ttest_1samp(r_lst, 0)[1]
             R = np.mean(r_lst)
+            r_lst_array = np.array(r_lst)  # Convert the list to a NumPy array
             output_dict = {"ROI":roi_name,
             "Layer": layer_id,
             "Model": model_name,
             "R": [R],
             "%R2": [R ** 2],
             "Significance": [significance],
-            "SEM": [np.nan],
+            "SEM": [sem(r_lst_array)],
             "LNC": [np.nan],
             "UNC": [np.nan]}
             layer_df = pd.DataFrame.from_dict(output_dict)
