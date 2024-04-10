@@ -115,6 +115,8 @@ def check_dist_input(x: Union[Tensor, np.ndarray],
         - `x` is not on the specified device then it is moved to the specified device.
     If `y` is `None`, then `None` is returned for `y`.
     """
+    if isinstance(dtype, str):
+        dtype = getattr(torch, dtype)
 
     def _check_input(tensor):
         if isinstance(tensor, np.ndarray):
@@ -140,7 +142,7 @@ def check_dist_input(x: Union[Tensor, np.ndarray],
             tensor = tensor.contiguous()
 
         if dtype is not None:
-            tensor = tensor.to(dtype)
+            tensor = tensor.to(dtype=dtype)
 
         # move to device if specified
         if device is not None:
@@ -336,6 +338,7 @@ def dist(x: Union[Tensor, np.ndarray],
 
     verbose = kwargs.pop("verbose", False)
     device = kwargs.pop("device", None)
+    dtype = kwargs.pop("dtype", None)
 
     if callable(metric):
         func = partial(_prepare_dist_func(metric), **kwargs)
@@ -344,7 +347,7 @@ def dist(x: Union[Tensor, np.ndarray],
 
     dist._output_condensed = getattr(func, "_output_condensed", False)
 
-    inputs = check_dist_input(x, y, func=func, device=device, dtype=kwargs.pop("dtype", None))
+    inputs = check_dist_input(x, y, func=func, device=device, dtype=dtype)
 
     if chunk_size is None:
         return func(**inputs, **kwargs)
