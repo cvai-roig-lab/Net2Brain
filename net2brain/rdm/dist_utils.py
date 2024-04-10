@@ -271,6 +271,27 @@ def is_condensed_1d(x: torch.Tensor) -> bool:
     return d * (d - 1) == shape[-1] * 2 and len(shape) == 1
 
 
+def standardize(x: Tensor, dim: int = 0, epsilon: float = 1e-7) -> Tensor:
+    """
+    Standardizes the input tensor by subtracting the mean and dividing by the standard deviation.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        A 2D tensor of shape `[n, d]` where `n` is the number of vectors and `d` is the dimensionality of each vector.
+    dim : int
+        The dimension along which the standardization is performed.
+    epsilon : float
+        A small value to prevent division by zero.
+
+    Returns
+    -------
+    out : torch.Tensor
+        The standardized tensor of shape `[n, d]`.
+    """
+    return (x - x.mean(dim=dim, keepdim=True)) / (x.std(dim=dim, keepdim=True, unbiased=False) + epsilon)
+
+
 def dist(x: Union[Tensor, np.ndarray],
          y: Optional[Union[Tensor, np.ndarray]] = None,
          chunk_size: Optional[int] = None,
