@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List, Union, Optional, Dict, Literal
 from uuid import uuid4
 
+import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import torch
@@ -177,5 +178,7 @@ class LayerRDM(RDM):
         )
         if self.layer_name is not None:
             ax.set_title(f"Layer={self.layer_name}")
+
+        plt.show()
 
         return ax
