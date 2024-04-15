@@ -26,11 +26,11 @@
         "model": "transformers.BartModel.from_pretrained",
         "tokenizer": "transformers.AutoTokenizer.from_pretrained", 
         "nodes": ["encoder.layers.0",
-        "encoder.layers.1",
-        "encoder.layers.2",
-        "encoder.layers.3",
-        "encoder.layers.4",
-        "encoder.layers.5"]
+                "encoder.layers.1",
+                "encoder.layers.2",
+                "encoder.layers.3",
+                "encoder.layers.4",
+                "encoder.layers.5"]
     },
     "gpt2": {
         "model": "transformers.GPT2Model.from_pretrained",

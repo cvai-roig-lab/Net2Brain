@@ -87,9 +87,6 @@ This taxonomy system provides a convenient way to search for models that align w
 
 # Compatibility and System Requirements
 
-Net2Brain has been extensively tested on all systems running Python version up to 3.10. It is compatible with major operating systems, including Windows, macOS, and Linux.
-
-Please note that there are two netsets, Detectron2 and VISSL, which are specifically designed for Linux-based systems. Installation instructions for these netsets can be found in the provided notebooks.
 
 # Installation
 
