@@ -114,6 +114,34 @@ class WorkshopCuttingGardens(BaseDataset):
 
 
 
+
+
+
+class Tutorial_LE_Results(BaseDataset):
+    dataset_name = "Tutorial_LE_Results"
+    DATASET_URLS = {
+        dataset_name: "https://drive.google.com/uc?export=download&id=1HxsNtRdj5KPxr33sS7qMBgYPlU5Itp9q"
+    }
+
+    def __init__(self, path=None):
+        super().__init__(path)
+
+    def _load(self):
+        self.download_and_extract_zip()
+        # Dictionary to store folder names and their paths
+        folder_paths = {}
+        
+        # Iterate over items in the dataset folder
+        for item in os.listdir(self.dataset_folder):
+            item_path = os.path.join(self.dataset_folder, item)
+            # Check if the item is a directory
+            if os.path.isdir(item_path):
+                folder_paths[item] = item_path
+                
+        return folder_paths
+
+
+
 class DatasetNSD_872(BaseDataset):
     dataset_name = "NSD Dataset"
     DATASET_URLS = {
@@ -559,7 +587,7 @@ class DatasetNSD_872(BaseDataset):
 class DatasetAlgonauts_NSD(DatasetNSD_872):
     dataset_name = "Algonauts_NSD"
     DATASET_URLS = {
-        dataset_name: "https://drive.google.com/uc?export=download&id=1OCKE7efSojxwDlNTE93yybEZZl_wJ7mX"
+        dataset_name: "https://drive.google.com/uc?export=download&id=195mLhZzsJXAu7q4-tDsAooTUUuM_ZpP6"
     }
 
     def __init__(self, path=None):
