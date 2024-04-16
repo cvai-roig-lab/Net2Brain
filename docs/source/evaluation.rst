@@ -129,6 +129,11 @@ Linear Encoding Models:
 
 Another integrated analysis pipeline is a linear encoder. Given a npy file with voxel values, and extracted features, the encoder performs an X-fold regression where the training data is used to train a PCA embedding and a linear regression to predict voxel values. The output is the testing split X-fold average pearson correlation.
 
+.. note::
+
+   Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/Workshops/Net2Brain_Introduction_LLM.ipynb>`_!
+
+
 Prerequisites for the linear encoding function include:
 
 - **feat_path**: The file path directing to the model's features.
@@ -141,9 +146,9 @@ Prerequisites for the linear encoding function include:
 
 .. code-block:: python
 
-    from net2brain.evaluations.encoding import linear_encoding
+    from net2brain.evaluations.Linear_Encoding import Linear_Encoding
     
-    results_dataframe = linear_encoding(
+    results_dataframe = Linear_Encoding(
         feat_path,
         roi_path,
         model_name,
@@ -151,8 +156,9 @@ Prerequisites for the linear encoding function include:
         trn_tst_split=0.8,
         n_components=100,
         batch_size=100
+        return_correlations=True,
+        save_path="path/to/csv"
     )
-
 
 
 
