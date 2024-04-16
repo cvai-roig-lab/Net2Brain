@@ -9,34 +9,54 @@ Welcome to __Net2Brain__, a powerful toolbox designed to facilitate the comparis
 
 Net2Brain is a collaborative effort between CVAI and Radek Cichy's lab, aimed at providing a user-friendly toolbox for neural research with deep neural networks. 
 
-## All-in-One Solution
+**All-in-One Solution**: 
 Net2Brain offers an all-in-one solution by providing access to over 600 pretrained neural networks, specifically trained for various visual tasks. This extensive collection allows researchers to extract features from a diverse range of models, including pretrained and random architectures. Moreover, Net2Brain offers flexibility by allowing users to integrate their own models, thereby expanding the scope of experiments that can be conducted to evaluate brain responses.
 
-## Bridging Neural and AI Research
-
+**Bridging Neural and AI Research**:
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
 
-# Documentation (NEW!)
-Net2Brain now has its own ReadTheDocs page including tutorials for
+# Updates 04/24
+Next to minor bug/api fixes these are the main changes:
+
+1. Added fully capabale Large-Language-Model functionality
+2. Added new Datasets including helper functions to modify these datasets (NSD subset & Algonauts 2023)
+3. Improved Linear Encoding functionalty (Attention: Import Name changed)
+4. Improved Plotting functionality
+5. Allowing Multimodal input for multimodal models (instead of one modality at once) 
+6. Added new [Tutorial Notebook](/notebooks/Workshops/Net2Brain_Introduction_LLM.ipynb)
+
+
+
+# Documentation
+Net2Brain now has its own [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) page including tutorials for
 - Installation
 - Taxonomy, Feature Extraction, RDM Creation, Evaluation
 - Adding your own models to the extractor
 - Adding your own netset
 
+# Tutorial Notebooks and Datasets
 
-# Tutorial and Workshop Notebooks
-Dive into the capabilities of __Net2Brain__  with our interactive tutorial and workshop notebooks, available for download [here](/notebooks/). The tutorial notebooks provide a comprehensive guide to the core functionalities of the Toolbox, offering step-by-step instructions to help you harness its full potential. The workshop notebooks, on the other hand, are designed to facilitate the replication of studies using __Net2Brain__, presenting practical examples and detailed workflows. Whether you're new to the Toolbox or looking to conduct your research, these resources are an invaluable starting point.
+Net2Brain provides a set of [tutorial notebooks](notebooks) that demonstrate the various functionalities of the toolbox. These notebooks are designed to guide users through the process of model taxonomy exploration, feature extraction, RDM creation, and evaluation. 
+
+To further facilitate your exploration, we also offer pre-downloaded datasets that you can use in conjunction with the tutorial notebooks. These datasets allow you to immediately dive into the experimentation process and gain hands-on experience with Net2Brain. Simply follow the instructions provided in the notebooks to access and utilize the datasets effectively.
+
+## Available Datasets:
+- The 78Images-Dataset from [Algonauts2019 Challenge Training Set A](http://algonauts.csail.mit.edu/2019/download.html)
+- The 92Images-Dataset from [Algonauts2019 Challenge Test Set](http://algonauts.csail.mit.edu/2019/download.html)
+- The bonnerpnas2017-Dataset from [Micheal F. Bonner et. al](https://www.pnas.org/doi/full/10.1073/pnas.1618228114)
+- The NSD-Dataset (Algonauts Challenge) from [EJ Allen et. al](https://www.nature.com/articles/s41593-021-00962-x)
+- A subset of the NSD-Dataset with the 872 images that all participants have seen from [EJ Allen et. al](https://www.nature.com/articles/s41593-021-00962-x)
 
 
-See [here](https://net2brain.readthedocs.io/en/latest/index.html) for an detailed documentation of the toolbox. Below you will find a subset of the tutorials.
+The NSD-Datasets offers an additional range of functions designed to bridge NSD and COCO, enhancing the utility of the NSD dataset for comprehensive visual studies:
 
-
-# Example Notebooks and Datasets (NEW!)
-
-Net2Brain provides a set of [example notebooks](notebooks) that demonstrate the various functionalities of the toolbox. These notebooks are designed to guide users through the process of model taxonomy exploration, feature extraction, RDM creation, and evaluation. 
-
-To further facilitate your exploration, we also offer pre-downloaded datasets that you can use in conjunction with the example notebooks. These datasets allow you to immediately dive into the experimentation process and gain hands-on experience with Net2Brain. Simply follow the instructions provided in the notebooks to access and utilize the datasets effectively.
+* **Image Downloads**: Access original COCO images directly from the NSD context.
+* **ID Conversion**: Switch between NSD and COCO identifiers.
+* **Segmentation Masks**: Obtain COCO segmentation masks corresponding to NSD images.
+* **Caption Downloads**: Obtain COCO original caption to each downloaded image.
+* **Image and Mask Manipulation**: Crop and rename files for consistency with NSD conventions.
+* **Visualization**: Display the images along with their segmentaion masks.
 
 # Key Functions
 
@@ -46,9 +66,27 @@ The toolbox encompasses several key functions to support comprehensive neural re
 
 2. __Creation of Representational Dissimilarity Matrices (RDMs)__: Users can generate RDMs to analyze the dissimilarity between neural representations.
 
-3. __Evaluation__: Net2Brain incorporates Representational Similarity Analysis (RSA) ([Kriegeskorte et al., 2008](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2605405/)) techniques, including weighted RSA and Searchlight evaluation, to compare neural representations with brain activity patterns.
+3. __Evaluation__: Net2Brain incorporates various evaluation methos to compare neural representations with brain activity patterns, ranging from RSA, to Linar Encoding and Variance Partitioning Analysis.
 
 4. __Plotting__: Net2Brain provides plotting functionalities that allow you to visualize and present your analysis results in a polished manner. The generated plots are designed to be publication-ready, making it easier for you to showcase your findings and share them with the scientific community.
+
+
+
+# Compatibility and System Requirements
+
+# Installation
+
+To install Net2Brain and its dependencies, please follow these steps:
+
+1. Install the repository on your machine. You can use the following command in your terminal:
+
+```
+pip install -U git+https://github.com/cvai-roig-lab/Net2Brain
+```
+
+2. Once the installation is complete, you can import Net2Brain in your Python environment and start utilizing its powerful features for neural research.
+
+
 
 
 # Model Taxonomy
@@ -82,23 +120,6 @@ This taxonomy system provides a convenient way to search for models that align w
 
 
 
-
-
-
-# Compatibility and System Requirements
-
-
-# Installation
-
-To install Net2Brain and its dependencies, please follow these steps:
-
-1. Install the repository on your machine. You can use the following command in your terminal:
-
-```
-pip install -U git+https://github.com/cvai-roig-lab/Net2Brain
-```
-
-2. Once the installation is complete, you can import Net2Brain in your Python environment and start utilizing its powerful features for neural research.
 
 
 
@@ -202,58 +223,16 @@ results_dataframe = plotter.plot()
 
 Refer to the provided notebooks and documentation for detailed instructions on customizing RSA evaluation and exploring additional options offered by Net2Brain
 
-## Linear Encoding
 
-Another integrated analysis pipeline is a linear encoder. Given a npy file with voxel values, and extracted features, the encoder performs an X-fold regression where the training data is used to train a PCA embedding and a linear regression to predict voxel values. The output is the testing split X-fold average pearson correlation.
+## Other Evaluation methods
+`Net2Brain` has the ability to perform a wide range of evaluation methods to evaluate the correlation beetween artifical and biological network responses. Among those are:
+1. RSA
+2. Weighted RSA
+3. Searchlight Evaluation
+4. Linear Encoding
+5. Variance Partitioning Analysis
 
-```python
-from net2brain.evaluations.encoding import linear_encoding
-
-# n_folds: number of folds
-# trn_tst_split: how to split training and testing data at each fold
-# n_components: number of PCA components
-# batch_size: size of batch of updating the incremental pca
-results_dataframe = linear_encoding(feature_path, roi_path, model_name, n_folds=3, trn_tst_split=0.8, n_components=100, batch_size=100)
-```
-
-
-## Variance Partitioning Analysis
-
-Variance Partitioning Analysis (VPA) is a statistical method used to dissect the contributions of different independent variables or factors to the variance observed in a dependent variable. In the context of neural data analysis, VPA is employed to understand how different neural models or factors contribute to the variance observed in neural responses.
-
-The main steps involved in performing VPA are as follows:
-
-- Define the independent variables or factors of interest. These could be different neural models, stimulus conditions, or any other factors you want to study.
-- Collect neural data, typically in the form of response patterns (RDMs - Representational Dissimilarity Matrices).
-- Perform the VPA analysis to quantify the unique variances attributed to each independent variable and their interactions.
-
-```python
-from net2brain.evaluations.variance_partitioning_analysis import VPA
-
-# Independent variables for VPA
-independent_variables = [paths_2D, paths_3D, paths_Sm, paths_nv]
-
-# Variable names for plotting
-variable_names = ["2D", "3D", "SM", "NV"]
-
-# Dependent varaible for VPA
-dependent_variable = "path_to_RDM"
-
-# VPA
-VPA_eval = VPA(dependent_variable, independent_variables, variable_names)
-
-# average_models=True would average all data within each independent variable
-dataframe = VPA_eval.evaluate(average_models=False)
-
-# Filter the dataframe to include only specific variance components
-dataframe = dataframe.query("Variable in ['y1234', 'y1', 'y2', 'y3', 'y4']").reset_index(drop=True)
-
-# For plotting:
-from net2brain.evaluations.plotting import Plotting
-
-plotter = Plotting(dataframe)
-plotter.plotting_over_time(add_std=True)
-```
+To delve deeper into how they work, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks)
 
 
 
