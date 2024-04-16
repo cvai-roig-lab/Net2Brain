@@ -1,6 +1,10 @@
 Welcome to Net2Brain's Documentation!
 =====================================
 
+.. image:: Net2Brain_Logo.png
+   :align: center
+   :alt: Net2Brain Logo
+   :scale: 50%
 
 Welcome to **Net2Brain**, the comprehensive toolbox designed to illuminate the intricate parallels between the complex workings of the human brain and the sophisticated activations of Deep Neural Networks (DNNs). 
 Offering access to over 600 pre-trained models, Net2Brain empowers researchers to delve into the comparative study of 

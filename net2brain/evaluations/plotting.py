@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import warnings
+from matplotlib.patches import Patch
+from matplotlib.colors import LinearSegmentedColormap
 warnings.simplefilter(action='ignore', category=FutureWarning)
 plt.style.use('ggplot')
 
@@ -144,12 +146,12 @@ class Plotting:
         
         
 
-    def plot_all_layers(self, metric='R2', columns_per_row=4):
+    def plot_all_layers(self, metric='R2', columns_per_row=4, simplified_legend=False):
         for dataframe in self.dataframes:
             dataframe = self.prepare_dataframe(dataframe, metric)
         rois = pd.concat(self.dataframes)['ROI'].unique()
         n_rois = len(rois)
-        rows = int(np.ceil((n_rois + 1) / columns_per_row))
+        rows = int(np.ceil((n_rois) / columns_per_row))
 
         fig, axes = plt.subplots(rows, columns_per_row, figsize=(columns_per_row * 15, rows * 5), squeeze=False)
         axes = axes.flatten()
@@ -190,6 +192,28 @@ class Plotting:
 
                         if layer_df['Significance'].values < 0.05:
                             ax.text(x_pos, layer_df[metric].values + layer_df['SEM'].values, '*', ha='center', va='bottom', color='black')
+                            
+                            
+            if simplified_legend:
+                # Collect a representative color for each model
+                model_representative_colors = []
+                for j, model in enumerate(models):
+                    # Taking the midpoint color of the gradient for each model as a representative
+                    representative_color = sns.dark_palette(sns.color_palette("tab10")[j % len(sns.color_palette("tab10"))], n_colors=len(layers) + 2)[len(layers) // 2]
+                    model_representative_colors.append((representative_color, model))
+                    
+                # Create custom patches for the legend
+                legend_patches = [Patch(color=color, label=model) for color, model in model_representative_colors]
+                
+                # Add a note about gradient progression, if it's the first subplot
+                if i == 0:
+                    gradient_note = "Gradient: Early (darker) to Later (brighter) layers"
+                    legend_patches.append(Patch(color='none', label=gradient_note))  # Invisible patch, just for adding the note
+                
+                legend_position = 'upper right'
+
+                # Add the simplified legend to the current subplot, inside the plot area
+                ax.legend(handles=legend_patches, loc=legend_position, fontsize='small', title='Models')
 
             # Set x-ticks to the middle of each model's group of bars
             ax.set_xticks(model_positions)
@@ -201,42 +225,45 @@ class Plotting:
         # Hide unused subplots
         for j in range(i + 1, rows * columns_per_row):
             axes[j].axis('off')
-
+            
+            
+            
         # Determine the number of columns for the legend based on the number of models
         legend_columns = n_models
 
         # Calculate the size of the legend subplot to match other subplots
         legend_ax = plt.subplot(rows, columns_per_row, rows * columns_per_row)  # Position the legend in the last subplot area
+            
+        if not simplified_legend:
+            
+            # Collect handles and labels for the legend from one of the plots
+            handles, labels = axes[0].get_legend_handles_labels()
 
-        # Collect handles and labels for the legend from one of the plots
-        handles, labels = axes[0].get_legend_handles_labels()
+            # Organize labels and handles by network for clarity
+            network_handles = {}
+            for handle, label in zip(handles, labels):
+                model_name = label.split()[0]  # Assuming the model name is the first part of the label
+                if model_name not in network_handles:
+                    network_handles[model_name] = []
+                network_handles[model_name].append((handle, label))
 
-        # Organize labels and handles by network for clarity
-        network_handles = {}
-        for handle, label in zip(handles, labels):
-            model_name = label.split()[0]  # Assuming the model name is the first part of the label
-            if model_name not in network_handles:
-                network_handles[model_name] = []
-            network_handles[model_name].append((handle, label))
+            # Create new handles and labels lists, sorted by network and then by layer
+            new_handles = []
+            new_labels = []
+            for model_name in sorted(network_handles.keys()):
+                model_handles_labels = network_handles[model_name]
+                for handle, label in sorted(model_handles_labels, key=lambda x: int(x[1].split()[1].split('.')[-1])):  # Sort by layer number
+                    new_handles.append(handle)
+                    new_labels.append(label)
 
-        # Create new handles and labels lists, sorted by network and then by layer
-        new_handles = []
-        new_labels = []
-        for model_name in sorted(network_handles.keys()):
-            model_handles_labels = network_handles[model_name]
-            for handle, label in sorted(model_handles_labels, key=lambda x: int(x[1].split()[1].split('.')[-1])):  # Sort by layer number
-                new_handles.append(handle)
-                new_labels.append(label)
-
-        # Add the legend to the plot
-        legend = legend_ax.legend(new_handles, new_labels, loc='center', ncol=legend_columns, fontsize='small', title='Model Layers')
-        legend_ax.axis('off')  # Hide the axes of the legend subplot
+            # Add the legend to the plot
+            legend = legend_ax.legend(new_handles, new_labels, loc='center', ncol=legend_columns, fontsize='small', title='Model Layers')
+            legend_ax.axis('off')  # Hide the axes of the legend subplot
 
         plt.tight_layout()
         plt.show()
 
-        # plt.tight_layout()
-        # plt.show()
+
 
 
 
