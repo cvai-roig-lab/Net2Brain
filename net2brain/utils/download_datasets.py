@@ -151,7 +151,8 @@ class DatasetNSD_872(BaseDataset):
 
     def __init__(self, path=None):
         super().__init__(path)
-
+        self.source_path = "NSD Dataset"
+        
     def _load(self):
         self.download_and_extract_zip()
         # Dictionary to store folder names and their paths
@@ -167,7 +168,11 @@ class DatasetNSD_872(BaseDataset):
         return folder_paths
     
     
-    def NSDtoCOCO(self, nsd_id, coco_path="NSD Dataset/coco.csv"):
+    def NSDtoCOCO(self, nsd_id, coco_path=""):
+        
+        if coco_path == "":
+            coco_path = self.source_path + "/coco.csv"
+            
         # Check if the file exists
         if not os.path.exists(coco_path):
             raise DatasetError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
@@ -188,7 +193,11 @@ class DatasetNSD_872(BaseDataset):
         return int(df[df['nsdId'] == nsd_id_str]['cocoId'].values[0])  # Assuming cocoId is numeric
 
 
-    def COCOtoNSD(self, coco_id, coco_path="NSD Dataset/coco.csv"):
+    def COCOtoNSD(self, coco_id, coco_path=""):
+        
+        if coco_path == "":
+            coco_path = self.source_path + "/coco.csv"
+            
         # Check if the file exists
         if not os.path.exists(coco_path):
             raise DatasetError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
@@ -204,7 +213,11 @@ class DatasetNSD_872(BaseDataset):
     
 
 
-    def Download_COCO_Images(self, nsd_image_folder, target_folder, NSD_path="NSD Dataset"):
+    def Download_COCO_Images(self, nsd_image_folder, target_folder, NSD_path=""):
+        
+        if NSD_path == "":
+            NSD_path = self.source_path
+            
         coco_csv_path = os.path.join(NSD_path, "coco.csv")
         
         # Load the NSD to COCO mapping
@@ -252,7 +265,11 @@ class DatasetNSD_872(BaseDataset):
     
     
         
-    def Download_COCO_Segmentation_Masks(self, nsd_image_folder, target_folder, NSD_path="NSD Dataset"):
+    def Download_COCO_Segmentation_Masks(self, nsd_image_folder, target_folder, NSD_path=""):
+        
+        if NSD_path == "":
+            NSD_path = self.source_path
+            
         coco_csv_path = os.path.join(NSD_path, "coco.csv")
         
         # Load the NSD to COCO mapping
@@ -309,7 +326,11 @@ class DatasetNSD_872(BaseDataset):
         
         
 
-    def Download_COCO_Captions(self, nsd_image_folder, target_folder, NSD_path="NSD Dataset"):
+    def Download_COCO_Captions(self, nsd_image_folder, target_folder, NSD_path=""):
+        
+        if NSD_path == "":
+            NSD_path = self.source_path
+            
         coco_csv_path = os.path.join(NSD_path, "coco.csv")
         train_captions_path = os.path.join(NSD_path, "captions_train2017.json")
         val_captions_path = os.path.join(NSD_path, "captions_val2017.json")
@@ -364,7 +385,11 @@ class DatasetNSD_872(BaseDataset):
         
         
         
-    def Crop_COCO_to_NSD(self, source_folder, target_folder, coco_path="NSD Dataset/coco.csv"):
+    def Crop_COCO_to_NSD(self, source_folder, target_folder, coco_path=""):
+        
+        if coco_path == "":
+            coco_path = self.source_path + "/coco.csv"
+            
         # Check if the file exists
         if not os.path.exists(coco_path):
             raise DatasetError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
@@ -502,7 +527,11 @@ class DatasetNSD_872(BaseDataset):
         
         
 
-    def RenameToCOCO(self, folder, coco_path="NSD Dataset/coco.csv"):
+    def RenameToCOCO(self, folder, coco_path=""):
+        
+        if coco_path == "":
+            coco_path = self.source_path + "/coco.csv"
+            
         # Check if the file exists
         if not os.path.exists(coco_path):
             raise FileNotFoundError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
@@ -531,7 +560,10 @@ class DatasetNSD_872(BaseDataset):
                 os.rename(os.path.join(folder, filename), os.path.join(folder, new_filename))
                 
                 
-    def RenameToNSD(self, folder, coco_path="NSD Dataset/coco.csv"):
+    def RenameToNSD(self, folder, coco_path=""):
+        
+        if coco_path == "":
+            coco_path = self.source_path + "/coco.csv"
         # Check if the file exists
         if not os.path.exists(coco_path):
             raise DatasetError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
@@ -592,6 +624,7 @@ class DatasetAlgonauts_NSD(DatasetNSD_872):
 
     def __init__(self, path=None):
         super().__init__(path)
+        self.source_path = "Algonauts_NSD"
 
     def _load(self):
         self.download_and_extract_zip()
