@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.decomposition import IncrementalPCA
 from sklearn.linear_model import LinearRegression
 from scipy.stats import pearsonr, ttest_1samp, sem
+import warnings
 
 
 from scipy.stats import ttest_1samp
@@ -256,7 +257,14 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
         
         
         
-        
+def linear_encoding(*args, **kwargs):
+    warnings.warn(
+        "The 'linear_encoding' function is deprecated and has been replaced by 'Linear_Encoding'. "
+        "Please update your code to use the new function name, as this alias will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return Linear_Encoding(*args, **kwargs)   
         
     
 
