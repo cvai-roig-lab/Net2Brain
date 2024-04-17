@@ -9,9 +9,26 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from PIL import Image
 import re
+import warnings
 
 class DatasetError(Exception):
     pass
+
+
+def load_dataset(dataset_name, path=None):
+    warnings.warn(
+        "The 'load_dataset' function is deprecated. Please use the new class-based approach. "
+        "For example, use 'DatasetBonnerPNAS2017.load_dataset()' to load datasets. "
+        "You can list all available datasets using 'list_available_datasets()'.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    # Here you can still call the old function if you maintain it for backward compatibility or remove it after a transition period.
+
+def list_available_datasets():
+    available_datasets = [cls.__name__ for cls in BaseDataset.__subclasses__()]
+    return available_datasets
+
 
 class BaseDataset:
     DATASET_URLS = {}  # To be defined by subclass
