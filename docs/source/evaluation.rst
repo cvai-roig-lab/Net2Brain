@@ -146,7 +146,7 @@ Prerequisites for the linear encoding function include:
 
 .. code-block:: python
 
-    from net2brain.evaluations.Linear_Encoding import Linear_Encoding
+    from net2brain.evaluations.encoding import Linear_Encoding
     
     results_dataframe = Linear_Encoding(
         feat_path,
