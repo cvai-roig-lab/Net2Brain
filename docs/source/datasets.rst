@@ -34,6 +34,16 @@ Available datasets include:
 - ``"Algonauts"`` from the Algonauts Challenge, by EJ Allen et al.
 - ``"NSD_872"`` a subset of the NSD Dataset with 872 images viewed by all participants
 
+
+To list all available datasets you can use:
+
+.. code-block:: python
+        
+    from net2brain.utils.download_datasets import list_available_datasets
+    list_available_datasets()
+
+
+
 These datasets can be loaded using specific classes in the Net2Brain toolkit:
 
 .. code-block:: python
