@@ -280,7 +280,7 @@ def standardize(x: Tensor, dim: int = 0, epsilon: float = 1e-7) -> Tensor:
     Parameters
     ----------
     x : torch.Tensor
-        A 2D tensor of shape `[n, d]` where `n` is the number of vectors and `d` is the dimensionality of each vector.
+        The input tensor of any shape.
     dim : int
         The dimension along which the standardization is performed.
     epsilon : float
@@ -289,7 +289,7 @@ def standardize(x: Tensor, dim: int = 0, epsilon: float = 1e-7) -> Tensor:
     Returns
     -------
     out : torch.Tensor
-        The standardized tensor of shape `[n, d]`.
+        The standardized tensor of the same shape as the input tensor.
     """
     return (x - x.mean(dim=dim, keepdim=True)) / (x.std(dim=dim, keepdim=True, unbiased=False) + epsilon)
 
