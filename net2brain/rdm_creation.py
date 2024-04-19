@@ -90,7 +90,7 @@ class RDMCreator:
                 If not None, the RDM is created in chunks of the given size. This can be used to reduce the memory
                 consumption.
             **kwargs: dict
-                Additional keyword arguments for the distance function.
+                Additional keyword arguments for the distance function. See rdm.dist
         """
         if save_path is None:
             save_path = Path.cwd() / 'rdms' / datetime.now().strftime('%d-%m-%y_%H-%M-%S')
