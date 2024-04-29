@@ -25,6 +25,7 @@ Next to minor bug/api fixes these are the main changes:
 4. Improved Plotting functionality
 5. Allowing Multimodal input for multimodal models (instead of one modality at once) 
 6. Added new [Tutorial Notebook](/notebooks/Workshops/Net2Brain_Introduction_LLM.ipynb)
+7. Changed RDM Creator Default back to Pearson Correlation
 
 
 
