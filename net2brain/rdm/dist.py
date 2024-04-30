@@ -142,5 +142,4 @@ def correlation(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
     else:
         y = y - y.mean(dim=-1, keepdim=True)
         y = y / y.norm(p=2, dim=-1, keepdim=True)
-    print(x.shape)
     return 1 - x.matmul(y.transpose(-2, -1))
