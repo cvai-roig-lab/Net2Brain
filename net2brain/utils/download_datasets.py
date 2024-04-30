@@ -78,7 +78,8 @@ class DatasetBonnerPNAS2017(BaseDataset):
         self.download_and_extract_zip()
         stimuli_path = os.path.join(self.dataset_folder, "stimuli_data")
         roi_path = os.path.join(self.dataset_folder, "brain_data")
-        return {"stimuli_path": stimuli_path, "roi_path": roi_path}
+        live_data = os.path.join(self.dataset_folder, "brain_data_live_study")
+        return {"stimuli_path": stimuli_path, "roi_path": roi_path, "PPA_Study": live_data}
     
     
     
@@ -125,9 +126,7 @@ class WorkshopCuttingGardens(BaseDataset):
 
     def _load(self):
         self.download_and_extract_zip()
-        stimuli_path = os.path.join(self.dataset_folder, "stimuli_data")
-        roi_path = os.path.join(self.dataset_folder, "brain_data")
-        return {"stimuli_path": stimuli_path, "roi_path": roi_path}
+        return {"data_dir": self.dataset_folder}
 
 
 
