@@ -5,7 +5,7 @@ from typing import Union, Optional, Callable, List
 import torch
 from tqdm.auto import tqdm
 
-from .rdm import dist, valid_distance_functions
+from .rdm import dist, valid_distance_functions, standardize
 from .rdm.feature_iterator import FeatureIterator
 from .rdm.rdm import LayerRDM, RDMFileFormatType
 
@@ -43,6 +43,7 @@ class RDMCreator:
     def _create_rdm(self,
                     x: torch.Tensor,
                     distance: Union[str, Callable] = 'pearson',
+                    standardize_on_dim: Optional[int] = None,
                     chunk_size: Optional[int] = None,
                     **kwargs) -> torch.Tensor:
         """
@@ -55,6 +56,8 @@ class RDMCreator:
             distance: str or callable
                 The distance metric to use. If a string is given, it must be a valid distance function name. If a
                 callable is passed, it must define a custom distance function.
+            standardize_on_dim: int or None
+                If not None, the features are standardized on the given dimension.
             chunk_size: int or None
                 If not None, the RDM is created in chunks of the given size. This can be used to reduce the memory
                 consumption.
@@ -62,6 +65,8 @@ class RDMCreator:
                 Additional keyword arguments for the distance function.
         """
         x = torch.flatten(x, start_dim=1)
+        if standardize_on_dim is not None:
+            x = standardize(x, dim=standardize_on_dim)
         return dist(x, metric=distance, device=self.device, verbose=self.verbose, chunk_size=chunk_size, **kwargs)
 
     def create_rdms(self,
@@ -69,6 +74,7 @@ class RDMCreator:
                     save_path: Optional[Union[str, Path]] = None,
                     save_format: RDMFileFormatType = 'npz',
                     distance: Union[str, Callable] = 'pearson',
+                    standardize_on_dim: Optional[int] = None,
                     chunk_size: Optional[int] = None,
                     **kwargs
                     ) -> Path:
@@ -86,6 +92,11 @@ class RDMCreator:
             distance: str or callable
                 The distance metric to use. If a string is given, it must be a valid distance function name. If a
                 callable is passed, it must define a custom distance function.
+            standardize_on_dim: int or None
+                If not None, the features are standardized along the given dimension.
+                I.e. for a two-dimensional tensor:
+                    * dim=0: The mean and standard deviation are computed across rows (for each column)
+                    * dim=1: The mean and standard deviation are computed across columns (for each row)
             chunk_size: int or None
                 If not None, the RDM is created in chunks of the given size. This can be used to reduce the memory
                 consumption.
@@ -102,7 +113,8 @@ class RDMCreator:
         with tqdm(total=len(iterator), desc='Creating RDMs', disable=not self.verbose) as bar:
             for layer, stimuli, feats in iterator:
                 feats = torch.from_numpy(feats).to(self.device)
-                rdm_m = self._create_rdm(feats, distance=distance, chunk_size=chunk_size, **kwargs)
+                rdm_m = self._create_rdm(feats, distance=distance, chunk_size=chunk_size,
+                                         standardize_on_dim=standardize_on_dim, **kwargs)
                 meta = dict(distance=distance)
 
                 rdm = LayerRDM(rdm=rdm_m, layer_name=layer, stimuli_name=stimuli, meta=meta)

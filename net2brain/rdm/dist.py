@@ -134,6 +134,7 @@ def correlation(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
         A 2D tensor of shape `[n, n]` if `y` is `None` or `[n, m]` containing the pairwise distances, or
         a 3D tensor of shape `[b, n, n]` if `y` is `None` or `[b, n, m]` containing the batched pairwise distances.
     """
+    # same as torch.corrcoef or np.corrcoef (see tests) but supports batches and chunk-wise computation
     x = x - x.mean(dim=-1, keepdim=True)
     x = x / x.norm(p=2, dim=-1, keepdim=True)
     if y is None:
@@ -141,4 +142,5 @@ def correlation(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
     else:
         y = y - y.mean(dim=-1, keepdim=True)
         y = y / y.norm(p=2, dim=-1, keepdim=True)
+    print(x.shape)
     return 1 - x.matmul(y.transpose(-2, -1))
