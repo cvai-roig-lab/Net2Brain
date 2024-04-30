@@ -67,7 +67,7 @@ class RDMCreator:
     def create_rdms(self,
                     feature_path: Union[str, Path],
                     save_path: Optional[Union[str, Path]] = None,
-                    save_format: RDMFileFormatType = 'pt',
+                    save_format: RDMFileFormatType = 'npz',
                     distance: Union[str, Callable] = 'pearson',
                     chunk_size: Optional[int] = None,
                     **kwargs
