@@ -67,9 +67,8 @@ class TestBatchedDistanceFunction:
         shape = [x for x in shape if x is not None]
         x = torch.rand(*shape, device=device, dtype=dtype)
         x_np = x.cpu().numpy()
-        gt = torch.from_numpy(gt_func(x_np)).to(dtype=x.dtype)
+        gt = torch.from_numpy(gt_func(x_np))
         out = func(x, **kwargs).cpu()
-        assert torch.isnan(out).sum() == 0, f"Found NaN values in output of {func.__name__}"
         assert torch.allclose(out, gt, atol=1e-5, rtol=1e-5)
 
     def test_euclidean(self, device, b, n, d, dtype):
