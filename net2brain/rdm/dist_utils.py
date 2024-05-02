@@ -115,8 +115,6 @@ def check_dist_input(x: Union[Tensor, np.ndarray],
         - `x` is not on the specified device then it is moved to the specified device.
     If `y` is `None`, then `None` is returned for `y`.
     """
-    if isinstance(dtype, str):
-        dtype = getattr(torch, dtype)
 
     def _check_input(tensor):
         if isinstance(tensor, np.ndarray):
@@ -142,7 +140,7 @@ def check_dist_input(x: Union[Tensor, np.ndarray],
             tensor = tensor.contiguous()
 
         if dtype is not None:
-            tensor = tensor.to(dtype=dtype)
+            tensor = tensor.to(dtype)
 
         # move to device if specified
         if device is not None:
@@ -273,27 +271,6 @@ def is_condensed_1d(x: torch.Tensor) -> bool:
     return d * (d - 1) == shape[-1] * 2 and len(shape) == 1
 
 
-def standardize(x: Tensor, dim: int = 0, epsilon: float = 1e-7) -> Tensor:
-    """
-    Standardizes the input tensor by subtracting the mean and dividing by the standard deviation.
-
-    Parameters
-    ----------
-    x : torch.Tensor
-        The input tensor of any shape.
-    dim : int
-        The dimension along which the standardization is performed.
-    epsilon : float
-        A small value to prevent division by zero.
-
-    Returns
-    -------
-    out : torch.Tensor
-        The standardized tensor of the same shape as the input tensor.
-    """
-    return (x - x.mean(dim=dim, keepdim=True)) / (x.std(dim=dim, keepdim=True, unbiased=False) + epsilon)
-
-
 def dist(x: Union[Tensor, np.ndarray],
          y: Optional[Union[Tensor, np.ndarray]] = None,
          chunk_size: Optional[int] = None,
@@ -338,7 +315,6 @@ def dist(x: Union[Tensor, np.ndarray],
 
     verbose = kwargs.pop("verbose", False)
     device = kwargs.pop("device", None)
-    dtype = kwargs.pop("dtype", None)
 
     if callable(metric):
         func = partial(_prepare_dist_func(metric), **kwargs)
@@ -347,7 +323,7 @@ def dist(x: Union[Tensor, np.ndarray],
 
     dist._output_condensed = getattr(func, "_output_condensed", False)
 
-    inputs = check_dist_input(x, y, func=func, device=device, dtype=dtype)
+    inputs = check_dist_input(x, y, func=func, device=device, dtype=kwargs.pop("dtype", None))
 
     if chunk_size is None:
         return func(**inputs, **kwargs)

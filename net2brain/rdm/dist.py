@@ -3,7 +3,7 @@ from typing import Optional
 import torch
 from torch import Tensor
 
-from .dist_utils import register_distance_function, standardize
+from .dist_utils import register_distance_function
 
 
 @register_distance_function()
@@ -110,6 +110,7 @@ def cosine(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
 
 
 @register_distance_function()
+@register_distance_function(name="pearson")
 def correlation(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
     """
     Computes the pairwise correlation distance between all vectors in `x`.
@@ -141,27 +142,3 @@ def correlation(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
         y = y - y.mean(dim=-1, keepdim=True)
         y = y / y.norm(p=2, dim=-1, keepdim=True)
     return 1 - x.matmul(y.transpose(-2, -1))
-
-
-@register_distance_function(support_batch=False)
-def pearson(x: Tensor) -> Tensor:
-    """
-    Computes the pairwise Pearson correlation distance between all vectors in `x`. The input is normalized along the
-    first dimension, which normalizes for the mean level of activity and the variance of the activity pattern.
-
-    See:
-    Kriegeskorte, N., Mur, M., & Bandettini, P. (2008). Representational similarity analysis - connecting the branches
-    of systems neuroscience. Frontiers in systems neuroscience, 2, 4. https://doi.org/10.3389/neuro.06.004.2008
-
-    Parameters:
-    -----------
-    x : torch.Tensor
-        A 2D tensor of shape `[n, d]` where `n` is the number of vectors and `d` is the dimensionality of each vector.
-
-    Returns:
-    --------
-    out : torch.Tensor
-        A 2D tensor of shape `[n, n]` containing the pairwise distances.
-    """
-    x = standardize(x, dim=0)
-    return 1 - torch.corrcoef(x)
