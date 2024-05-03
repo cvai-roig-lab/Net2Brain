@@ -4,6 +4,7 @@ import pandas as pd
 import seaborn as sns
 import warnings
 from matplotlib.patches import Patch
+import re
 from matplotlib.colors import LinearSegmentedColormap
 warnings.simplefilter(action='ignore', category=FutureWarning)
 plt.style.use('ggplot')
@@ -235,7 +236,7 @@ class Plotting:
         legend_ax = plt.subplot(rows, columns_per_row, rows * columns_per_row)  # Position the legend in the last subplot area
             
         if not simplified_legend:
-            
+        
             # Collect handles and labels for the legend from one of the plots
             handles, labels = axes[0].get_legend_handles_labels()
 
@@ -252,7 +253,7 @@ class Plotting:
             new_labels = []
             for model_name in sorted(network_handles.keys()):
                 model_handles_labels = network_handles[model_name]
-                for handle, label in sorted(model_handles_labels, key=lambda x: int(x[1].split()[1].split('.')[-1])):  # Sort by layer number
+                for handle, label in sorted(model_handles_labels, key=lambda x: int(re.search(r'\d+', x[1].split('_')[-1]).group())):  # Extract digits from labels like 'RDM_features_10.npz'
                     new_handles.append(handle)
                     new_labels.append(label)
 
