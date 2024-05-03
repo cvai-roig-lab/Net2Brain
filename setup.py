@@ -24,14 +24,13 @@ setup(
         'requests',
         'seaborn==0.12.2',
         'opencv_python_headless',
-        'pandas==1.3.4',
+        'pandas',
         'numpy',
         'Pillow',
         'prettytable',
         'gdown',
         'pycocotools',
         'pytest',
-        'pytorchvideo == 0.1.5',
         'scikit_learn',
         'scipy',
         'torch',
@@ -39,8 +38,9 @@ setup(
         'visualpriors == 0.3.5',
         'timm == 0.4.12',
         'torchextractor == 0.3.0',
-        'torchvision == 0.12.0',
+        'torchvision',
         'rsatoolbox == 0.0.3',
+        'pytorchvideo @ git+https://github.com/facebookresearch/pytorchvideo.git@eb04d1b', # NOTE: Change when new release published
         'clip @ git+https://github.com/openai/CLIP.git',
         'mit_semseg @ git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master'
     ]
