@@ -3,7 +3,7 @@ import pytest
 import torch
 from scipy.spatial import distance
 
-from net2brain.rdm import to_condensed, to_distance_matrix, dist
+from net2brain.rdm import to_condensed, to_distance_matrix, dist, standardize
 from net2brain.rdm.dist import euclidean, manhattan, cosine, correlation
 
 
@@ -34,6 +34,23 @@ def test_squareform_to_matrix(device, b, size, dtype):
     gt = torch.from_numpy(scipy_squareform_batched(x, b is not None))  # disable checks to allow not symmetric matrices
     out = to_distance_matrix(x).cpu()
     assert torch.allclose(out, gt)
+
+
+@pytest.mark.parametrize('b', (None, 8))
+@pytest.mark.parametrize('n', (4, 32, 128, 256,))
+@pytest.mark.parametrize('d', (64, 128, 256))
+@pytest.mark.parametrize('dim', (0, 1))
+@pytest.mark.parametrize('dtype', (torch.float64,))
+def test_standardize(device, b, n, d, dim, dtype):
+    shape = [x for x in (b, n, d) if x is not None]
+    x = torch.rand(*shape, device=device, dtype=dtype)
+    out = standardize(x, dim=dim)
+
+    out_mean = out.mean(dim=dim)
+    out_std = out.std(dim=dim, unbiased=False)
+
+    assert torch.allclose(out_mean, torch.zeros_like(out_mean, device=device, dtype=dtype), atol=1e-3, rtol=1e-3)
+    assert torch.allclose(out_std, torch.ones_like(out_std, device=device, dtype=dtype), atol=1e-3, rtol=1e-3)
 
 
 @pytest.mark.parametrize('shape', ((5, 4), (8, 3), (4, 128, 157)))
@@ -85,6 +102,16 @@ class TestBatchedDistanceFunction:
 
     def test_correlation(self, device, b, n, d, dtype):
         self.run_dist_test(correlation, lambda x: self.scipy_cdist_batched(x, metric='correlation'), device,
+                           (b, n, d), dtype)
+
+    def test_correlation_vs_np_corrcoeff(self, device, b, n, d, dtype):
+        b = None
+        self.run_dist_test(correlation, lambda x: 1 - np.corrcoef(x), device,
+                           (b, n, d), dtype)
+
+    def test_correlation_vs_torch_corrcoeff(self, device, b, n, d, dtype):
+        b = None
+        self.run_dist_test(correlation, lambda x: 1 - torch.corrcoef(torch.from_numpy(x)).numpy(), device,
                            (b, n, d), dtype)
 
 

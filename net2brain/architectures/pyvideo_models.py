@@ -1,4 +1,4 @@
-import warnings
+import warnings, numbers, os
 from .netsetbase import NetSetBase
 from .shared_functions import load_from_json
 import torchextractor as tx
@@ -10,17 +10,8 @@ from pytorchvideo.transforms import (
     ShortSideScale,
     UniformTemporalSubsample,
 )
-import os
 
-import warnings
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    from torchvision.transforms._transforms_video import (
-        CenterCropVideo,
-        NormalizeVideo,
-    )
-
-
+from net2brain.utils.torchvideo import CenterCropVideo, NormalizeVideo
 
 class PackPathway(torch.nn.Module):
     """

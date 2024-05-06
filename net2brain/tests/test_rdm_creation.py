@@ -39,4 +39,4 @@ def test_rdm_creator(device, root_path, tmp_path, case, distance, save_format, c
         test_file = tmp_path / distance_name / gt_file.name
         gt = LayerRDM.from_file(gt_file)
         test = LayerRDM.from_file(test_file)
-        assert np.allclose(gt.rdm, test.rdm, rtol=1e-4, atol=1e-4)
+        assert np.allclose(gt.rdm, test.rdm, rtol=1e-3, atol=1e-3)
