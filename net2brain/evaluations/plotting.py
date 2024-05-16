@@ -73,11 +73,10 @@ class Plotting:
 
         # Extract numerical part from ROI names for sorting
         try:
-            plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('(\d+)').astype(int)
-            plotting_df.sort_values('ROI_num', inplace=True)
+            plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('\((\d+)\)').astype(int)
+            plotting_df = plotting_df.sort_values('ROI_num').reset_index(drop=True)
         except ValueError:
-            pass
-
+            plotting_df = plotting_df.sort_values('ROI').reset_index(drop=True)
 
         fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -164,7 +163,7 @@ class Plotting:
         for i, roi in enumerate(rois):
             ax = axes[i]
             roi_df = pd.concat([df[df['ROI'] == roi] for df in self.dataframes])
-            
+
             roi_df['Layer_num'] = roi_df['Layer'].str.extract('(\d+)').astype(int)
             roi_df.sort_values(['Model', 'Layer_num'], inplace=True)
 
@@ -197,8 +196,8 @@ class Plotting:
 
                         if layer_df['Significance'].values < 0.05:
                             ax.text(x_pos, layer_df[metric].values + layer_df['SEM'].values, '*', ha='center', va='bottom', color='black')
-                            
-                            
+
+
             if simplified_legend:
                 # Collect a representative color for each model
                 model_representative_colors = []
@@ -206,15 +205,15 @@ class Plotting:
                     # Taking the midpoint color of the gradient for each model as a representative
                     representative_color = sns.dark_palette(sns.color_palette("tab10")[j % len(sns.color_palette("tab10"))], n_colors=len(layers) + 2)[len(layers) // 2]
                     model_representative_colors.append((representative_color, model))
-                    
+
                 # Create custom patches for the legend
                 legend_patches = [Patch(color=color, label=model) for color, model in model_representative_colors]
-                
+
                 # Add a note about gradient progression, if it's the first subplot
                 if i == 0:
                     gradient_note = "Gradient: Early (darker) to Later (brighter) layers"
                     legend_patches.append(Patch(color='none', label=gradient_note))  # Invisible patch, just for adding the note
-                
+
                 legend_position = 'upper right'
 
                 # Add the simplified legend to the current subplot, inside the plot area
@@ -230,17 +229,17 @@ class Plotting:
         # Hide unused subplots
         for j in range(i + 1, rows * columns_per_row):
             axes[j].axis('off')
-            
-            
-            
+
+
+
         # Determine the number of columns for the legend based on the number of models
         legend_columns = n_models
 
         # Calculate the size of the legend subplot to match other subplots
         legend_ax = plt.subplot(rows, columns_per_row, rows * columns_per_row)  # Position the legend in the last subplot area
-            
+
         if not simplified_legend:
-        
+
             # Collect handles and labels for the legend from one of the plots
             handles, labels = axes[0].get_legend_handles_labels()
 

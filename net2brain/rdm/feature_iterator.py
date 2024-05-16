@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Union, Tuple, List, Iterator, Dict, Type, Iterable, Callable, Optional
 
 import numpy as np
+from sklearn.random_projection import SparseRandomProjection
 
 
 def natural_keys(text: str) -> List[Union[int, str]]:
@@ -193,14 +194,37 @@ class NPZSeparateEngine(FeatureEngine):
         return nsorted(self.root.iterdir(), key=lambda x: x.stem)
 
     def next(self, item) -> Tuple[str, List[str], np.ndarray]:
-        stimuli, feats = [], []
-
-        for file in self._stimuli:
-            if not file.suffix == ".npz":
-                warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-            feats.append(open_npz(file)[item])
-            stimuli.append(file.stem)
-        return item, stimuli, np.stack(feats)
+        # TODO: make this dim reduction parameterized by the user and in all engines
+        stimuli = []
+        sample = open_npz(self._stimuli[0])[item]
+        feat_dim = sample.shape[1:]
+        if len(sample.flatten()) > 1050000:
+            feats_for_estim = np.empty((100, *feat_dim))
+            for i, file in enumerate(self._stimuli[:100]):
+                if file.suffix == ".npz":
+                    feats_for_estim[i, :] = open_npz(file)[item].squeeze(0)
+            n_components = 10000
+            srp = SparseRandomProjection(n_components=n_components)
+            srp.fit(feats_for_estim.reshape(100, -1))
+            # srp = SparseRandomProjection()
+            # sample_auto_proj = srp.fit_transform(feats_for_estim.reshape(100, -1))
+            # n_components = sample_auto_proj.shape[-1]
+            del feats_for_estim
+            # del sample_auto_proj
+            feats = np.empty((len(self._stimuli), n_components))
+            for i, file in enumerate(self._stimuli):
+                if not file.suffix == ".npz":
+                    warnings.warn(f"File {file} is not a valid feature file. Skipping...")
+                feats[i, :] = srp.transform(open_npz(file)[item].reshape(1, -1)).squeeze(0)
+                stimuli.append(file.stem)
+        else:
+            feats = np.empty((len(self._stimuli), *feat_dim))
+            for i, file in enumerate(self._stimuli):
+                if not file.suffix == ".npz":
+                    warnings.warn(f"File {file} is not a valid feature file. Skipping...")
+                feats[i, :] = open_npz(file)[item].squeeze(0)
+                stimuli.append(file.stem)
+        return item, stimuli, feats
 
 
 @engine_registry.register
