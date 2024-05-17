@@ -164,8 +164,11 @@ class Plotting:
             ax = axes[i]
             roi_df = pd.concat([df[df['ROI'] == roi] for df in self.dataframes])
 
-            roi_df['Layer_num'] = roi_df['Layer'].str.extract('(\d+)').astype(int)
-            roi_df.sort_values(['Model', 'Layer_num'], inplace=True)
+            try:
+                roi_df['Layer_num'] = roi_df['Layer'].str.extract('\((\d+)\)').astype(int)
+                roi_df = roi_df.sort_values(['Model', 'Layer_num']).reset_index(drop=True)
+            except ValueError:
+                roi_df = roi_df.sort_values(['Model', 'Layer']).reset_index(drop=True)
 
             models = roi_df['Model'].unique()
             layers = roi_df['Layer'].unique()
