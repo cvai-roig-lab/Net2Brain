@@ -69,7 +69,7 @@ class FeatureExtractor:
             if isinstance(model, str):
                 raise ValueError("If no netset is given, the model_name parameter needs to be a ready model")
             else:
-                # Initiate as Standard Netset structure in case user does not select preprocessing, extractor, etc.
+                # Initiate as the Netset structure of choice in case user does not select preprocessing, extractor, etc.
                 self.netset = NetSetBase.initialize_netset(
                     model_name=None, netset_name=netset_fallback, device=self.device
                 )
