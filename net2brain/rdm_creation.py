@@ -76,6 +76,7 @@ class RDMCreator:
                     distance: Union[str, Callable] = 'pearson',
                     standardize_on_dim: Optional[int] = None,
                     chunk_size: Optional[int] = None,
+                    consolidated: bool = False,
                     **kwargs
                     ) -> Path:
         """
@@ -110,6 +111,11 @@ class RDMCreator:
         save_path.mkdir(parents=True, exist_ok=True)
 
         iterator = FeatureIterator(feature_path)
+        if consolidated:  # SET MANUALLY BECAUSE AUTODETECTION IS WRONG!!!
+            iterator.format = FeatureFormat.NPZ_CONSOLIDATED
+        else:
+            iterator.format = FeatureFormat.NPZ_SEPARATE
+        iterator.engine = engine_registry.get_engine(iterator.format)(iterator.root)
         with tqdm(total=len(iterator), desc='Creating RDMs', disable=not self.verbose) as bar:
             for layer, stimuli, feats in iterator:
                 feats = torch.from_numpy(feats).to(self.device)
@@ -119,6 +125,9 @@ class RDMCreator:
 
                 rdm = LayerRDM(rdm=rdm_m, layer_name=layer, stimuli_name=stimuli, meta=meta)
                 rdm.save(save_path, file_format=save_format)
+                del feats
+                del rdm_m
+                del rdm
 
                 bar.update()
         return save_path
