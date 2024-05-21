@@ -297,14 +297,16 @@ class Pyvideo(NetSetBase):
         
         clean_dict = {}
         for A_key, subtuple in features.items():
-            keys = [A_key + "_slow", A_key + "_fast"]
-
-            try:  # if subdict is a list of two values
-                for counter, key in enumerate(keys):
-                    clean_dict.update({key: subtuple[counter].cpu()})
-            except:
+            if type(subtuple) == list or type(subtuple) == tuple:
+                if len(subtuple) >= 2:  # if subdict is a list of two values
+                    keys = [A_key + "_slow", A_key + "_fast"]
+                    for counter, key in enumerate(keys):
+                        clean_dict.update({key: subtuple[counter].cpu()})
+                else:
+                    [value] = subtuple
+                    clean_dict.update({A_key: value.cpu()})
+            else:
                 clean_dict.update({A_key: subtuple.cpu()})
-
         return clean_dict
     
 

@@ -52,7 +52,7 @@ class FeatureExtractor:
         self.preprocessor = preprocessor
         self.extraction_function = extraction_function
         self.feature_cleaner = feature_cleaner
-
+        
 
 
 
@@ -69,7 +69,7 @@ class FeatureExtractor:
             if isinstance(model, str):
                 raise ValueError("If no netset is given, the model_name parameter needs to be a ready model")
             else:
-                # Initiate as Standard Netset structure in case user does not select preprocessing, extractor, etc.
+                # Initiate as the Netset structure of choice in case user does not select preprocessing, extractor, etc.
                 self.netset = NetSetBase.initialize_netset(
                     model_name=None, netset_name=netset_fallback, device=self.device
                 )
@@ -79,7 +79,7 @@ class FeatureExtractor:
 
                 if None in (preprocessor, extraction_function, feature_cleaner):
                     warnings.warn("If you add your own model you can also select our own: \nPreprocessing Function (preprocessor) \nExtraction Function (extraction_function) \nFeature Cleaner (feature_cleaner) ")
-
+    
 
 
 
@@ -109,13 +109,17 @@ class FeatureExtractor:
 
         # Detect data type for the current file
         data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
-
+        
         if self.data_type == "multimodal":
             data_files = self._pair_modalities(data_files)
 
+        # Select preprocessor
+        if self.preprocessor == None:
+            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
+
         if self.data_type not in self.netset.supported_data_types:
             raise ValueError(f"Datatype {self.data_type} not supported by current model")
-
+        
 
         for data_file in tqdm(data_files):
 
@@ -131,13 +135,7 @@ class FeatureExtractor:
             for data in data_from_file:
 
                 # Preprocess data
-                # Select preprocessor
-                if self.preprocessor == None:
-                    preprocessed_data = self.netset.get_preprocessing_function(self.data_type)(
-                        data, self.model_name, self.device
-                    )
-                else:
-                    preprocessed_data = self.preprocessor(data, self.device)
+                preprocessed_data = self.preprocessor(data, self.model_name, self.device)
 
                 # Extract features
                 if self.extraction_function == None:
@@ -243,7 +241,7 @@ class FeatureExtractor:
         Returns:
         - None
         """
-
+        
         # Create new dir
         if not os.path.exists(os.path.join(self.save_path, "sentences")):
             os.mkdir(os.path.join(self.save_path, "sentences"))
@@ -277,25 +275,25 @@ class FeatureExtractor:
         """Returns all possible layers for extraction."""
 
         return tx.list_module_names(self.netset.loaded_model)
-
-
+    
+    
     def _pair_modalities(self, files):
         # Dictionary to hold base names and their associated files
         base_names = defaultdict(list)
-
+        
         # Iterate over files to group by base name
         for file in files:
             base_name = os.path.splitext(file)[0]
             base_names[base_name].append(file)
-
+        
         # Create tuples from the grouped files
         paired_files = [tuple(files) for files in base_names.values() if len(files) > 1]
-
+        
         # Check if all groups have more than one modality, otherwise raise an error
         single_modality_bases = [base for base, files in base_names.items() if len(files) == 1]
         if single_modality_bases:
             raise ValueError(f"Missing modalities for: {', '.join(single_modality_bases)}")
-
+        
         return paired_files
 
 
@@ -313,7 +311,7 @@ class FeatureExtractor:
             warnings.warn(f"{self.dim_reduction} does not exist as form of dimensionality reduction. Choose between 'srp'")
 
 
-
+    
 
     def reduce_dimensionality_sparse_random(self, features):
         """
@@ -333,7 +331,7 @@ class FeatureExtractor:
             reduced_tensor = sparse_random_proj.fit_transform(flattened_tensor)
             reduced_features[layer] = torch.tensor(reduced_tensor).view(original_tensor.size(0), -1)
         return reduced_features
-
+        
 
 
 class DataTypeLoader:
@@ -414,17 +412,17 @@ def get_netset_model_dict():
         try:
             # Provide placeholder values for model_name and device
             netset_instance = netset_class(model_name='placeholder', device='cpu')
-
+            
             # Access the config path directly from the instance
             config_path = netset_instance.config_path
-
+            
             # Load the config file
             models_data = load_json_config(config_path)
-
+            
             # Extract the model names and add them to the dictionary
             model_names = list(models_data.keys())
             netset_models_dict[netset_name] = model_names
-
+        
         except AttributeError:
             # Handle the case where config_path is not defined in the instance
             warnings.warn(f"{netset_name} does not have a config_path attribute")
