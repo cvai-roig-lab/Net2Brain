@@ -164,8 +164,11 @@ class Plotting:
             ax = axes[i]
             roi_df = pd.concat([df[df['ROI'] == roi] for df in self.dataframes])
 
-            roi_df['Layer_num'] = roi_df['Layer'].str.extract('(\d+)').astype(int)
-            roi_df.sort_values(['Model', 'Layer_num'], inplace=True)
+            try:
+                roi_df['Layer_num'] = roi_df['Layer'].str.extract('\((\d+)\)').astype(int)
+                roi_df = roi_df.sort_values(['Model', 'Layer_num']).reset_index(drop=True)
+            except ValueError:
+                roi_df = roi_df.sort_values(['Model', 'Layer']).reset_index(drop=True)
 
             models = roi_df['Model'].unique()
             layers = roi_df['Layer'].unique()
@@ -256,7 +259,13 @@ class Plotting:
             new_labels = []
             for model_name in sorted(network_handles.keys()):
                 model_handles_labels = network_handles[model_name]
-                for handle, label in sorted(model_handles_labels, key=lambda x: int(re.search(r'\d+', x[1].split('_')[-1]).group())):  # Extract digits from labels like 'RDM_features_10.npz'
+                try:
+                    # Extract digits from labels like 'RDM_features_10.npz'
+                    sorted_model_handles_labels = sorted(model_handles_labels, key=lambda x: int(re.search(r'\d+', x[1].split('_')[-1]).group()))
+                except AttributeError:
+                    # Some layers are not numbered (AttributeError: 'NoneType' object has no attribute 'group')
+                    sorted_model_handles_labels = sorted(model_handles_labels, key=lambda x: x[1])
+                for handle, label in sorted_model_handles_labels:
                     new_handles.append(handle)
                     new_labels.append(label)
 
