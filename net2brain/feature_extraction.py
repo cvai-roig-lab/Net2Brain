@@ -151,7 +151,8 @@ class FeatureExtractor:
                     features = self.feature_cleaner(features)
 
                 # Append to list of data
-                data_from_file_list.append(features)
+                data_from_file_list.append({key: value.detach().cpu() for key, value in features.items()})
+                del preprocessed_data, features
 
             # Combine Data from list into single dictionary depending on input type
             final_features = self.data_combiner(data_from_file_list)
@@ -162,7 +163,7 @@ class FeatureExtractor:
 
 
             # Convert the final_features dictionary to one that contains detached numpy arrays
-            final_features = {key: value.detach().cpu().numpy() for key, value in final_features.items()}
+            final_features = {key: value.numpy() for key, value in final_features.items()}
 
             # Write the features for one image to a single file
             file_path = os.path.join(self.save_path, f"{file_name}.npz")
