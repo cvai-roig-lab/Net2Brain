@@ -11,6 +11,7 @@ from PIL import Image
 import re
 import warnings
 
+
 class DatasetError(Exception):
     pass
 
@@ -68,7 +69,7 @@ class BaseDataset:
 class DatasetBonnerPNAS2017(BaseDataset):
     dataset_name = "bonner_pnas2017"
     DATASET_URLS = {
-        dataset_name: "https://drive.google.com/uc?id=1gW4otwb7yPqyAbP3YUiFO08Wnw_HnS8t"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiG4gkTpZGrE8gsq8Xo498/bonner_pnas2017.zip"
     }
 
     def __init__(self, path=None):
@@ -86,7 +87,7 @@ class DatasetBonnerPNAS2017(BaseDataset):
 class Dataset78images(BaseDataset):
     dataset_name = "78images"
     DATASET_URLS = {
-        dataset_name: "https://drive.google.com/uc?id=1b1SWkkISwzqFl0URE8iNDBGui1vbww6u"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiLSqoiEArM6Mi8qZDpyxr/78images.zip"
     }
 
     def __init__(self, path=None):
@@ -102,7 +103,7 @@ class Dataset78images(BaseDataset):
 class Dataset92images(BaseDataset):
     dataset_name = "92images"
     DATASET_URLS = {
-        dataset_name: "https://drive.google.com/uc?id=1dpbo5NYD6z7yQUfdpQcg3Y59AKoZD_b-"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiVMG4j85ZS2j8tG9cGfAj/92images.zip"
     }
 
     def __init__(self, path=None):
@@ -118,7 +119,7 @@ class Dataset92images(BaseDataset):
 class WorkshopCuttingGardens(BaseDataset):
     dataset_name = "cutting_gardens23"
     DATASET_URLS = {
-        dataset_name: "https://drive.google.com/uc?export=download&id=195MA1fqplzxLZsfs282yAXTPKn0qy5d7"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiHrLWdMVTVJGWBmrGcYP1/cutting_gardens23.zip"
     }
 
     def __init__(self, path=None):
@@ -136,7 +137,7 @@ class WorkshopCuttingGardens(BaseDataset):
 class Tutorial_LE_Results(BaseDataset):
     dataset_name = "Tutorial_LE_Results"
     DATASET_URLS = {
-        dataset_name: "https://drive.google.com/uc?export=download&id=1HxsNtRdj5KPxr33sS7qMBgYPlU5Itp9q"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiRqQSBqmEDVtjJZ7TPGmM/Tutorial_LE_Results.zip"
     }
 
     def __init__(self, path=None):
@@ -161,7 +162,7 @@ class Tutorial_LE_Results(BaseDataset):
 class DatasetNSD_872(BaseDataset):
     dataset_name = "NSD Dataset"
     DATASET_URLS = {
-        dataset_name: "https://drive.google.com/uc?export=download&id=1OCKE7efSojxwDlNTE93yybEZZl_wJ7mX"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiSExLpb1b84jTi4QYXH2n/NSD%20Dataset.zip"
     }
 
 
@@ -635,7 +636,7 @@ class DatasetNSD_872(BaseDataset):
 class DatasetAlgonauts_NSD(DatasetNSD_872):
     dataset_name = "Algonauts_NSD"
     DATASET_URLS = {
-        dataset_name: "https://drive.google.com/uc?export=download&id=195mLhZzsJXAu7q4-tDsAooTUUuM_ZpP6"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiR2qmmGe3cUPrYp2N9oet/Algonauts_NSD.zip"
     }
 
     def __init__(self, path=None):
