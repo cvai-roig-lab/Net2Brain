@@ -75,7 +75,6 @@ class Plotting:
         plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('(\d+)').astype(int)
         plotting_df.sort_values('ROI_num', inplace=True)
 
-
         fig, ax = plt.subplots(figsize=(10, 6))
 
         # Use a predefined seaborn palette for nicer colors
