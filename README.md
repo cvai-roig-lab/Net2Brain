@@ -16,7 +16,7 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
 
-# Updates 04/24
+# Updates 05/24
 Next to minor bug/api fixes these are the main changes:
 
 1. Added fully capabale Large-Language-Model functionality
@@ -26,7 +26,7 @@ Next to minor bug/api fixes these are the main changes:
 5. Allowing Multimodal input for multimodal models (instead of one modality at once) 
 6. Added new [Tutorial Notebook](/notebooks/Workshops/Net2Brain_Introduction_LLM.ipynb)
 7. Changed RDM Creator Default back to Pearson Correlation
-
+8. Patch 28.05: Downloading Datasets from different source
 
 
 # Documentation
@@ -290,7 +290,7 @@ This toolbox is inspired by the Algonauts Project and contains collections of ar
 - **Taskonomy:** Zamir, Amir R and Sax, Alexander and and Shen, William B and Guibas, Leonidas and Malik, Jitendra and Savarese, Silvio, Taskonomy: Disentangling Task Transfer Learning (2018), 2018 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)
 - **Image Models:** Ross Wightman, PyTorch Image Models(2019), 10.5281/zenodo.4414861, https://github.com/rwightman/pytorch-image-models
 - **SlowFast:** Haoqi Fan and Yanghao Li and Bo Xiong and Wan-Yen Lo and Christoph Feichtenhofer, PySlowFast(2020), https://github.com/facebookresearch/slowfast
-
+- **Torchextractor** https://github.com/antoinebrl/torchextractor
 
 ## Funding
 The project is supported by hessian.ai Connectom Networking and Innovation Fund 2023 and by the German Research Foundation (DFG) - DFG Research Unit FOR 5368. 
