@@ -72,11 +72,8 @@ class Plotting:
         plotting_df = pd.concat(max_dataframes, ignore_index=True)
 
         # Extract numerical part from ROI names for sorting
-        try:
-            plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('(\d+)').astype(int)
-            plotting_df.sort_values('ROI_num', inplace=True)
-        except ValueError:
-            pass
+        plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('(\d+)').astype(int)
+        plotting_df.sort_values('ROI_num', inplace=True)
 
 
         fig, ax = plt.subplots(figsize=(10, 6))
