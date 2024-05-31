@@ -3,11 +3,14 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import warnings
-from matplotlib.patches import Patch
 import re
-from matplotlib.colors import LinearSegmentedColormap
+import numpy as np
+import matplotlib.pyplot as plt
+
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
-plt.style.use('ggplot')
+plt.style.use('seaborn-v0_8-whitegrid')
+
 
 class Plotting:
     """Class for plotting the results generated in the evaluation module."""
@@ -147,8 +150,8 @@ class Plotting:
 
         # Noise ceiling
         self.add_noise_ceiling(ax, plotting_df)
-        
-        
+
+
 
     def plot_all_layers(self, metric='R2', columns_per_row=4, simplified_legend=False):
         for dataframe in self.dataframes:
@@ -157,8 +160,10 @@ class Plotting:
         n_rois = len(rois)
         rows = int(np.ceil((n_rois) / columns_per_row))
 
-        fig, axes = plt.subplots(rows, columns_per_row, figsize=(columns_per_row * 15, rows * 5), squeeze=False)
+        fig, axes = plt.subplots(rows, columns_per_row, figsize=(columns_per_row * 9, rows * 4), squeeze=False)
         axes = axes.flatten()
+
+        all_handles_labels = []
 
         for i, roi in enumerate(rois):
             ax = axes[i]
@@ -175,16 +180,18 @@ class Plotting:
             n_models = len(models)
             n_layers = len(layers)
 
-            bar_width = 0.8 / n_layers  # Adjust bar width based on the number of layers
+            bar_width = 0.4 / n_layers  # Adjusted bar width for less space between bars
+            model_spacing = 0.1  # Adjusted spacing between models
 
             # Calculate positions for each bar and the middle position for each model's group
             model_positions = []
+            current_pos = 0  # Start from zero and increment
             for j, model in enumerate(models):
                 model_df = roi_df[roi_df['Model'] == model]
                 model_layers = model_df['Layer'].unique()
-                start_pos = j * (n_layers + 1) * bar_width  # Starting position of the model's group
-                end_pos = start_pos + (len(model_layers) - 1) * bar_width  # Ending position of the model's group
-                middle_pos = (start_pos + end_pos) / 2  # Middle position of the model's group
+                start_pos = current_pos  # Start position for this model group
+                end_pos = start_pos + (len(model_layers) - 1) * bar_width
+                middle_pos = (start_pos + end_pos) / 2
                 model_positions.append(middle_pos)
 
                 layer_colors = sns.dark_palette(sns.color_palette("tab10")[j % len(sns.color_palette("tab10"))], n_colors=len(model_layers) + 2)[1:-1]
@@ -200,61 +207,44 @@ class Plotting:
                         if layer_df['Significance'].values < 0.05:
                             ax.text(x_pos, layer_df[metric].values + layer_df['SEM'].values, '*', ha='center', va='bottom', color='black')
 
+                    current_pos = end_pos + model_spacing  # Update position for the next model group
 
-            if simplified_legend:
-                # Collect a representative color for each model
-                model_representative_colors = []
-                for j, model in enumerate(models):
-                    # Taking the midpoint color of the gradient for each model as a representative
-                    representative_color = sns.dark_palette(sns.color_palette("tab10")[j % len(sns.color_palette("tab10"))], n_colors=len(layers) + 2)[len(layers) // 2]
-                    model_representative_colors.append((representative_color, model))
+            if i == 0:
+                handles, labels = ax.get_legend_handles_labels()
+                all_handles_labels.append((handles, labels))
 
-                # Create custom patches for the legend
-                legend_patches = [Patch(color=color, label=model) for color, model in model_representative_colors]
-
-                # Add a note about gradient progression, if it's the first subplot
-                if i == 0:
-                    gradient_note = "Gradient: Early (darker) to Later (brighter) layers"
-                    legend_patches.append(Patch(color='none', label=gradient_note))  # Invisible patch, just for adding the note
-
-                legend_position = 'upper right'
-
-                # Add the simplified legend to the current subplot, inside the plot area
-                ax.legend(handles=legend_patches, loc=legend_position, fontsize='small', title='Models')
-
-            # Set x-ticks to the middle of each model's group of bars
             ax.set_xticks(model_positions)
-            ax.set_xticklabels(models)
-            ax.set_title(f'All Layers for {roi}')
-            ax.set_xlabel('Model')
-            ax.set_ylabel(metric)
+            ax.set_xticklabels(models, fontsize=14)
+            ax.set_title(f'Correlation Analysis for {roi}', fontsize=14)
+            ax.set_xlabel('Models with layers', fontsize=14)
+            ax.set_ylabel('Correlation Coefficient (R)', fontsize=14)
 
-        # Hide unused subplots
         for j in range(i + 1, rows * columns_per_row):
             axes[j].axis('off')
 
+        # Collect handles and labels for the legend
+        if simplified_legend:
+            for ax in axes[:n_rois]:
+                # Add a textbox at the upper left position of each axis
+                textstr = "Gradient: Early (darker) to Later (brighter) layers"
+                props = dict(boxstyle='round', facecolor='white', edgecolor='black')
+                ax.text(0.02, 0.95, textstr, transform=ax.transAxes, fontsize=12,
+                        verticalalignment='top', bbox=props)
 
 
-        # Determine the number of columns for the legend based on the number of models
-        legend_columns = n_models
 
-        # Calculate the size of the legend subplot to match other subplots
-        legend_ax = plt.subplot(rows, columns_per_row, rows * columns_per_row)  # Position the legend in the last subplot area
+        else:
+            handles, labels = zip(*all_handles_labels)
+            handles = [h for sublist in handles for h in sublist]
+            labels = [l for sublist in labels for l in sublist]
 
-        if not simplified_legend:
-
-            # Collect handles and labels for the legend from one of the plots
-            handles, labels = axes[0].get_legend_handles_labels()
-
-            # Organize labels and handles by network for clarity
             network_handles = {}
             for handle, label in zip(handles, labels):
-                model_name = label.split()[0]  # Assuming the model name is the first part of the label
+                model_name = label.split()[0]
                 if model_name not in network_handles:
                     network_handles[model_name] = []
                 network_handles[model_name].append((handle, label))
 
-            # Create new handles and labels lists, sorted by network and then by layer
             new_handles = []
             new_labels = []
             for model_name in sorted(network_handles.keys()):
@@ -269,19 +259,16 @@ class Plotting:
                     new_handles.append(handle)
                     new_labels.append(label)
 
-            # Add the legend to the plot
-            legend = legend_ax.legend(new_handles, new_labels, loc='center', ncol=legend_columns, fontsize='small', title='Model Layers')
-            legend_ax.axis('off')  # Hide the axes of the legend subplot
+            legend_handles = new_handles
+            legend_labels = new_labels
+            legend_columns = n_models
 
-        plt.tight_layout()
+            # Add a single legend at the bottom of the figure
+            fig.legend(legend_handles, legend_labels, loc='upper center', ncol=legend_columns, fontsize=14, title='Model Layers', title_fontsize=14, bbox_to_anchor=(0.5, 0), bbox_transform=fig.transFigure)
+
+        # Adjust layout to make space for the legend
+        plt.tight_layout(rect=[0, 0, 1, 1])
         plt.show()
-
-
-
-
-
-
-
 
 
     def decorate_subplot(self, ax, df, metric):
