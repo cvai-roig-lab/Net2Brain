@@ -75,8 +75,11 @@ class Plotting:
         plotting_df = pd.concat(max_dataframes, ignore_index=True)
 
         # Extract numerical part from ROI names for sorting
-        plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('(\d+)').astype(int)
-        plotting_df.sort_values('ROI_num', inplace=True)
+        try:
+            plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('\((\d+)\)').astype(int)
+            plotting_df = plotting_df.sort_values('ROI_num').reset_index(drop=True)
+        except ValueError:
+            plotting_df = plotting_df.sort_values('ROI').reset_index(drop=True)
 
         fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -147,7 +150,7 @@ class Plotting:
 
         # Noise ceiling
         self.add_noise_ceiling(ax, plotting_df)
-    
+
 
 
     def plot_all_layers(self, metric='R2', columns_per_row=4, simplified_legend=False):
@@ -165,9 +168,12 @@ class Plotting:
         for i, roi in enumerate(rois):
             ax = axes[i]
             roi_df = pd.concat([df[df['ROI'] == roi] for df in self.dataframes])
-            
-            roi_df['Layer_num'] = roi_df['Layer'].str.extract('(\d+)').astype(int)
-            roi_df.sort_values(['Model', 'Layer_num'], inplace=True)
+
+            try:
+                roi_df['Layer_num'] = roi_df['Layer'].str.extract('\((\d+)\)').astype(int)
+                roi_df = roi_df.sort_values(['Model', 'Layer_num']).reset_index(drop=True)
+            except ValueError:
+                roi_df = roi_df.sort_values(['Model', 'Layer']).reset_index(drop=True)
 
             models = roi_df['Model'].unique()
             layers = roi_df['Layer'].unique()
@@ -243,7 +249,13 @@ class Plotting:
             new_labels = []
             for model_name in sorted(network_handles.keys()):
                 model_handles_labels = network_handles[model_name]
-                for handle, label in sorted(model_handles_labels, key=lambda x: int(re.search(r'\d+', x[1].split('_')[-1]).group())):
+                try:
+                    # Extract digits from labels like 'RDM_features_10.npz'
+                    sorted_model_handles_labels = sorted(model_handles_labels, key=lambda x: int(re.search(r'\d+', x[1].split('_')[-1]).group()))
+                except AttributeError:
+                    # Some layers are not numbered (AttributeError: 'NoneType' object has no attribute 'group')
+                    sorted_model_handles_labels = sorted(model_handles_labels, key=lambda x: x[1])
+                for handle, label in sorted_model_handles_labels:
                     new_handles.append(handle)
                     new_labels.append(label)
 
@@ -257,18 +269,6 @@ class Plotting:
         # Adjust layout to make space for the legend
         plt.tight_layout(rect=[0, 0, 1, 1])
         plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     def decorate_subplot(self, ax, df, metric):
