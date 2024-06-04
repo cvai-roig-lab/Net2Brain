@@ -27,6 +27,7 @@ Next to minor bug/api fixes these are the main changes:
 6. Added new [Tutorial Notebook](/notebooks/Workshops/Net2Brain_Introduction_LLM.ipynb)
 7. Changed RDM Creator Default back to Pearson Correlation
 8. Patch 28.05: Downloading Datasets from different source
+9. Patch 04.06: Fixing Plotting & PyVideo Bugs
 
 
 # Documentation
