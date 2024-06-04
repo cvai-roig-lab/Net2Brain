@@ -18,8 +18,9 @@ class PackPathway(torch.nn.Module):
     Transform for converting video frames as a list of tensors. 
     """
 
-    def __init__(self):
+    def __init__(self, alpha):
         super().__init__()
+        self.alpha = alpha
 
     def forward(self, frames: torch.Tensor):
         fast_pathway = frames
@@ -27,9 +28,7 @@ class PackPathway(torch.nn.Module):
         slow_pathway = torch.index_select(
             frames,
             1,
-            torch.linspace(
-                0, frames.shape[1] - 1, frames.shape[1] // 4
-            ).long(),
+            torch.linspace(0, frames.shape[1] - 1, frames.shape[1] // self.alpha).long(),
         )
         frame_list = [slow_pathway, fast_pathway]
         return frame_list
@@ -105,10 +104,7 @@ class Pyvideo(NetSetBase):
         std = [0.225, 0.225, 0.225]
         crop_size = 256
         num_frames = 32
-        sampling_rate = 2
-        frames_per_second = 30
-        num_clips = 10
-        num_crops = 3
+        alpha = 4
         
         transform = ApplyTransformToKey(
             key="video",
@@ -121,22 +117,16 @@ class Pyvideo(NetSetBase):
                         size=side_size
                     ),
                     CenterCropVideo(crop_size),
-                    PackPathway()
+                    PackPathway(alpha=alpha),
                 ]
             ),
         )
-        
-        clip_duration = (num_frames * sampling_rate)/frames_per_second
-        
-        start_sec = 0
-
-        end_sec = start_sec + clip_duration
 
         # Initialize an EncodedVideo helper class and load the video
-        video = EncodedVideo.from_path(video_path)
+        video = EncodedVideo.from_path(video_path, decode_audio=False, decoder="decord")
 
         # Load the desired clip
-        video_data = video.get_clip(start_sec=start_sec, end_sec=end_sec)
+        video_data = video.get_clip(start_sec=0, end_sec=video.duration)
 
         # Apply a transform to normalize the video input
         video_data = transform(video_data)
@@ -163,8 +153,6 @@ class Pyvideo(NetSetBase):
         std = [0.225, 0.225, 0.225]
         crop_size = 256
         num_frames = 8
-        sampling_rate = 8
-        frames_per_second = 30
 
         # Note that this transform is specific to the slow_R50 model.
         transform = ApplyTransformToKey(
@@ -182,19 +170,11 @@ class Pyvideo(NetSetBase):
             ),
         )
 
-        # The duration of the input clip is also specific to the model.
-        clip_duration = (num_frames * sampling_rate)/frames_per_second
-
-        # Select the duration of the clip to load by specifying the start and end duration
-        # The start_sec should correspond to where the action occurs in the video
-        start_sec = 0
-        end_sec = start_sec + clip_duration
-
         # Initialize an EncodedVideo helper class and load the video
-        video = EncodedVideo.from_path(video_path)
+        video = EncodedVideo.from_path(video_path, decode_audio=False, decoder="decord")
 
         # Load the desired clip
-        video_data = video.get_clip(start_sec=start_sec, end_sec=end_sec)
+        video_data = video.get_clip(start_sec=0, end_sec=video.duration)
 
         # Apply a transform to normalize the video input
         video_data = transform(video_data)
@@ -220,7 +200,6 @@ class Pyvideo(NetSetBase):
         
         mean = [0.45, 0.45, 0.45]
         std = [0.225, 0.225, 0.225]
-        frames_per_second = 30
         model_transform_params  = {
             "x3d_xs": {
                 "side_size": 182,
@@ -261,19 +240,11 @@ class Pyvideo(NetSetBase):
             ),
         )
 
-        # The duration of the input clip is also specific to the model.
-        clip_duration = (transform_params["num_frames"] * transform_params["sampling_rate"])/frames_per_second
-        
-        # Select the duration of the clip to load by specifying the start and end duration
-        # The start_sec should correspond to where the action occurs in the video
-        start_sec = 0
-        end_sec = start_sec + clip_duration
-
         # Initialize an EncodedVideo helper class and load the video
-        video = EncodedVideo.from_path(video_path)
+        video = EncodedVideo.from_path(video_path, decode_audio=False, decoder="decord")
 
         # Load the desired clip
-        video_data = video.get_clip(start_sec=start_sec, end_sec=end_sec)
+        video_data = video.get_clip(start_sec=0, end_sec=video.duration)
 
         # Apply a transform to normalize the video input
         video_data = transform(video_data)
@@ -326,14 +297,16 @@ class Pyvideo(NetSetBase):
         
         clean_dict = {}
         for A_key, subtuple in features.items():
-            keys = [A_key + "_slow", A_key + "_fast"]
-
-            try:  # if subdict is a list of two values
-                for counter, key in enumerate(keys):
-                    clean_dict.update({key: subtuple[counter].cpu()})
-            except:
+            if type(subtuple) == list or type(subtuple) == tuple:
+                if len(subtuple) >= 2:  # if subdict is a list of two values
+                    keys = [A_key + "_slow", A_key + "_fast"]
+                    for counter, key in enumerate(keys):
+                        clean_dict.update({key: subtuple[counter].cpu()})
+                else:
+                    [value] = subtuple
+                    clean_dict.update({A_key: value.cpu()})
+            else:
                 clean_dict.update({A_key: subtuple.cpu()})
-
         return clean_dict
     
 
