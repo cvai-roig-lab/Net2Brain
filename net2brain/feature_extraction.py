@@ -34,13 +34,14 @@ except ModuleNotFoundError:
 
 # FeatureExtractor class
 class FeatureExtractor:
-    def __init__(self, 
-                 model, 
-                 netset=None, 
-                 device="cpu", 
-                 pretrained=True, 
-                 preprocessor=None, 
-                 extraction_function=None, 
+    def __init__(self,
+                 model,
+                 netset=None,
+                 netset_fallback="Standard",
+                 device="cpu",
+                 pretrained=True,
+                 preprocessor=None,
+                 extraction_function=None,
                  feature_cleaner=None):
         # Parameters
         self.model_name = model
@@ -68,8 +69,10 @@ class FeatureExtractor:
             if isinstance(model, str):
                 raise ValueError("If no netset is given, the model_name parameter needs to be a ready model")
             else:
-                # Initiate as Standard Netset structure in case user does not select preprocessing, extractor, etc.
-                self.netset = NetSetBase.initialize_netset(model_name=None, netset_name="Standard", device=self.device)
+                # Initiate as the Netset structure of choice in case user does not select preprocessing, extractor, etc.
+                self.netset = NetSetBase.initialize_netset(
+                    model_name=None, netset_name=netset_fallback, device=self.device
+                )
                 self.model = model
                 self.model.eval()
                 self.netset.loaded_model = self.model
@@ -113,7 +116,7 @@ class FeatureExtractor:
         # Select preprocessor
         if self.preprocessor == None:
             self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
-            
+
         if self.data_type not in self.netset.supported_data_types:
             raise ValueError(f"Datatype {self.data_type} not supported by current model")
         
@@ -148,7 +151,8 @@ class FeatureExtractor:
                     features = self.feature_cleaner(features)
 
                 # Append to list of data
-                data_from_file_list.append(features)
+                data_from_file_list.append({key: value.detach().cpu() for key, value in features.items()})
+                del preprocessed_data, features
 
             # Combine Data from list into single dictionary depending on input type
             final_features = self.data_combiner(data_from_file_list)
@@ -159,7 +163,7 @@ class FeatureExtractor:
 
 
             # Convert the final_features dictionary to one that contains detached numpy arrays
-            final_features = {key: value.detach().cpu().numpy() for key, value in final_features.items()}
+            final_features = {key: value.numpy() for key, value in final_features.items()}
 
             # Write the features for one image to a single file
             file_path = os.path.join(self.save_path, f"{file_name}.npz")
