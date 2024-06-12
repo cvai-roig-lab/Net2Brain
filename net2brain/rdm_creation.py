@@ -76,6 +76,10 @@ class RDMCreator:
                     distance: Union[str, Callable] = 'pearson',
                     standardize_on_dim: Optional[int] = None,
                     chunk_size: Optional[int] = None,
+                    dim_reduction: Optional[str] = None,
+                    max_dim_allowed: int = 0.5e6,
+                    n_samples_estim: int = 100,
+                    n_components: Optional[int] = 10000,
                     **kwargs
                     ) -> Path:
         """
@@ -100,6 +104,18 @@ class RDMCreator:
             chunk_size: int or None
                 If not None, the RDM is created in chunks of the given size. This can be used to reduce the memory
                 consumption.
+            dim_reduction: str or None
+                Whether to apply dimensionality reduction to the features before creating the RDMs. Only supported
+                when the features are *not* stored in a consolidated format. For consolidated storing of features,
+                apply the dimensionality reduction at the feature extraction stage.
+                Choose from `srp` (Sparse Random Projection) and `pca` (Principal Component Analysis).
+            max_dim_allowed: int
+                The threshold over which the dimensionality reduction is applied.
+            n_samples_estim: int
+                The number of samples used for estimating the dimensionality reduction.
+            n_components: int
+                The number of components to reduce the features to. If None, the number of components is estimated.
+                For PCA, `n_components` must be smaller than `n_samples_estim`.
             **kwargs: dict
                 Additional keyword arguments for the distance function.
         """
@@ -109,7 +125,14 @@ class RDMCreator:
             save_path = Path(save_path)
         save_path.mkdir(parents=True, exist_ok=True)
 
-        iterator = FeatureIterator(feature_path)
+        if dim_reduction:
+            iterator = FeatureIterator(feature_path,
+                                       dim_reduction=dim_reduction,
+                                       max_dim_allowed=max_dim_allowed,
+                                       n_samples_estim=n_samples_estim,
+                                       n_components=n_components)
+        else:
+            iterator = FeatureIterator(feature_path)
         with tqdm(total=len(iterator), desc='Creating RDMs', disable=not self.verbose) as bar:
             for layer, stimuli, feats in iterator:
                 feats = torch.from_numpy(feats).to(self.device)
