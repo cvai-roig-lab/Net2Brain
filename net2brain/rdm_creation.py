@@ -105,13 +105,17 @@ class RDMCreator:
                 If not None, the RDM is created in chunks of the given size. This can be used to reduce the memory
                 consumption.
             dim_reduction: str or None
-                Whether to apply dimensionality reduction to the features before creating the RDMs.
+                Whether to apply dimensionality reduction to the features before creating the RDMs. Only supported
+                when the features are *not* stored in a consolidated format. For consolidated storing of features,
+                apply the dimensionality reduction at the feature extraction stage.
+                Choose from `srp` (Sparse Random Projection) and `pca` (Principal Component Analysis).
             max_dim_allowed: int
                 The threshold over which the dimensionality reduction is applied.
             n_samples_estim: int
                 The number of samples used for estimating the dimensionality reduction.
             n_components: int
                 The number of components to reduce the features to. If None, the number of components is estimated.
+                For PCA, `n_components` must be smaller than `n_samples_estim`.
             **kwargs: dict
                 Additional keyword arguments for the distance function.
         """
@@ -138,9 +142,6 @@ class RDMCreator:
 
                 rdm = LayerRDM(rdm=rdm_m, layer_name=layer, stimuli_name=stimuli, meta=meta)
                 rdm.save(save_path, file_format=save_format)
-                del feats
-                del rdm_m
-                del rdm
 
                 bar.update()
         return save_path

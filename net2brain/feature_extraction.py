@@ -87,6 +87,29 @@ class FeatureExtractor:
 
     def extract(self, data_path, save_path=None, layers_to_extract=None, consolidate_per_layer=True,
                 dim_reduction=None, max_dim_allowed=0.5e6, n_samples_estim=100, n_components=10000):
+        """
+        TODO: Add docstring here because it is a user API func (not my code so I would appreciate if you could add it)
+        Args:
+            data_path:
+            save_path:
+            layers_to_extract:
+            consolidate_per_layer:
+            dim_reduction: str or None
+                Whether to apply dimensionality reduction to the features at the feature extraction stage.
+                If the original full features are needed for further processing, set this to None and apply the
+                dimensionality reduction at the RDM creation stage when the features are loaded.
+                Choose from `srp` (Sparse Random Projection) and `pca` (Principal Component Analysis).
+            max_dim_allowed: int
+                The threshold over which the dimensionality reduction is applied.
+            n_samples_estim: int
+                The number of samples used for estimating the dimensionality reduction.
+            n_components: int
+                The number of components to reduce the features to. If None, the number of components is estimated.
+                For PCA, `n_components` must be smaller than `n_samples_estim`.
+
+        Returns:
+
+        """
 
         # Create save_path:
         now = datetime.now()
@@ -307,20 +330,9 @@ class FeatureExtractor:
 
 
     def reduce_dimensionality(self):
-        if self.dim_reduction == "srp":
-            return self.reduce_dimensionality_sparse_random()
-        else:
-            warnings.warn(f"{self.dim_reduction} does not exist as form of dimensionality reduction. Choose between 'srp'")
-
-
-    def reduce_dimensionality_sparse_random(self):
-        """
-        Perform dimensionality reduction using Sparse Random Projection.
-        """
-
         # List all files, ignoring ones ending with "_consolidated.npz"
         all_files = [f for f in os.listdir(self.save_path) if (f.endswith(".npz") and not
-                                                                f.endswith("_consolidated.npz"))]
+                                                               f.endswith("_consolidated.npz"))]
         if not all_files:
             print("No feature files to reduce dimension for.")
             return
@@ -335,17 +347,21 @@ class FeatureExtractor:
         for layer in layers:
             sample_feats_at_layer = sample[layer]
             feat_dim = sample_feats_at_layer.shape[1:]
+            # Check if the dimensionality reduction is necessary
             if len(sample_feats_at_layer.flatten()) > self.max_dim_allowed:
+                # Estimate the dimensionality reduction from a subset of the data
                 srp, _ = estimate_from_files(all_files, layer, feat_dim, open_npz,
-                                             self.n_samples_estim, self.n_components)
+                                             self.dim_reduction, self.n_samples_estim, self.n_components)
                 for file in tqdm(all_files):
                     feats = open_npz(file)
                     reduced_feats_at_layer = {}
+                    # Apply the dimensionality reduction to the features at the layer
                     for key, value in feats.items():
                         if key == layer:
                             reduced_feats_at_layer[key] = srp.transform(value.reshape(1, -1))
                         else:
                             reduced_feats_at_layer[key] = value
+                    # Make sure no corrupted files are saved
                     feats.close()
                     np.savez(os.path.join(self.save_path, 'tmp_'+file), **reduced_feats_at_layer)
                     os.replace(os.path.join(self.save_path, 'tmp_'+file), os.path.join(self.save_path, file))
