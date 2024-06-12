@@ -73,7 +73,7 @@ def detect_feature_format(root: Union[str, Path]) -> FeatureFormat:
         if not file.is_file():
             raise ValueError(f"Directory {root} does not contain any files.")
         if file.suffix == ".npz":
-            if 'consolidated' in file:
+            if 'consolidated' in str(file):
                 return FeatureFormat.NPZ_CONSOLIDATED
             else:
                 return FeatureFormat.NPZ_SEPARATE
@@ -91,10 +91,20 @@ class FeatureEngine(ABC):
     """
     Abstract class for feature engines. Each feature engine is responsible for extracting features from a specific
     format of feature files.
+    Takes optional keyword arguments for dimensionality reduction at the feature loading, currently only implemented for
+    the NPZSeperateEngine.
     """
 
-    def __init__(self, root: Path):
+    def __init__(self, root: Path,
+                 dim_reduction=None,
+                 max_dim_allowed=0.5e6,
+                 n_samples_estim=100,
+                 n_components=10000,):
         self.root = Path(root)
+        self.dim_reduction = dim_reduction
+        self.max_dim_allowed = max_dim_allowed
+        self.n_samples_estim = n_samples_estim
+        self.n_components = n_components
 
     @abstractmethod
     def get_iterator(self) -> Iterator:
@@ -177,14 +187,6 @@ class NPZConsolidateEngine(FeatureEngine):
 class NPZSeparateEngine(FeatureEngine):
     feature_format = FeatureFormat.NPZ_SEPARATE
 
-    def __init__(self, root: Path, dim_reduction, max_dim_allowed, n_samples_estim, n_components):
-        super().__init__(root)
-        self.root = Path(root)
-        self.dim_reduction = dim_reduction
-        self.max_dim_allowed = max_dim_allowed
-        self.n_samples_estim = n_samples_estim
-        self.n_components = n_components
-
     def get_iterator(self) -> Iterator:
         return iter(nsorted(open_npz(self._stimuli[0])))
 
@@ -255,9 +257,8 @@ class FeatureIterator:
         if self.format == FeatureFormat.NPZ_SEPARATE:
             warnings.warn("FeatureIterator is not optimized for NPZ_SEPARATE format. "
                           "Consider using NPZ_CONSOLIDATED format instead.")
-            self.engine: FeatureEngine = NPZSeparateEngine(self.root, **kwargs)
-        else:
-            self.engine: FeatureEngine = engine_registry.get_engine(self.format)(self.root)
+
+        self.engine: FeatureEngine = engine_registry.get_engine(self.format)(self.root, **kwargs)
 
         self._iter = None
 

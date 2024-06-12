@@ -23,7 +23,7 @@ from sklearn.random_projection import SparseRandomProjection
 warnings.filterwarnings("ignore", category=UserWarning, module='torchvision')
 
 from pathlib import Path
-from utils.dim_reduction import estimate_from_files
+from .utils.dim_reduction import estimate_from_files
 
 
 try:
@@ -86,7 +86,7 @@ class FeatureExtractor:
 
 
     def extract(self, data_path, save_path=None, layers_to_extract=None, consolidate_per_layer=True,
-                dim_reduction=None, max_dim_allowed=1050000, n_samples_estim=100, n_components=10000):
+                dim_reduction=None, max_dim_allowed=0.5e6, n_samples_estim=100, n_components=10000):
 
         # Create save_path:
         now = datetime.now()
@@ -338,10 +338,17 @@ class FeatureExtractor:
             if len(sample_feats_at_layer.flatten()) > self.max_dim_allowed:
                 srp, _ = estimate_from_files(all_files, layer, feat_dim, open_npz,
                                              self.n_samples_estim, self.n_components)
-                for file in all_files:
+                for file in tqdm(all_files):
                     feats = open_npz(file)
-                    feats[layer] = srp.transform(feats[layer].reshape(1, -1))
-                    np.savez(file, **feats)
+                    reduced_feats_at_layer = {}
+                    for key, value in feats.items():
+                        if key == layer:
+                            reduced_feats_at_layer[key] = srp.transform(value.reshape(1, -1))
+                        else:
+                            reduced_feats_at_layer[key] = value
+                    feats.close()
+                    np.savez(os.path.join(self.save_path, 'tmp_'+file), **reduced_feats_at_layer)
+                    os.replace(os.path.join(self.save_path, 'tmp_'+file), os.path.join(self.save_path, file))
 
 
 class DataTypeLoader:
