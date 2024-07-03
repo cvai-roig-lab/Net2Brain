@@ -42,28 +42,32 @@ class Plotting:
         return dataframe
 
 
+    def get_patch_index(self, ax, n_rois, index):
+        return index * n_rois % len(ax.patches) + index * n_rois // len(ax.patches)
+
 
     def add_significance_markers(self, ax, plotting_df, metric, pairs):
         """Add significance markers based on individual significance."""
+        n_rois = plotting_df["ROI"].nunique()
         for index, row in plotting_df.iterrows():
             if row['Significance'] < 0.05:
-                x = ax.patches[index].get_x() + ax.patches[index].get_width() / 2
-                y = ax.patches[index].get_height()
+                patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+                x = patch.get_x() + patch.get_width() / 2
+                y = patch.get_height()
             ax.text(x, y + 0.01, '*', ha='center', va='bottom', c='k')
 
 
     def add_noise_ceiling(self, ax, plotting_df):
         """Add noise ceiling lines to the plot."""
+        n_rois = plotting_df["ROI"].nunique()
         for index, row in plotting_df.iterrows():
-            if np.isnan(row['LNC']) or np.isnan(row['UNC']):
+            if np.isnan(row["LNC"]) or np.isnan(row["UNC"]):
                 continue
-            x = ax.patches[index].get_x()
-            width = ax.patches[index].get_width()
-            ax.hlines(y=row['LNC'], xmin=x, xmax=x+width, linewidth=1, color='k', linestyle='dashed')
-            ax.hlines(y=row['UNC'], xmin=x, xmax=x+width, linewidth=1, color='k', linestyle='dashed')
-
-
-
+            patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+            x = patch.get_x()
+            width = patch.get_width()
+            ax.hlines(y=row["LNC"], xmin=x, xmax=x + width, linewidth=1, color="k", linestyle="dashed")
+            ax.hlines(y=row["UNC"], xmin=x, xmax=x + width, linewidth=1, color="k", linestyle="dashed")
 
 
     def plot(self, pairs=[], metric='R2'):
@@ -74,12 +78,16 @@ class Plotting:
         
         plotting_df = pd.concat(max_dataframes, ignore_index=True)
 
+        # Get model order before the ROI sorting
+        model_order = plotting_df['Model'].unique()
+        plotting_df['CustomOrder'] = plotting_df['Model'].map({model: i for i, model in enumerate(model_order)})
         # Extract numerical part from ROI names for sorting
         try:
             plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('\((\d+)\)').astype(int)
-            plotting_df = plotting_df.sort_values('ROI_num').reset_index(drop=True)
+            plotting_df = plotting_df.sort_values(by=['ROI_num', 'CustomOrder']).reset_index(drop=True)
         except ValueError:
-            plotting_df = plotting_df.sort_values('ROI').reset_index(drop=True)
+            plotting_df = plotting_df.sort_values(by=['ROI', 'CustomOrder']).reset_index(drop=True)
+        plotting_df.drop('CustomOrder', axis=1, inplace=True)
 
         fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -103,22 +111,18 @@ class Plotting:
 
     def decorate_plot(self, ax, plotting_df, metric, pairs):
         """Decorate the plot with error bars, significance markers, and noise ceiling."""
-        for i, patch in enumerate(ax.patches):
-            # Calculate the x position and height of the bar
-            x = patch.get_x() + patch.get_width() / 2
+        n_rois = plotting_df["ROI"].nunique()
+        for index, row in plotting_df.iterrows():
+            patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+            x = patch.get_x()
+            width = patch.get_width()
+            x_middle = x + width / 2
             y = patch.get_height()
-            
-            # Adjust error bars to not go below zero
-            if i < len(plotting_df):  # Ensure we're not exceeding the DataFrame's length
-                row = plotting_df.iloc[i]
-                lower_limit = max(y - row["SEM"], 0)  # Ensure the lower limit is not below 0
-                upper_limit = y + row["SEM"]
-                ax.errorbar(x, y, yerr=[[y-lower_limit], [upper_limit-y]], fmt='none', c='k', capsize=5)
-            
-                # Significance markers
-                if row['Significance'] < 0.05:
-                    ax.text(x, upper_limit, '*', ha='center', va='bottom', c='k')
-
+            lower_limit = max(y - row["SEM"], 0)
+            upper_limit = y + row["SEM"]
+            ax.errorbar(x_middle, y, yerr=[[y - lower_limit], [upper_limit - y]], fmt=" ", c="k", capsize=width)
+            if row["Significance"] < 0.05:
+                ax.text(x_middle, upper_limit, "*", ha="center", va="bottom", c="k")
 
         bar_width = ax.patches[0].get_width()
         for pair in pairs:
@@ -133,11 +137,13 @@ class Plotting:
 
                 if len(indices) == 2:  # Check if both bars are found
                     index1, index2 = indices
+                    patch1 = ax.patches[self.get_patch_index(ax, n_rois, index1)]
+                    patch2 = ax.patches[self.get_patch_index(ax, n_rois, index2)]
 
-                    x1 = ax.patches[index1].get_x() + bar_width / 2
-                    y1 = ax.patches[index1].get_height()
-                    x2 = ax.patches[index2].get_x() + bar_width / 2
-                    y2 = ax.patches[index2].get_height()
+                    x1 = patch1.get_x() + bar_width / 2
+                    y1 = patch1.get_height()
+                    x2 = patch2.get_x() + bar_width / 2
+                    y2 = patch2.get_height()
 
                     # Calculate the height and tips of the significance line
                     bar_height = max(y1, y2) + 0.05  # Adjusted for visibility
@@ -146,7 +152,6 @@ class Plotting:
                     # Draw the line and asterisk for significance
                     ax.plot([x1, x1, x2, x2], [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k')
                     ax.text((x1 + x2) / 2, bar_height + 0.02, '*', ha='center', va='bottom', c='k')
-        
 
         # Noise ceiling
         self.add_noise_ceiling(ax, plotting_df)
@@ -272,17 +277,20 @@ class Plotting:
 
 
     def decorate_subplot(self, ax, df, metric):
-        for i, patch in enumerate(ax.patches):
-            x = patch.get_x() + patch.get_width() / 2
+        n_rois = df["ROI"].nunique()
+        for index, row in df.iterrows():
+            patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+            x = patch.get_x()
+            width = patch.get_width()
+            x_middle = x + width / 2
             height = patch.get_height()
 
-            if height > 0:  # Ensure the bar has a positive height
-                row = df.iloc[i % len(df)]  # Cycle through the DataFrame rows for each patch
+            if height > 0:
                 if row['Significance'] < 0.05:
-                    ax.text(x, height, '*', ha='center', va='bottom', color='black')
+                    ax.text(x_middle, height, '*', ha='center', va='bottom', color='black')
 
                 sem = row['SEM'] if height - row['SEM'] > 0 else height  # Prevent error bars from going below 0
-                ax.errorbar(x, height, yerr=[[sem], [sem]], fmt='none', c='k', capsize=5)
+                ax.errorbar(x_middle, height, yerr=[[sem], [sem]], fmt='none', c='k', capsize=width)
 
         # Noise ceiling
         for unc, lnc in zip(df['UNC'], df['LNC']):
