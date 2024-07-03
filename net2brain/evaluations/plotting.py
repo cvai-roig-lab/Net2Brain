@@ -61,11 +61,11 @@ class Plotting:
         """Add noise ceiling lines to the plot."""
         n_rois = plotting_df["ROI"].nunique()
         for index, row in plotting_df.iterrows():
+            if np.isnan(row["LNC"]) or np.isnan(row["UNC"]):
+                continue
             patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
             x = patch.get_x()
             width = patch.get_width()
-            if np.isnan(row["LNC"]) or np.isnan(row["UNC"]):
-                continue
             ax.hlines(y=row["LNC"], xmin=x, xmax=x + width, linewidth=1, color="k", linestyle="dashed")
             ax.hlines(y=row["UNC"], xmin=x, xmax=x + width, linewidth=1, color="k", linestyle="dashed")
 
