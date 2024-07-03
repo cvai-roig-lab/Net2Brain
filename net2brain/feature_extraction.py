@@ -90,10 +90,15 @@ class FeatureExtractor:
         """
         TODO: Add docstring here because it is a user API func (not my code so I would appreciate if you could add it)
         Args:
-            data_path:
-            save_path:
-            layers_to_extract:
-            consolidate_per_layer:
+            data_path: str
+                Path to stimuli data
+            save_path: str
+                Path to where to save the extracted features
+            layers_to_extract: list of str
+                List of layers to extract from model.
+                User "get_all_layers" function to see all avaiable layers
+            consolidate_per_layer: Bool
+                Whether to consolidate of one file per image to one file per layer
             dim_reduction: str or None
                 Whether to apply dimensionality reduction to the features at the feature extraction stage.
                 If the original full features are needed for further processing, set this to None and apply the
