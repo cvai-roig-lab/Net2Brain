@@ -78,12 +78,16 @@ class Plotting:
         
         plotting_df = pd.concat(max_dataframes, ignore_index=True)
 
+        # Get model order before the ROI sorting
+        model_order = plotting_df['Model'].unique()
+        plotting_df['CustomOrder'] = plotting_df['Model'].map({model: i for i, model in enumerate(model_order)})
         # Extract numerical part from ROI names for sorting
         try:
             plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('\((\d+)\)').astype(int)
-            plotting_df = plotting_df.sort_values('ROI_num').reset_index(drop=True)
+            plotting_df = plotting_df.sort_values(by=['ROI_num', 'CustomOrder']).reset_index(drop=True)
         except ValueError:
-            plotting_df = plotting_df.sort_values('ROI').reset_index(drop=True)
+            plotting_df = plotting_df.sort_values(by=['ROI', 'CustomOrder']).reset_index(drop=True)
+        plotting_df.drop('CustomOrder', axis=1, inplace=True)
 
         fig, ax = plt.subplots(figsize=(10, 6))
 
