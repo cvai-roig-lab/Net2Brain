@@ -46,8 +46,6 @@ def aggregate_df_by_layer(df):
     return pd.DataFrame(aggregated_data)
 
 
-    return pd.DataFrame(aggregated_data)
-
 def find_common_roi_name(names):
     """
     Identifies the common ROI name within a single DataFrame.
@@ -151,7 +149,7 @@ def encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path
             activations.append(np.mean(feat[layer_id], axis=1).flatten())
         
             # Partially fit the PCA model in batches
-            if ((jj+1) % batch_size) == 0:
+            if ((jj + 1) % batch_size) == 0 or (jj + 1) == len(trn_Idx):
                 pca.partial_fit(np.stack(activations[-batch_size:],axis=0))
                 
         # Transform the training set using the trained PCA model

@@ -23,6 +23,7 @@ from sklearn.random_projection import SparseRandomProjection
 warnings.filterwarnings("ignore", category=UserWarning, module='torchvision')
 
 from pathlib import Path
+from .utils.dim_reduction import estimate_from_files
 
 
 try:
@@ -84,7 +85,36 @@ class FeatureExtractor:
 
 
 
-    def extract(self, data_path, save_path=None, layers_to_extract=None, consolidate_per_layer=True, dim_reduction=None, n_components=50):
+    def extract(self, data_path, save_path=None, layers_to_extract=None, consolidate_per_layer=True,
+                dim_reduction=None, max_dim_allowed=0.5e6, n_samples_estim=100, n_components=10000):
+        """
+        TODO: Add docstring here because it is a user API func (not my code so I would appreciate if you could add it)
+        Args:
+            data_path: str
+                Path to stimuli data
+            save_path: str
+                Path to where to save the extracted features
+            layers_to_extract: list of str
+                List of layers to extract from model.
+                User "get_all_layers" function to see all avaiable layers
+            consolidate_per_layer: Bool
+                Whether to consolidate of one file per image to one file per layer
+            dim_reduction: str or None
+                Whether to apply dimensionality reduction to the features at the feature extraction stage.
+                If the original full features are needed for further processing, set this to None and apply the
+                dimensionality reduction at the RDM creation stage when the features are loaded.
+                Choose from `srp` (Sparse Random Projection) and `pca` (Principal Component Analysis).
+            max_dim_allowed: int
+                The threshold over which the dimensionality reduction is applied.
+            n_samples_estim: int
+                The number of samples used for estimating the dimensionality reduction.
+            n_components: int
+                The number of components to reduce the features to. If None, the number of components is estimated.
+                For PCA, `n_components` must be smaller than `n_samples_estim`.
+
+        Returns:
+
+        """
 
         # Create save_path:
         now = datetime.now()
@@ -92,8 +122,10 @@ class FeatureExtractor:
         self.save_path = save_path or os.path.join(os.getcwd(),"results", now_formatted)
         self._ensure_dir_exists(self.save_path)
 
-        # Specify new attributes:
+        # Specify new attributes for dimensionality reduction:
         self.dim_reduction = dim_reduction
+        self.max_dim_allowed = max_dim_allowed
+        self.n_samples_estim = n_samples_estim
         self.n_components = n_components
 
         # Iterate over all files in the given data_path
@@ -157,11 +189,6 @@ class FeatureExtractor:
             # Combine Data from list into single dictionary depending on input type
             final_features = self.data_combiner(data_from_file_list)
 
-            # Reduce dimension of feautres
-            # print("final_feats", len(final_features))
-            final_features = self.reduce_dimensionality(final_features)
-
-
             # Convert the final_features dictionary to one that contains detached numpy arrays
             final_features = {key: value.numpy() for key, value in final_features.items()}
 
@@ -171,6 +198,10 @@ class FeatureExtractor:
 
             # Clear variables to save RAM
             del data_from_file_list, final_features
+
+        if dim_reduction:
+            print("Reducing dimensions...")
+            self.reduce_dimensionality()
 
         if consolidate_per_layer:
             print("Consolidating data per layer...")
@@ -227,7 +258,7 @@ class FeatureExtractor:
                 print(f"Error: No data found to consolidate for layer {layer}.")
                 continue
 
-            output_file_path = os.path.join(self.save_path, f"{layer}.npz")
+            output_file_path = os.path.join(self.save_path, f"consolidated_{layer}.npz")
             np.savez_compressed(output_file_path, **data)
 
 
@@ -303,36 +334,42 @@ class FeatureExtractor:
         return NetSetBase._registry.get(netset_name, None)
 
 
-    def reduce_dimensionality(self, features):
-        if self.dim_reduction == None:
-            return features
-        elif self.dim_reduction == "srp":
-            return self.reduce_dimensionality_sparse_random(features)
-        else:
-            warnings.warn(f"{self.dim_reduction} does not exist as form of dimensionality reduction. Choose between 'srp'")
+    def reduce_dimensionality(self):
+        # List all files, ignoring ones ending with "_consolidated.npz"
+        all_files = [f for f in os.listdir(self.save_path) if (f.endswith(".npz") and not
+                                                               f.endswith("_consolidated.npz"))]
+        if not all_files:
+            print("No feature files to reduce dimension for.")
+            return
 
+        def open_npz(file):
+            return np.load(os.path.join(self.save_path, file), allow_pickle=True)
 
-    
+        # Assuming that each file has the same set of layers
+        sample = open_npz(all_files[0])
+        layers = list(sample.keys())
 
-    def reduce_dimensionality_sparse_random(self, features):
-        """
-        Perform dimensionality reduction using Sparse Random Projection.
-
-        Parameters:
-        - features (dict): Dictionary of layers with corresponding torch tensors.
-        - n_components (int): Number of components to keep (default is 50).
-
-        Returns:
-        - dict: Reduced features.
-        """
-        reduced_features = {}
-        for layer, original_tensor in features.items():
-            flattened_tensor = original_tensor.detach().view(original_tensor.size(0), -1).cpu().numpy()
-            sparse_random_proj = SparseRandomProjection(n_components=self.n_components)
-            reduced_tensor = sparse_random_proj.fit_transform(flattened_tensor)
-            reduced_features[layer] = torch.tensor(reduced_tensor).view(original_tensor.size(0), -1)
-        return reduced_features
-        
+        for layer in layers:
+            sample_feats_at_layer = sample[layer]
+            feat_dim = sample_feats_at_layer.shape[1:]
+            # Check if the dimensionality reduction is necessary
+            if len(sample_feats_at_layer.flatten()) > self.max_dim_allowed:
+                # Estimate the dimensionality reduction from a subset of the data
+                srp, _ = estimate_from_files(all_files, layer, feat_dim, open_npz,
+                                             self.dim_reduction, self.n_samples_estim, self.n_components)
+                for file in tqdm(all_files):
+                    feats = open_npz(file)
+                    reduced_feats_at_layer = {}
+                    # Apply the dimensionality reduction to the features at the layer
+                    for key, value in feats.items():
+                        if key == layer:
+                            reduced_feats_at_layer[key] = srp.transform(value.reshape(1, -1))
+                        else:
+                            reduced_feats_at_layer[key] = value
+                    # Make sure no corrupted files are saved
+                    feats.close()
+                    np.savez(os.path.join(self.save_path, 'tmp_'+file), **reduced_feats_at_layer)
+                    os.replace(os.path.join(self.save_path, 'tmp_'+file), os.path.join(self.save_path, file))
 
 
 class DataTypeLoader:

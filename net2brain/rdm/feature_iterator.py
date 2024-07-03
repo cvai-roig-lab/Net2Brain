@@ -9,6 +9,8 @@ from typing import Union, Tuple, List, Iterator, Dict, Type, Iterable, Callable,
 import numpy as np
 from sklearn.random_projection import SparseRandomProjection
 
+from net2brain.utils.dim_reduction import estimate_from_files
+
 
 def natural_keys(text: str) -> List[Union[int, str]]:
     """
@@ -71,17 +73,10 @@ def detect_feature_format(root: Union[str, Path]) -> FeatureFormat:
         if not file.is_file():
             raise ValueError(f"Directory {root} does not contain any files.")
         if file.suffix == ".npz":
-            shape = None
-            for _, mat in open_npz(file).items():
-                if shape is None:
-                    shape = mat.shape
-                else:
-                    if mat.shape != shape:
-                        # if the shape of the two arrays are different, then the npz files are separate
-                        return FeatureFormat.NPZ_SEPARATE
-                    else:
-                        # if the shape of the two arrays are the same, then the npz files are consolidated
-                        return FeatureFormat.NPZ_CONSOLIDATED
+            if 'consolidated' in str(file):
+                return FeatureFormat.NPZ_CONSOLIDATED
+            else:
+                return FeatureFormat.NPZ_SEPARATE
         raise ValueError(f"Invalid file suffix {file.suffix} for directory {root}. Only .npz files are supported.")
     elif root.is_file():
         if root.suffix in (".h5", ".hdf5", ".hdf", ".h5py"):
@@ -96,10 +91,20 @@ class FeatureEngine(ABC):
     """
     Abstract class for feature engines. Each feature engine is responsible for extracting features from a specific
     format of feature files.
+    Takes optional keyword arguments for dimensionality reduction at the feature loading, currently only implemented for
+    the NPZSeperateEngine.
     """
 
-    def __init__(self, root: Path):
+    def __init__(self, root: Path,
+                 dim_reduction=None,
+                 max_dim_allowed=0.5e6,
+                 n_samples_estim=100,
+                 n_components=10000,):
         self.root = Path(root)
+        self.dim_reduction = dim_reduction
+        self.max_dim_allowed = max_dim_allowed
+        self.n_samples_estim = n_samples_estim
+        self.n_components = n_components
 
     @abstractmethod
     def get_iterator(self) -> Iterator:
@@ -194,29 +199,21 @@ class NPZSeparateEngine(FeatureEngine):
         return nsorted(self.root.iterdir(), key=lambda x: x.stem)
 
     def next(self, item) -> Tuple[str, List[str], np.ndarray]:
-        # TODO: make this dim reduction parameterized by the user and in all engines
         stimuli = []
         sample = open_npz(self._stimuli[0])[item]
         feat_dim = sample.shape[1:]
-        if len(sample.flatten()) > 1050000:
-            feats_for_estim = np.empty((100, *feat_dim))
-            for i, file in enumerate(self._stimuli[:100]):
-                if file.suffix == ".npz":
-                    feats_for_estim[i, :] = open_npz(file)[item].squeeze(0)
-            n_components = 10000
-            srp = SparseRandomProjection(n_components=n_components)
-            srp.fit(feats_for_estim.reshape(100, -1))
-            # srp = SparseRandomProjection()
-            # sample_auto_proj = srp.fit_transform(feats_for_estim.reshape(100, -1))
-            # n_components = sample_auto_proj.shape[-1]
-            del feats_for_estim
-            # del sample_auto_proj
-            feats = np.empty((len(self._stimuli), n_components))
+        # Check if dimensionality reduction is needed
+        if self.dim_reduction and len(sample.flatten()) > self.max_dim_allowed:
+            # Estimate the dimensionality reduction from a subset of the data
+            srp, self.n_components = estimate_from_files(self._stimuli, item, feat_dim, open_npz,
+                                                         self.dim_reduction, self.n_samples_estim, self.n_components)
+            feats = np.empty((len(self._stimuli), self.n_components))
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
                 feats[i, :] = srp.transform(open_npz(file)[item].reshape(1, -1)).squeeze(0)
                 stimuli.append(file.stem)
+        # Otherwise load features without dimensionality reduction
         else:
             feats = np.empty((len(self._stimuli), *feat_dim))
             for i, file in enumerate(self._stimuli):
@@ -242,25 +239,30 @@ class HDF5Engine(FeatureEngine):
 
 
 class FeatureIterator:
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, **kwargs):
         """
         Iterator for extracting features from feature files. It automatically detects the format of the feature files
         and uses the corresponding feature engine to extract features.
 
         Args:
-            root : str or Path
+            root: str or Path
                 Path to the directory containing the feature files.
+            **kwargs: dict
+                Keyword arguments for dimensionality reduction at the feature loading, currently only implemented for
+                the NPZSeperateEngine.
         """
         if not isinstance(root, (Path, str)):
             raise TypeError(f"Expected Path or str for feature path, got {type(root)}")
         self.root = Path(root)
 
         self.format: FeatureFormat = detect_feature_format(self.root)
+
         if self.format == FeatureFormat.NPZ_SEPARATE:
             warnings.warn("FeatureIterator is not optimized for NPZ_SEPARATE format. "
                           "Consider using NPZ_CONSOLIDATED format instead.")
 
-        self.engine: FeatureEngine = engine_registry.get_engine(self.format)(self.root)
+        self.engine: FeatureEngine = engine_registry.get_engine(self.format)(self.root, **kwargs)
+
         self._iter = None
 
     def __len__(self) -> int:

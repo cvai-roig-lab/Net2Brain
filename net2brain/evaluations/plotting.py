@@ -3,11 +3,14 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import warnings
-from matplotlib.patches import Patch
 import re
-from matplotlib.colors import LinearSegmentedColormap
+import numpy as np
+import matplotlib.pyplot as plt
+
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
-plt.style.use('ggplot')
+plt.style.use('seaborn-v0_8-whitegrid')
+
 
 class Plotting:
     """Class for plotting the results generated in the evaluation module."""
@@ -39,28 +42,32 @@ class Plotting:
         return dataframe
 
 
+    def get_patch_index(self, ax, n_rois, index):
+        return index * n_rois % len(ax.patches) + index * n_rois // len(ax.patches)
+
 
     def add_significance_markers(self, ax, plotting_df, metric, pairs):
         """Add significance markers based on individual significance."""
+        n_rois = plotting_df["ROI"].nunique()
         for index, row in plotting_df.iterrows():
             if row['Significance'] < 0.05:
-                x = ax.patches[index].get_x() + ax.patches[index].get_width() / 2
-                y = ax.patches[index].get_height()
+                patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+                x = patch.get_x() + patch.get_width() / 2
+                y = patch.get_height()
             ax.text(x, y + 0.01, '*', ha='center', va='bottom', c='k')
 
 
     def add_noise_ceiling(self, ax, plotting_df):
         """Add noise ceiling lines to the plot."""
+        n_rois = plotting_df["ROI"].nunique()
         for index, row in plotting_df.iterrows():
-            if np.isnan(row['LNC']) or np.isnan(row['UNC']):
+            if np.isnan(row["LNC"]) or np.isnan(row["UNC"]):
                 continue
-            x = ax.patches[index].get_x()
-            width = ax.patches[index].get_width()
-            ax.hlines(y=row['LNC'], xmin=x, xmax=x+width, linewidth=1, color='k', linestyle='dashed')
-            ax.hlines(y=row['UNC'], xmin=x, xmax=x+width, linewidth=1, color='k', linestyle='dashed')
-
-
-
+            patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+            x = patch.get_x()
+            width = patch.get_width()
+            ax.hlines(y=row["LNC"], xmin=x, xmax=x + width, linewidth=1, color="k", linestyle="dashed")
+            ax.hlines(y=row["UNC"], xmin=x, xmax=x + width, linewidth=1, color="k", linestyle="dashed")
 
 
     def plot(self, pairs=[], metric='R2'):
@@ -71,12 +78,16 @@ class Plotting:
         
         plotting_df = pd.concat(max_dataframes, ignore_index=True)
 
+        # Get model order before the ROI sorting
+        model_order = plotting_df['Model'].unique()
+        plotting_df['CustomOrder'] = plotting_df['Model'].map({model: i for i, model in enumerate(model_order)})
         # Extract numerical part from ROI names for sorting
         try:
             plotting_df['ROI_num'] = plotting_df['ROI'].str.extract('\((\d+)\)').astype(int)
-            plotting_df = plotting_df.sort_values('ROI_num').reset_index(drop=True)
+            plotting_df = plotting_df.sort_values(by=['ROI_num', 'CustomOrder']).reset_index(drop=True)
         except ValueError:
-            plotting_df = plotting_df.sort_values('ROI').reset_index(drop=True)
+            plotting_df = plotting_df.sort_values(by=['ROI', 'CustomOrder']).reset_index(drop=True)
+        plotting_df.drop('CustomOrder', axis=1, inplace=True)
 
         fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -100,22 +111,18 @@ class Plotting:
 
     def decorate_plot(self, ax, plotting_df, metric, pairs):
         """Decorate the plot with error bars, significance markers, and noise ceiling."""
-        for i, patch in enumerate(ax.patches):
-            # Calculate the x position and height of the bar
-            x = patch.get_x() + patch.get_width() / 2
+        n_rois = plotting_df["ROI"].nunique()
+        for index, row in plotting_df.iterrows():
+            patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+            x = patch.get_x()
+            width = patch.get_width()
+            x_middle = x + width / 2
             y = patch.get_height()
-            
-            # Adjust error bars to not go below zero
-            if i < len(plotting_df):  # Ensure we're not exceeding the DataFrame's length
-                row = plotting_df.iloc[i]
-                lower_limit = max(y - row["SEM"], 0)  # Ensure the lower limit is not below 0
-                upper_limit = y + row["SEM"]
-                ax.errorbar(x, y, yerr=[[y-lower_limit], [upper_limit-y]], fmt='none', c='k', capsize=5)
-            
-                # Significance markers
-                if row['Significance'] < 0.05:
-                    ax.text(x, upper_limit, '*', ha='center', va='bottom', c='k')
-
+            lower_limit = max(y - row["SEM"], 0)
+            upper_limit = y + row["SEM"]
+            ax.errorbar(x_middle, y, yerr=[[y - lower_limit], [upper_limit - y]], fmt=" ", c="k", capsize=width)
+            if row["Significance"] < 0.05:
+                ax.text(x_middle, upper_limit, "*", ha="center", va="bottom", c="k")
 
         bar_width = ax.patches[0].get_width()
         for pair in pairs:
@@ -130,11 +137,13 @@ class Plotting:
 
                 if len(indices) == 2:  # Check if both bars are found
                     index1, index2 = indices
+                    patch1 = ax.patches[self.get_patch_index(ax, n_rois, index1)]
+                    patch2 = ax.patches[self.get_patch_index(ax, n_rois, index2)]
 
-                    x1 = ax.patches[index1].get_x() + bar_width / 2
-                    y1 = ax.patches[index1].get_height()
-                    x2 = ax.patches[index2].get_x() + bar_width / 2
-                    y2 = ax.patches[index2].get_height()
+                    x1 = patch1.get_x() + bar_width / 2
+                    y1 = patch1.get_height()
+                    x2 = patch2.get_x() + bar_width / 2
+                    y2 = patch2.get_height()
 
                     # Calculate the height and tips of the significance line
                     bar_height = max(y1, y2) + 0.05  # Adjusted for visibility
@@ -143,12 +152,11 @@ class Plotting:
                     # Draw the line and asterisk for significance
                     ax.plot([x1, x1, x2, x2], [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k')
                     ax.text((x1 + x2) / 2, bar_height + 0.02, '*', ha='center', va='bottom', c='k')
-        
 
         # Noise ceiling
         self.add_noise_ceiling(ax, plotting_df)
-        
-        
+
+
 
     def plot_all_layers(self, metric='R2', columns_per_row=4, simplified_legend=False):
         for dataframe in self.dataframes:
@@ -157,8 +165,10 @@ class Plotting:
         n_rois = len(rois)
         rows = int(np.ceil((n_rois) / columns_per_row))
 
-        fig, axes = plt.subplots(rows, columns_per_row, figsize=(columns_per_row * 15, rows * 5), squeeze=False)
+        fig, axes = plt.subplots(rows, columns_per_row, figsize=(columns_per_row * 9, rows * 4), squeeze=False)
         axes = axes.flatten()
+
+        all_handles_labels = []
 
         for i, roi in enumerate(rois):
             ax = axes[i]
@@ -175,16 +185,18 @@ class Plotting:
             n_models = len(models)
             n_layers = len(layers)
 
-            bar_width = 0.8 / n_layers  # Adjust bar width based on the number of layers
+            bar_width = 0.4 / n_layers  # Adjusted bar width for less space between bars
+            model_spacing = 0.1  # Adjusted spacing between models
 
             # Calculate positions for each bar and the middle position for each model's group
             model_positions = []
+            current_pos = 0  # Start from zero and increment
             for j, model in enumerate(models):
                 model_df = roi_df[roi_df['Model'] == model]
                 model_layers = model_df['Layer'].unique()
-                start_pos = j * (n_layers + 1) * bar_width  # Starting position of the model's group
-                end_pos = start_pos + (len(model_layers) - 1) * bar_width  # Ending position of the model's group
-                middle_pos = (start_pos + end_pos) / 2  # Middle position of the model's group
+                start_pos = current_pos  # Start position for this model group
+                end_pos = start_pos + (len(model_layers) - 1) * bar_width
+                middle_pos = (start_pos + end_pos) / 2
                 model_positions.append(middle_pos)
 
                 layer_colors = sns.dark_palette(sns.color_palette("tab10")[j % len(sns.color_palette("tab10"))], n_colors=len(model_layers) + 2)[1:-1]
@@ -200,61 +212,44 @@ class Plotting:
                         if layer_df['Significance'].values < 0.05:
                             ax.text(x_pos, layer_df[metric].values + layer_df['SEM'].values, '*', ha='center', va='bottom', color='black')
 
+                    current_pos = end_pos + model_spacing  # Update position for the next model group
 
-            if simplified_legend:
-                # Collect a representative color for each model
-                model_representative_colors = []
-                for j, model in enumerate(models):
-                    # Taking the midpoint color of the gradient for each model as a representative
-                    representative_color = sns.dark_palette(sns.color_palette("tab10")[j % len(sns.color_palette("tab10"))], n_colors=len(layers) + 2)[len(layers) // 2]
-                    model_representative_colors.append((representative_color, model))
+            if i == 0:
+                handles, labels = ax.get_legend_handles_labels()
+                all_handles_labels.append((handles, labels))
 
-                # Create custom patches for the legend
-                legend_patches = [Patch(color=color, label=model) for color, model in model_representative_colors]
-
-                # Add a note about gradient progression, if it's the first subplot
-                if i == 0:
-                    gradient_note = "Gradient: Early (darker) to Later (brighter) layers"
-                    legend_patches.append(Patch(color='none', label=gradient_note))  # Invisible patch, just for adding the note
-
-                legend_position = 'upper right'
-
-                # Add the simplified legend to the current subplot, inside the plot area
-                ax.legend(handles=legend_patches, loc=legend_position, fontsize='small', title='Models')
-
-            # Set x-ticks to the middle of each model's group of bars
             ax.set_xticks(model_positions)
-            ax.set_xticklabels(models)
-            ax.set_title(f'All Layers for {roi}')
-            ax.set_xlabel('Model')
-            ax.set_ylabel(metric)
+            ax.set_xticklabels(models, fontsize=14)
+            ax.set_title(f'Correlation Analysis for {roi}', fontsize=14)
+            ax.set_xlabel('Models with layers', fontsize=14)
+            ax.set_ylabel('Correlation Coefficient (R)', fontsize=14)
 
-        # Hide unused subplots
         for j in range(i + 1, rows * columns_per_row):
             axes[j].axis('off')
 
+        # Collect handles and labels for the legend
+        if simplified_legend:
+            for ax in axes[:n_rois]:
+                # Add a textbox at the upper left position of each axis
+                textstr = "Gradient: Early (darker) to Later (brighter) layers"
+                props = dict(boxstyle='round', facecolor='white', edgecolor='black')
+                ax.text(0.02, 0.95, textstr, transform=ax.transAxes, fontsize=12,
+                        verticalalignment='top', bbox=props)
 
 
-        # Determine the number of columns for the legend based on the number of models
-        legend_columns = n_models
 
-        # Calculate the size of the legend subplot to match other subplots
-        legend_ax = plt.subplot(rows, columns_per_row, rows * columns_per_row)  # Position the legend in the last subplot area
+        else:
+            handles, labels = zip(*all_handles_labels)
+            handles = [h for sublist in handles for h in sublist]
+            labels = [l for sublist in labels for l in sublist]
 
-        if not simplified_legend:
-
-            # Collect handles and labels for the legend from one of the plots
-            handles, labels = axes[0].get_legend_handles_labels()
-
-            # Organize labels and handles by network for clarity
             network_handles = {}
             for handle, label in zip(handles, labels):
-                model_name = label.split()[0]  # Assuming the model name is the first part of the label
+                model_name = label.split()[0]
                 if model_name not in network_handles:
                     network_handles[model_name] = []
                 network_handles[model_name].append((handle, label))
 
-            # Create new handles and labels lists, sorted by network and then by layer
             new_handles = []
             new_labels = []
             for model_name in sorted(network_handles.keys()):
@@ -269,33 +264,33 @@ class Plotting:
                     new_handles.append(handle)
                     new_labels.append(label)
 
-            # Add the legend to the plot
-            legend = legend_ax.legend(new_handles, new_labels, loc='center', ncol=legend_columns, fontsize='small', title='Model Layers')
-            legend_ax.axis('off')  # Hide the axes of the legend subplot
+            legend_handles = new_handles
+            legend_labels = new_labels
+            legend_columns = n_models
 
-        plt.tight_layout()
+            # Add a single legend at the bottom of the figure
+            fig.legend(legend_handles, legend_labels, loc='upper center', ncol=legend_columns, fontsize=14, title='Model Layers', title_fontsize=14, bbox_to_anchor=(0.5, 0), bbox_transform=fig.transFigure)
+
+        # Adjust layout to make space for the legend
+        plt.tight_layout(rect=[0, 0, 1, 1])
         plt.show()
 
 
-
-
-
-
-
-
-
     def decorate_subplot(self, ax, df, metric):
-        for i, patch in enumerate(ax.patches):
-            x = patch.get_x() + patch.get_width() / 2
+        n_rois = df["ROI"].nunique()
+        for index, row in df.iterrows():
+            patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+            x = patch.get_x()
+            width = patch.get_width()
+            x_middle = x + width / 2
             height = patch.get_height()
 
-            if height > 0:  # Ensure the bar has a positive height
-                row = df.iloc[i % len(df)]  # Cycle through the DataFrame rows for each patch
+            if height > 0:
                 if row['Significance'] < 0.05:
-                    ax.text(x, height, '*', ha='center', va='bottom', color='black')
+                    ax.text(x_middle, height, '*', ha='center', va='bottom', color='black')
 
                 sem = row['SEM'] if height - row['SEM'] > 0 else height  # Prevent error bars from going below 0
-                ax.errorbar(x, height, yerr=[[sem], [sem]], fmt='none', c='k', capsize=5)
+                ax.errorbar(x_middle, height, yerr=[[sem], [sem]], fmt='none', c='k', capsize=width)
 
         # Noise ceiling
         for unc, lnc in zip(df['UNC'], df['LNC']):
