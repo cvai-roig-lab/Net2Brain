@@ -46,6 +46,8 @@ def aggregate_df_by_layer(df):
     return pd.DataFrame(aggregated_data)
 
 
+    return pd.DataFrame(aggregated_data)
+
 def find_common_roi_name(names):
     """
     Identifies the common ROI name within a single DataFrame.
@@ -131,42 +133,35 @@ def encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path
     - pca_trn (numpy.ndarray): PCA-encoded features of the training set.
     - pca_tst (numpy.ndarray): PCA-encoded features of the test set.
     """
+    
     activations = []
-    feat_files = glob.glob(feat_path + '/*.npz')
-    feat_files.sort()  # Ensure consistent order
-
-    # Load a sample feature to check its dimensions after processing
-    sample_feat = np.load(feat_files[0], allow_pickle=True)[layer_id]
-    processed_sample_feat = np.mean(sample_feat, axis=1).flatten()
-
-    # Determine whether to use PCA based on the dimensionality of the processed features
-    use_pca = processed_sample_feat.ndim > 1 or (processed_sample_feat.ndim == 1 and processed_sample_feat.shape[0] > 1)
-
-    if use_pca:
-        pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
-        for jj,ii in enumerate(trn_Idx):  # for each datafile for the current layer
-            feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
-            activations.append(np.mean(feat[layer_id], axis=1).flatten())
+    feat_files = glob.glob(feat_path+'/*.npz')
+    feat_files.sort()
+    pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
+    
+    # Train pca encoding
+    
+    # for each datafile for the current layer
+    for jj,ii in enumerate(trn_Idx): 
         
-            # Partially fit the PCA model in batches
-            if ((jj + 1) % batch_size) == 0 or (jj + 1) == len(trn_Idx):
-                pca.partial_fit(np.stack(activations[-batch_size:],axis=0))
-                
-        # Transform the training set using the trained PCA model
-        pca_trn = pca.transform(np.stack(activations,axis=0))
+        # get activations of the current layer
+        feat = np.load(feat_files[ii], allow_pickle=True)  
         
-        # Repeat the process for the test set
-        activations = []
-        for ii in tst_Idx:  # for each datafile for the current layer
-            feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
-            activations.append(np.mean(feat[layer_id], axis=1).flatten())
-        pca_tst = pca.transform(np.stack(activations,axis=0))
-    else:
-        # Directly use the activations without PCA transformation and ensure they are reshaped to 2D arrays
-        pca_trn = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in trn_Idx]).reshape(-1, 1)
-        pca_tst = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in tst_Idx]).reshape(-1, 1)
-
-    return pca_trn, pca_tst
+        # collect in a list
+        activations.append(feat[layer_id].flatten())  
+        if ((jj+1) % batch_size) == 0:
+            pca.partial_fit(np.stack(activations[-batch_size:],axis=0))
+            
+    # Get the trn pca encoding
+    pca_trn = pca.transform(np.stack(activations,axis=0))
+    
+    # Get the tst pca encoding
+    activations = []
+    for ii in tqdm(tst_Idx):  # for each datafile for the current layer
+        feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
+        activations.append(feat[layer_id].flatten())  # collect in a list
+    pca_tst = pca.transform(np.stack(activations,axis=0))
+    return pca_trn,pca_tst
 
 
 def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y):
