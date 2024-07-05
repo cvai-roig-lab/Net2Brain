@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Union, Tuple, List, Iterator, Dict, Type, Iterable, Callable, Optional
 
 import numpy as np
-from sklearn.random_projection import SparseRandomProjection
 
 from net2brain.utils.dim_reduction import estimate_from_files
 
