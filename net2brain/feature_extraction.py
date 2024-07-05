@@ -86,7 +86,7 @@ class FeatureExtractor:
 
 
     def extract(self, data_path, save_path=None, layers_to_extract=None, consolidate_per_layer=True,
-                dim_reduction=None, max_dim_allowed=0.5e6, n_samples_estim=100, n_components=10000):
+                dim_reduction=None, n_samples_estim=100, n_components=10000, max_dim_allowed=None):
         """
         Args:
             data_path: str
@@ -103,13 +103,15 @@ class FeatureExtractor:
                 If the original full features are needed for further processing, set this to None and apply the
                 dimensionality reduction at the RDM creation stage when the features are loaded.
                 Choose from `srp` (Sparse Random Projection) and `pca` (Principal Component Analysis).
-            max_dim_allowed: int
-                The threshold over which the dimensionality reduction is applied.
+                The next three parameters only apply when `dim_reduction` is not None.
             n_samples_estim: int
                 The number of samples used for estimating the dimensionality reduction.
-            n_components: int
+            n_components: int or None
                 The number of components to reduce the features to. If None, the number of components is estimated.
                 For PCA, `n_components` must be smaller than `n_samples_estim`.
+            max_dim_allowed: int or None
+                Optional: The threshold over which the dimensionality reduction is applied. If None, it is always
+                applied.
 
         Returns:
 
@@ -123,9 +125,9 @@ class FeatureExtractor:
 
         # Specify new attributes for dimensionality reduction:
         self.dim_reduction = dim_reduction
-        self.max_dim_allowed = max_dim_allowed
         self.n_samples_estim = n_samples_estim
         self.n_components = n_components
+        self.max_dim_allowed = max_dim_allowed
 
         # Iterate over all files in the given data_path
         self.data_path = data_path
@@ -352,7 +354,7 @@ class FeatureExtractor:
             sample_feats_at_layer = sample[layer]
             feat_dim = sample_feats_at_layer.shape[1:]
             # Check if the dimensionality reduction is necessary
-            if len(sample_feats_at_layer.flatten()) > self.max_dim_allowed:
+            if not self.max_dim_allowed or len(sample_feats_at_layer.flatten()) > self.max_dim_allowed:
                 # Estimate the dimensionality reduction from a subset of the data
                 fitted_transform, _ = estimate_from_files(all_files, layer, feat_dim, open_npz,
                                              self.dim_reduction, self.n_samples_estim, self.n_components)

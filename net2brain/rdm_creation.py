@@ -77,9 +77,9 @@ class RDMCreator:
                     standardize_on_dim: Optional[int] = None,
                     chunk_size: Optional[int] = None,
                     dim_reduction: Optional[str] = None,
-                    max_dim_allowed: int = 0.5e6,
                     n_samples_estim: int = 100,
                     n_components: Optional[int] = 10000,
+                    max_dim_allowed: Optional[int] = None,
                     **kwargs
                     ) -> Path:
         """
@@ -109,13 +109,15 @@ class RDMCreator:
                 when the features are *not* stored in a consolidated format. For consolidated storing of features,
                 apply the dimensionality reduction at the feature extraction stage.
                 Choose from `srp` (Sparse Random Projection) and `pca` (Principal Component Analysis).
-            max_dim_allowed: int
-                The threshold over which the dimensionality reduction is applied.
+                The next three parameters only apply when `dim_reduction` is not None.
             n_samples_estim: int
                 The number of samples used for estimating the dimensionality reduction.
-            n_components: int
+            n_components: int or None
                 The number of components to reduce the features to. If None, the number of components is estimated.
                 For PCA, `n_components` must be smaller than `n_samples_estim`.
+            max_dim_allowed: int or None
+                Optional: The threshold over which the dimensionality reduction is applied. If None, it is always
+                applied.
             **kwargs: dict
                 Additional keyword arguments for the distance function.
         """
@@ -128,9 +130,9 @@ class RDMCreator:
         if dim_reduction:
             iterator = FeatureIterator(feature_path,
                                        dim_reduction=dim_reduction,
-                                       max_dim_allowed=max_dim_allowed,
                                        n_samples_estim=n_samples_estim,
-                                       n_components=n_components)
+                                       n_components=n_components,
+                                       max_dim_allowed=max_dim_allowed)
         else:
             iterator = FeatureIterator(feature_path)
         with tqdm(total=len(iterator), desc='Creating RDMs', disable=not self.verbose) as bar:

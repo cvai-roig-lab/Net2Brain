@@ -97,14 +97,14 @@ class FeatureEngine(ABC):
 
     def __init__(self, root: Path,
                  dim_reduction=None,
-                 max_dim_allowed=0.5e6,
                  n_samples_estim=100,
-                 n_components=10000,):
+                 n_components=10000,
+                 max_dim_allowed=None):
         self.root = Path(root)
         self.dim_reduction = dim_reduction
-        self.max_dim_allowed = max_dim_allowed
         self.n_samples_estim = n_samples_estim
         self.n_components = n_components
+        self.max_dim_allowed = max_dim_allowed
 
     @abstractmethod
     def get_iterator(self) -> Iterator:
@@ -203,7 +203,7 @@ class NPZSeparateEngine(FeatureEngine):
         sample = open_npz(self._stimuli[0])[item]
         feat_dim = sample.shape[1:]
         # Check if dimensionality reduction is needed
-        if self.dim_reduction and len(sample.flatten()) > self.max_dim_allowed:
+        if self.dim_reduction and (not self.max_dim_allowed or len(sample.flatten()) > self.max_dim_allowed):
             # Estimate the dimensionality reduction from a subset of the data
             fitted_transform, self.n_components = estimate_from_files(self._stimuli, item, feat_dim, open_npz,
                                                          self.dim_reduction, self.n_samples_estim, self.n_components)
