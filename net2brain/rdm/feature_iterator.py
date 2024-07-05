@@ -205,13 +205,13 @@ class NPZSeparateEngine(FeatureEngine):
         # Check if dimensionality reduction is needed
         if self.dim_reduction and len(sample.flatten()) > self.max_dim_allowed:
             # Estimate the dimensionality reduction from a subset of the data
-            srp, self.n_components = estimate_from_files(self._stimuli, item, feat_dim, open_npz,
+            fitted_transform, self.n_components = estimate_from_files(self._stimuli, item, feat_dim, open_npz,
                                                          self.dim_reduction, self.n_samples_estim, self.n_components)
             feats = np.empty((len(self._stimuli), self.n_components))
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                feats[i, :] = srp.transform(open_npz(file)[item].reshape(1, -1)).squeeze(0)
+                feats[i, :] = fitted_transform.transform(open_npz(file)[item].reshape(1, -1)).squeeze(0)
                 stimuli.append(file.stem)
         # Otherwise load features without dimensionality reduction
         else:

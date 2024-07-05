@@ -354,7 +354,7 @@ class FeatureExtractor:
             # Check if the dimensionality reduction is necessary
             if len(sample_feats_at_layer.flatten()) > self.max_dim_allowed:
                 # Estimate the dimensionality reduction from a subset of the data
-                srp, _ = estimate_from_files(all_files, layer, feat_dim, open_npz,
+                fitted_transform, _ = estimate_from_files(all_files, layer, feat_dim, open_npz,
                                              self.dim_reduction, self.n_samples_estim, self.n_components)
                 for file in tqdm(all_files):
                     feats = open_npz(file)
@@ -362,7 +362,7 @@ class FeatureExtractor:
                     # Apply the dimensionality reduction to the features at the layer
                     for key, value in feats.items():
                         if key == layer:
-                            reduced_feats_at_layer[key] = srp.transform(value.reshape(1, -1))
+                            reduced_feats_at_layer[key] = fitted_transform.transform(value.reshape(1, -1))
                         else:
                             reduced_feats_at_layer[key] = value
                     # Make sure no corrupted files are saved
