@@ -88,7 +88,6 @@ class FeatureExtractor:
     def extract(self, data_path, save_path=None, layers_to_extract=None, consolidate_per_layer=True,
                 dim_reduction=None, max_dim_allowed=0.5e6, n_samples_estim=100, n_components=10000):
         """
-        TODO: Add docstring here because it is a user API func (not my code so I would appreciate if you could add it)
         Args:
             data_path: str
                 Path to stimuli data
