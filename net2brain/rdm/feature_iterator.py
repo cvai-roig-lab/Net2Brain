@@ -261,6 +261,10 @@ class FeatureIterator:
             warnings.warn("FeatureIterator is not optimized for NPZ_SEPARATE format. "
                           "Consider using NPZ_CONSOLIDATED format instead.")
 
+        if kwargs and self.format != FeatureFormat.NPZ_SEPARATE:
+            warnings.warn(f"Keyword arguments provided for dimensionality reduction only supported for NPZ_SEPARATE, "
+                          f"and will have no effect for the provided format {self.format}.")
+
         self.engine: FeatureEngine = engine_registry.get_engine(self.format)(self.root, **kwargs)
 
         self._iter = None
