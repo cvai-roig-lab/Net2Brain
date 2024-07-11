@@ -120,7 +120,7 @@ def get_layers_ncondns(feat_path):
     return num_layers, layer_list, num_condns
 
 
-def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_feat, n_components=100, alpha=1.0):
+def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_feat, n_components=100):
     """
     Encodes the layer activations using IncrementalPCA or Ridge Regression, for both training and test sets.
 
@@ -133,7 +133,6 @@ def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_
     - feat_path (str): Path to the directory containing npz files with model features.
     - avg_across_feat (bool): Whether to average across features.
     - n_components (int): Number of components for PCA.
-    - alpha (float): Regularization strength for Ridge Regression.
 
     Returns:
     - metric_trn (numpy.ndarray): Encoded features of the training set.
@@ -172,9 +171,7 @@ def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_
     if metric == "pca":
         metric_trn = pca.transform(activations)
     elif metric == "ridge":
-        # ridge.fit(activations, activations)
-        # metric_trn = ridge.predict(activations)
-        
+                
         # Nested cross-validation and grid search for Ridge regression
         param_grid = {'alpha': np.logspace(-1, 3, 5)}
         inner_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
@@ -239,7 +236,7 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y):
 
 
 
-def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, alpha=1.0, metric="pca", batch_size=100, just_corr=True, avg_across_feat=False, return_correlations = False,random_state=14, save_path="Linear_Encoding_Results"):
+def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, metric="pca", batch_size=100, just_corr=True, avg_across_feat=False, return_correlations = False,random_state=14, save_path="Linear_Encoding_Results"):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -282,8 +279,7 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
                                             avg_across_feat=avg_across_feat, 
                                             return_correlations=return_correlations,
                                             random_state=random_state,
-                                            metric=metric,
-                                            alpha=alpha)
+                                            metric=metric)
         
 
         # Collect dataframes in list
@@ -318,7 +314,7 @@ def linear_encoding(*args, **kwargs):
         
     
 
-def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, batch_size=100, just_corr=True, avg_across_feat=False, return_correlations = False,random_state=14, metric="pca", alpha=1.0):
+def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, batch_size=100, just_corr=True, avg_across_feat=False, return_correlations = False,random_state=14, metric="pca"):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -373,7 +369,7 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
             
             
             # Encode the current layer using PCA and split into training and testing sets
-            pca_trn,pca_tst = encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_feat, n_components, alpha)
+            pca_trn,pca_tst = encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_feat, n_components)
 
             for roi_path in roi_paths:
                 roi_files = []
