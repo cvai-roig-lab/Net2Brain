@@ -107,6 +107,14 @@ class Plotting:
         # Optionally return the DataFrame of best layers
         best_layers_df = plotting_df[['ROI', 'Model', 'Layer', metric]].drop_duplicates().reset_index(drop=True)
         return best_layers_df
+    
+    def add_line_break(self, label):
+        if len(label) > 10:
+            parts = label.split(' ')
+            for i in range(len(parts)):
+                if len(' '.join(parts[:i])) >= (len(label) // 2) - 2:
+                    return ' '.join(parts[:i]) + '\n' + ' '.join(parts[i:])
+        return label
 
 
     def decorate_plot(self, ax, plotting_df, metric, pairs):
@@ -219,10 +227,10 @@ class Plotting:
                 all_handles_labels.append((handles, labels))
 
             ax.set_xticks(model_positions)
-            ax.set_xticklabels(models, fontsize=14)
-            ax.set_title(f'Correlation Analysis for {roi}', fontsize=14)
-            ax.set_xlabel('Models with layers', fontsize=14)
-            ax.set_ylabel('Correlation Coefficient (R)', fontsize=14)
+            ax.set_xticklabels([self.add_line_break(label) for label in models], fontsize=16, ha='center')
+            ax.set_title(f'Correlation Analysis for {roi}', fontsize=16)
+            ax.set_xlabel('Model Architectures', fontsize=16)
+            ax.set_ylabel('Correlation Coefficient (R)', fontsize=16)
 
         for j in range(i + 1, rows * columns_per_row):
             axes[j].axis('off')
@@ -233,7 +241,7 @@ class Plotting:
                 # Add a textbox at the upper left position of each axis
                 textstr = "Gradient: Early (darker) to Later (brighter) layers"
                 props = dict(boxstyle='round', facecolor='white', edgecolor='black')
-                ax.text(0.02, 0.95, textstr, transform=ax.transAxes, fontsize=12,
+                ax.text(0.02, 0.95, textstr, transform=ax.transAxes, fontsize=14,
                         verticalalignment='top', bbox=props)
 
 
@@ -269,7 +277,7 @@ class Plotting:
             legend_columns = n_models
 
             # Add a single legend at the bottom of the figure
-            fig.legend(legend_handles, legend_labels, loc='upper center', ncol=legend_columns, fontsize=14, title='Model Layers', title_fontsize=14, bbox_to_anchor=(0.5, 0), bbox_transform=fig.transFigure)
+            fig.legend(legend_handles, legend_labels, loc='upper center', ncol=legend_columns, fontsize=16, title='Model Layers', title_fontsize=16, bbox_to_anchor=(0.5, 0), bbox_transform=fig.transFigure)
 
         # Adjust layout to make space for the legend
         plt.tight_layout(rect=[0, 0, 1, 1])
