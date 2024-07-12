@@ -101,7 +101,7 @@ class Dataset78images(BaseDataset):
     
     
 class Workhsop_Harry_Potter_Cognition(BaseDataset):
-    dataset_name = "Workhsop_Harry_Potter_Cognition"
+    dataset_name = "Workshop_Harry_Potter_Cognition"
     DATASET_URLS = {
         dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiMNMYWhtDMvhfxEf9JNA6/Workshop_Harry_Potter_Cognition.zip"
     }
