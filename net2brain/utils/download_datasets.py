@@ -100,6 +100,21 @@ class Dataset78images(BaseDataset):
         return {"stimuli_path": stimuli_path, "roi_path": roi_path}
     
     
+class Workhsop_Harry_Potter_Cognition(BaseDataset):
+    dataset_name = "Workhsop_Harry_Potter_Cognition"
+    DATASET_URLS = {
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiMNMYWhtDMvhfxEf9JNA6/Workshop_Harry_Potter_Cognition.zip"
+    }
+
+    def __init__(self, path=None):
+        super().__init__(path)
+
+    def _load(self):
+        self.download_and_extract_zip()
+        dataset_location = os.path.join(self.dataset_folder)
+        return {"dataset_folder": dataset_location}
+    
+    
 class Dataset92images(BaseDataset):
     dataset_name = "92images"
     DATASET_URLS = {
