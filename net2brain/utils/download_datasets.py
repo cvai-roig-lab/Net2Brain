@@ -200,6 +200,8 @@ class DatasetNSD_872(BaseDataset):
                 
         return folder_paths
     
+
+    
     
     def NSDtoCOCO(self, nsd_id, coco_path=""):
         
@@ -683,3 +685,22 @@ class DatasetAlgonauts_NSD(DatasetNSD_872):
         return folder_paths
 
 
+class DatasetNSD_505(DatasetNSD_872):
+    dataset_name = "NSD_505_images"
+    DATASET_URLS = {
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiGerAfBiSti5wPX55RA31/NSD_505_images.zip"
+    }
+
+    def __init__(self, path=None):
+        super().__init__(path)
+        self.source_path = "NSD_505_images"
+
+    def _load(self):
+        self.download_and_extract_zip()
+        # Dictionary to store folder names and their paths
+      
+        stimuli_path = os.path.join(self.dataset_folder, "NSD_505_images")
+        roi_path = os.path.join(self.dataset_folder, "NSD_505_fmri")
+
+        return {"stimuli_path": stimuli_path, "roi_path": roi_path}
+    
