@@ -686,9 +686,9 @@ class DatasetAlgonauts_NSD(DatasetNSD_872):
 
 
 class DatasetNSD_505(DatasetNSD_872):
-    dataset_name = "NSD_505_images"
+    dataset_name = "NSD_505"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiGerAfBiSti5wPX55RA31/NSD_505_images.zip"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi5xjA95F8UPddD6PbttdQ/NSD_505.zip"
     }
 
     def __init__(self, path=None):
@@ -701,6 +701,7 @@ class DatasetNSD_505(DatasetNSD_872):
       
         stimuli_path = os.path.join(self.dataset_folder, "NSD_505_images")
         roi_path = os.path.join(self.dataset_folder, "NSD_505_fmri")
+        viz_path = os.path.join(self.dataset_folder, "NSD_505_viz")
 
-        return {"stimuli_path": stimuli_path, "roi_path": roi_path}
+        return {"stimuli_path": stimuli_path, "roi_path": roi_path, "viz_path": viz_path}
     
