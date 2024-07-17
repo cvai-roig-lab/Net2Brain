@@ -90,7 +90,7 @@ class FeatureExtractor:
         """
         Args:
             data_path: str
-                Path to stimuli data
+                Path to stimuli data or list of data_paths
             save_path: str
                 Path to where to save the extracted features
             layers_to_extract: list of str
@@ -137,11 +137,18 @@ class FeatureExtractor:
         all_supported_extensions = [ext for extensions in DataWrapper.supported_extensions.values() for ext in extensions]
 
         # Filter data_files to include only files with supported extensions
-        data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
+        if isinstance(data_path, str):
+            data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
+        else:
+            # data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
+            data_files = [Path(f) for f in data_path if Path(f).suffix.lower() in all_supported_extensions]
         data_files.sort()
 
         # Detect data type for the current file
-        data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
+        if isinstance(data_path, str):
+            data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
+        else:
+            data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
         
         if self.data_type == "multimodal":
             data_files = self._pair_modalities(data_files)
@@ -395,6 +402,19 @@ class DataTypeLoader:
                     modalities[base_name].append(modality)
                     break
         return modalities
+    
+    
+    def _get_modalities_in_files(self, files):
+        """Check which modalities exist in the provided list of files."""
+        modalities = defaultdict(list)
+        for file in files:
+            file_extension = os.path.splitext(file)[1].lower()
+            for modality, extensions in self.supported_extensions.items():
+                if file_extension in extensions:
+                    base_name = os.path.splitext(os.path.basename(file))[0]
+                    modalities[base_name].append(modality)
+                    break
+        return modalities
 
     def _check_modalities(self, modalities):
         """Check for multimodal files and their completeness."""
@@ -414,7 +434,10 @@ class DataTypeLoader:
         return multimodal_files, single_modal_files
 
     def _get_dataloader(self, folder_path):
-        modalities = self._get_modalities_in_folder(folder_path)
+        if isinstance(folder_path, str):
+            modalities = self._get_modalities_in_folder(folder_path)
+        else:
+            modalities = self._get_modalities_in_files(folder_path)
         multimodal_files, single_modal_files = self._check_modalities(modalities)
 
         if multimodal_files and not single_modal_files:
