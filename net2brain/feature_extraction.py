@@ -140,7 +140,6 @@ class FeatureExtractor:
         if isinstance(data_path, str):
             data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
         else:
-            # data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
             data_files = [Path(f) for f in data_path if Path(f).suffix.lower() in all_supported_extensions]
         data_files.sort()
 
@@ -172,7 +171,7 @@ class FeatureExtractor:
             # Create empty list for data accumulation
             data_from_file_list = []
 
-            for data in data_from_file:
+            for data in tqdm(data_from_file):
 
                 # Preprocess data
                 preprocessed_data = self.preprocessor(data, self.model_name, self.device)
