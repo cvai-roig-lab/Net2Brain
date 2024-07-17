@@ -171,7 +171,7 @@ class FeatureExtractor:
             # Create empty list for data accumulation
             data_from_file_list = []
 
-            for data in tqdm(data_from_file):
+            for data in data_from_file:
 
                 # Preprocess data
                 preprocessed_data = self.preprocessor(data, self.model_name, self.device)
