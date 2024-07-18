@@ -159,8 +159,9 @@ class FeatureExtractor:
         if self.data_type not in self.netset.supported_data_types:
             raise ValueError(f"Datatype {self.data_type} not supported by current model")
         
-
-        for data_file in tqdm(data_files):
+        progress_bar = tqdm(data_files, desc='Processing files')
+        
+        for data_file in progress_bar:
 
             # Get datapath
             file_name = str(data_file).split(os.sep)[-1].split(".")[0]
@@ -170,8 +171,14 @@ class FeatureExtractor:
 
             # Create empty list for data accumulation
             data_from_file_list = []
+            
+            # Total number of items in the inner loop
+            total_inner_items = len(data_from_file)
 
-            for data in data_from_file:
+            for idx, data in enumerate(data_from_file):
+                
+                # Update the progress bar description to show progress of the inner loop
+                progress_bar.set_postfix(subfiles=f'{idx + 1}/{total_inner_items}')
 
                 # Preprocess data
                 preprocessed_data = self.preprocessor(data, self.model_name, self.device)
