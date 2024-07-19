@@ -70,7 +70,7 @@ class Plotting:
             ax.hlines(y=row["UNC"], xmin=x, xmax=x + width, linewidth=1, color="k", linestyle="dashed")
 
 
-    def plot(self, pairs=[], metric='R2'):
+    def plot(self, pairs=[], metric='R2', rotation=30):
         max_dataframes = []
         for dataframe in self.dataframes:
             dataframe = self.prepare_dataframe(dataframe, metric)
@@ -95,7 +95,7 @@ class Plotting:
         palette = sns.color_palette("tab10", n_colors=len(plotting_df['Model'].unique()))
 
         sns.barplot(data=plotting_df, x="ROI", y=metric, hue="Model", palette=palette, alpha=.6, ax=ax)
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=30)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=rotation, ha='right', rotation_mode='anchor')
         
         # Decorate the plot with error bars, significance markers, and noise ceiling
         self.decorate_plot(ax, plotting_df, metric, pairs)
@@ -166,7 +166,7 @@ class Plotting:
 
 
 
-    def plot_all_layers(self, metric='R2', columns_per_row=4, simplified_legend=False):
+    def plot_all_layers(self, metric='R2', columns_per_row=4, simplified_legend=False, rotation=45):
         for dataframe in self.dataframes:
             dataframe = self.prepare_dataframe(dataframe, metric)
         rois = pd.concat(self.dataframes)['ROI'].unique()
@@ -227,10 +227,13 @@ class Plotting:
                 all_handles_labels.append((handles, labels))
 
             ax.set_xticks(model_positions)
-            ax.set_xticklabels([self.add_line_break(label) for label in models], fontsize=16, ha='center')
+            ax.set_xticklabels([self.add_line_break(label) for label in models], fontsize=16, rotation=rotation, ha='right')
             ax.set_title(f'Correlation Analysis for {roi}', fontsize=16)
             ax.set_xlabel('Model Architectures', fontsize=16)
             ax.set_ylabel('Correlation Coefficient (R)', fontsize=16)
+            ymax = roi_df[metric].max() + (0.1 if roi_df[metric].max() < 0.05 else 0.2)
+            ax.set_ylim(0, min(1.2, ymax))
+
 
         for j in range(i + 1, rows * columns_per_row):
             axes[j].axis('off')
