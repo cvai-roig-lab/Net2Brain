@@ -236,7 +236,7 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y):
 
 
 
-def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, metric="pca", batch_size=100, just_corr=True, avg_across_feat=False, return_correlations = False,random_state=14, save_path="Linear_Encoding_Results"):
+def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, metric="pca", batch_size=100, just_corr=True, avg_across_feat=False, return_correlations = False,random_state=14, save_path="Linear_Encoding_Results", file_name=None):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -295,7 +295,10 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
     if not os.path.exists(save_path):
         os.makedirs(save_path)
         
-    csv_file_path = f"{save_path}/{model_name}.csv"
+    if file_name == None:
+        csv_file_path = f"{save_path}/{model_name}.csv"
+    else:
+        csv_file_path = f"{save_path}/{file_name}.csv"
     final_df.to_csv(csv_file_path, index=False)
     
     return final_df
