@@ -700,8 +700,9 @@ class DatasetNSD_25(DatasetNSD_872):
         # Dictionary to store folder names and their paths
       
         stimuli_path = os.path.join(self.dataset_folder, "NSD_25_images")
+        captions_path = os.path.join(self.dataset_folder, "NSD_25_captions")
         roi_path = os.path.join(self.dataset_folder, "NSD_25_fmri")
-        viz_path = os.path.join(self.dataset_folder, "NSD_25_viz")
+        viz_path = os.path.join(self.dataset_folder, "NSD_25_roi_masks")
 
-        return {"stimuli_path": stimuli_path, "roi_path": roi_path, "viz_path": viz_path}
+        return {"stimuli_path": stimuli_path, "roi_path": roi_path, "viz_path": viz_path, "captions_path": captions_path}
     
