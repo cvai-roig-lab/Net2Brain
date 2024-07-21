@@ -145,8 +145,7 @@ def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_
     
     if metric == "pca":
         pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
-    elif metric == "ridge":
-        ridge = Ridge()
+ 
     
     # Train encoding (PCA or Ridge)
     for jj, ii in enumerate(trn_Idx):
@@ -170,27 +169,7 @@ def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_
 
     if metric == "pca":
         metric_trn = pca.transform(activations)
-    elif metric == "ridge":
-                
-        # Nested cross-validation and grid search for Ridge regression
-        param_grid = {'alpha': np.logspace(-1, 3, 5)}
-        inner_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
-        outer_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
-        
-        grid_search = GridSearchCV(estimator=ridge, param_grid=param_grid, cv=inner_cv, n_jobs=-1)
-        
-        # Sample the training data for cross-validation
-        X_sample, _, y_sample, _ = train_test_split(activations, activations, test_size=0.5, random_state=1)
-        
-        nested_cv_scores = cross_val_score(grid_search, X=X_sample, y=y_sample, cv=outer_cv, n_jobs=-1)
-        # Train the best model on the full dataset
-        grid_search.fit(X_sample, y_sample)
-        best_params = grid_search.best_params_
-        best_model = Ridge(**best_params)
-        best_model.fit(activations, activations)
-        
-        metric_trn = best_model.predict(activations)
-    
+
     # Encode test set
     activations = []
     for ii in tst_Idx:
@@ -205,9 +184,6 @@ def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_
 
     if metric == "pca":
         metric_tst = pca.transform(activations)
-    elif metric == "ridge":
-        #metric_tst = ridge.predict(activations)
-        metric_tst = best_model.predict(activations)
     
     return metric_trn, metric_tst
 
@@ -260,6 +236,10 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
         all_rois_df (pd.DataFrame): DataFrame summarizing the analysis results including correlations and statistical significance.
         corr_dict (dict): Dictionary containing correlation values for each layer and ROI (only if return_correlations is True).
     """
+    
+    if metric == "ridge": 
+        raise NotImplementedError("Ridge regression is not implemented yet.")
+
     
     # Check if its a list
     roi_paths = roi_path if isinstance(roi_path, list) else [roi_path]
