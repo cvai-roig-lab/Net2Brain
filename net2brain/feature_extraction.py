@@ -204,14 +204,23 @@ class FeatureExtractor:
             final_features = self.data_combiner(data_from_file_list)
 
             # Convert the final_features dictionary to one that contains detached numpy arrays
-            final_features = {key: value.numpy() for key, value in final_features.items()}
+            if self.data_type == "text":
+                for idx, subfeature in enumerate(final_features):
+                    subfeature = {key: value.numpy() for key, value in subfeature.items()}
 
-            # Write the features for one image to a single file
-            file_path = os.path.join(self.save_path, f"{file_name}.npz")
-            np.savez(file_path, **final_features)
+                    # Write the features for one image to a single file
+                    file_path = os.path.join(self.save_path, f"{file_name}_sentence{idx:04d}.npz")
+                    np.savez(file_path, **subfeature)
 
-            # Clear variables to save RAM
-            del data_from_file_list, final_features
+            else:
+                final_features = {key: value.numpy() for key, value in final_features.items()}
+
+                # Write the features for one image to a single file
+                file_path = os.path.join(self.save_path, f"{file_name}.npz")
+                np.savez(file_path, **final_features)
+
+                # Clear variables to save RAM
+                del data_from_file_list, final_features
 
         if dim_reduction:
             print("Reducing dimensions...")
@@ -443,7 +452,11 @@ class DataTypeLoader:
         if isinstance(folder_path, str):
             modalities = self._get_modalities_in_folder(folder_path)
         else:
-            modalities = self._get_modalities_in_files(folder_path)
+            if os.path.isdir(folder_path[0]):
+                raise ValueError("You entered the path to a folder in the data_path=[] of the extractor. Either enter the path to the folder outside the list or enter single files as a list.")
+            else:
+                modalities = self._get_modalities_in_files(folder_path)
+                
         multimodal_files, single_modal_files = self._check_modalities(modalities)
 
         if multimodal_files and not single_modal_files:
@@ -458,7 +471,7 @@ class DataTypeLoader:
             data_combiner = getattr(self.netset, f'combine_{modality}_data')
             return data_loader, modality, data_combiner
         else:
-            raise ValueError("Mixed single and multimodal files found in the folder. Ensure all files are either single or multimodal.")
+            raise ValueError("You have mixed single and multimodal files found in the folder. Ensure all files are either single or multimodal.")
 
 
 
