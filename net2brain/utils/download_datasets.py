@@ -112,8 +112,9 @@ class Workhsop_Harry_Potter_Cognition(BaseDataset):
     def _load(self):
         self.download_and_extract_zip()
         stimuli_path = os.path.join(self.dataset_folder, "stimuli_data")
-        roi_path = os.path.join(self.dataset_folder, "brain_data")
-        return {"stimuli_path": stimuli_path, "roi_path": roi_path}
+        brain_path = os.path.join(self.dataset_folder, "entire_brain_data")
+        roi_path = os.path.join(self.dataset_folder, "roi_data")
+        return {"stimuli_path": stimuli_path, "roi_path": roi_path, "brain_path":brain_path}
     
     
 class Dataset92images(BaseDataset):
