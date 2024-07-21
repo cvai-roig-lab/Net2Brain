@@ -452,8 +452,8 @@ class DataTypeLoader:
         if isinstance(folder_path, str):
             modalities = self._get_modalities_in_folder(folder_path)
         else:
-            if os.path.isdir(folder_path[0]):
-                raise ValueError("You entered the path to a folder in the data_path=[] of the extractor. Either enter the path to the folder outside the list or enter single files as a list.")
+            if not os.path.isfile(folder_path[0]):
+                raise ValueError("You entered the path to a folder in the data_path=[] of the extractor or the file you entered does not exist. Either enter the path to the folder outside the list or enter single files as a list.")
             else:
                 modalities = self._get_modalities_in_files(folder_path)
                 
