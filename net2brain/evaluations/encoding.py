@@ -283,7 +283,10 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
         
 
         # Collect dataframes in list
-        list_dataframes.append(result_dataframe[0])
+        if return_correlations:
+            list_dataframes.append(result_dataframe[0])
+        else:
+            list_dataframes.append(result_dataframe)
     
     # If just one dataframe, return it as it is
     if len(list_dataframes) == 1:
