@@ -100,6 +100,23 @@ class Dataset78images(BaseDataset):
         return {"stimuli_path": stimuli_path, "roi_path": roi_path}
     
     
+class Workhsop_Harry_Potter_Cognition(BaseDataset):
+    dataset_name = "Workshop_Harry_Potter_Cognition"
+    DATASET_URLS = {
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiMNMYWhtDMvhfxEf9JNA6/Workshop_Harry_Potter_Cognition.zip"
+    }
+
+    def __init__(self, path=None):
+        super().__init__(path)
+
+    def _load(self):
+        self.download_and_extract_zip()
+        stimuli_path = os.path.join(self.dataset_folder, "stimuli_data")
+        brain_path = os.path.join(self.dataset_folder, "entire_brain_data")
+        roi_path = os.path.join(self.dataset_folder, "roi_data")
+        return {"stimuli_path": stimuli_path, "roi_path": roi_path, "brain_path":brain_path}
+    
+    
 class Dataset92images(BaseDataset):
     dataset_name = "92images"
     DATASET_URLS = {
@@ -183,6 +200,8 @@ class DatasetNSD_872(BaseDataset):
                 folder_paths[item] = item_path
                 
         return folder_paths
+    
+
     
     
     def NSDtoCOCO(self, nsd_id, coco_path=""):
@@ -667,3 +686,24 @@ class DatasetAlgonauts_NSD(DatasetNSD_872):
         return folder_paths
 
 
+class DatasetNSD_25(DatasetNSD_872):
+    dataset_name = "NSD_25_images"
+    DATASET_URLS = {
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi6sDQMUTHQeuj91a47s2c/NSD_25_images.zip"
+    }
+
+    def __init__(self, path=None):
+        super().__init__(path)
+        self.source_path = "NSD_25_images"
+
+    def _load(self):
+        self.download_and_extract_zip()
+        # Dictionary to store folder names and their paths
+      
+        stimuli_path = os.path.join(self.dataset_folder, "NSD_25_images")
+        captions_path = os.path.join(self.dataset_folder, "NSD_25_captions")
+        roi_path = os.path.join(self.dataset_folder, "NSD_25_fmri")
+        viz_path = os.path.join(self.dataset_folder, "NSD_25_roi_masks")
+
+        return {"stimuli_path": stimuli_path, "roi_path": roi_path, "viz_path": viz_path, "captions_path": captions_path}
+    

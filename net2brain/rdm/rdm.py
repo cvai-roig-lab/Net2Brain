@@ -30,6 +30,14 @@ class RDM:
         self.rdm = torch.from_numpy(rdm) if isinstance(rdm, np.ndarray) else rdm
         self.is_condensed = is_condensed_1d(self.rdm)
 
+    @property
+    def data(self) -> torch.Tensor:
+        """
+        Returns the RDM as a torch.Tensor in matrix form.
+        """
+        self.to_matrix()
+        return self.rdm
+
     def to_vector(self):
         """
         Converts the RDM to a condensed vector.
