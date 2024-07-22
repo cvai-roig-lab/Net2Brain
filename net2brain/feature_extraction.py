@@ -137,14 +137,14 @@ class FeatureExtractor:
         all_supported_extensions = [ext for extensions in DataWrapper.supported_extensions.values() for ext in extensions]
 
         # Filter data_files to include only files with supported extensions
-        if isinstance(data_path, str):
+        if isinstance(data_path, (str, Path)):
             data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
         else:
             data_files = [Path(f) for f in data_path if Path(f).suffix.lower() in all_supported_extensions]
         data_files.sort()
 
         # Detect data type for the current file
-        if isinstance(data_path, str):
+        if isinstance(data_path, (str, Path)):
             data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
         else:
             data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
@@ -449,7 +449,7 @@ class DataTypeLoader:
         return multimodal_files, single_modal_files
 
     def _get_dataloader(self, folder_path):
-        if isinstance(folder_path, str):
+        if isinstance(folder_path, (str, Path)):
             modalities = self._get_modalities_in_folder(folder_path)
         else:
             if not os.path.isfile(folder_path[0]):
