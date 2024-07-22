@@ -17,7 +17,7 @@ One of the primary objectives of Net2Brain is to facilitate the collaboration be
 
 
 # Updates 07/24
-1. Improved Dimensionality Reduction
+1. Improved Dimensionality Reduction and included PCA next to SRP
 2. Fixing Plotting Visualization Errors
 3. Added new Workshop Notebooks with Datasets
 4. Improved RDM Creation Notebook
