@@ -124,10 +124,13 @@ class WRSA():
         range_rois = list(range(len(roi_upper)))
 
         """Find 80% train test split"""
-        splitter = int(len(roi_upper) * 0.2)
+        # does not do what it says
+        # splitter = int(len(roi_upper) * 0.2)
 
-        if splitter == 0:
-            splitter = 2
+        # if splitter == 0:
+        #     splitter = 2
+
+        splitter = 5 if int(len(roi_upper) * 0.2) > 0 else 2
 
         """Do KFold"""
         kf = KFold(n_splits=splitter, shuffle=True, random_state=1)
@@ -150,11 +153,13 @@ class WRSA():
             """Optimize model with the brain RDMs"""
             theta_corr_regress = rsatoolbox.model.fit_regress(
                 model, brain_train_dataset, method='corr')  # returns 15 thetas because 15 participants
+            # thetas are for layers not participants!
 
             """Prediciton"""
             rdm_corr = model.predict_rdm(theta_corr_regress)
 
             """Calculate Correlation"""
+            # RSA toolbox for RSA here
             corr = rsatoolbox.rdm.compare(
                 rdm_corr, brain_test_dataset, 'corr')
 
