@@ -278,13 +278,14 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
         final_df = list_dataframes[0]
     else:
         final_df = aggregate_layers(list_dataframes)
-        
-    # Create the output folder if it doesn't exist
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-        
-    csv_file_path = f"{save_path}/{model_name}.csv"
-    final_df.to_csv(csv_file_path, index=False)
+
+    if not veRSA:
+        # Create the output folder if it doesn't exist
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+
+        csv_file_path = f"{save_path}/{model_name}.csv"
+        final_df.to_csv(csv_file_path, index=False)
     
     return final_df
         
