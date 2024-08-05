@@ -177,7 +177,7 @@ def encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path
     return pca_trn, pca_tst
 
 
-def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y, roi_name, save_path, model_name, layer_id):
+def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y, roi_name, save_path, model_name, layer_id, veRSA=False):
     """
     Train a linear regression model for each ROI and compute correlation coefficients.
 
@@ -200,10 +200,19 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y, roi_name, save_path, model
         np.save(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy", y_prd)
     else:
         y_prd = np.load(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy")
-    correlation_lst = np.zeros(y_prd.shape[1])
-    for v in range(y_prd.shape[1]):
-        correlation_lst[v] = pearsonr(y_prd[:,v], tst_y[:,v])[0]
-    return correlation_lst
+    if not veRSA:
+        correlation_lst = np.zeros(y_prd.shape[1])
+        for v in range(y_prd.shape[1]):
+            correlation_lst[v] = pearsonr(y_prd[:,v], tst_y[:,v])[0]
+        return correlation_lst
+    else:
+        prd_rdm = raw2rdm(y_prd)
+        brain_rdm = raw2rdm(tst_y)
+        corr = spearmanr(sq(brain_rdm), sq(prd_rdm))[0]
+        corr_squared = np.square(corr)
+        r2 = np.mean(corr_squared)
+        r = np.sqrt(r2)
+        return r
 
 
 
@@ -267,7 +276,7 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
     # Create the output folder if it doesn't exist
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-
+        
     csv_file_path = f"{save_path}/{model_name}.csv"
     final_df.to_csv(csv_file_path, index=False)
     
@@ -289,7 +298,7 @@ def linear_encoding(*args, **kwargs):
 
 def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, random_state=14, shuffle=True,
                     n_components=100, batch_size=100,
-                    just_corr=True, return_correlations = False, save_path="Linear_Encoding_Results"):
+                    just_corr=True, return_correlations = False, save_path="Linear_Encoding_Results", veRSA=False):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -378,16 +387,20 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
                 fmri_data = np.load(os.path.join(roi_file))
                 fmri_trn,fmri_tst = fmri_data[trn_Idx],fmri_data[tst_Idx]
 
-                # Train a linear regression model and compute correlations for the current ROI
-                r_lst = train_regression_per_ROI(pca_trn,pca_tst,fmri_trn,fmri_tst, roi_name, save_path,
-                                                 model_name, layer_id)
-                r = np.mean(r_lst) # Mean of all train test splits
+                if not veRSA:
+                    # Train a linear regression model and compute correlations for the current ROI
+                    r_lst = train_regression_per_ROI(pca_trn,pca_tst,fmri_trn,fmri_tst, roi_name, save_path,
+                                                     model_name, layer_id)
+                    r = np.mean(r_lst) # Mean of all train test splits
 
-                # Store correlation results
-                if return_correlations:
-                    corr_dict[layer_id][roi_name].append(r_lst)
-                    if fold_ii == n_folds-1:
-                        corr_dict[layer_id][roi_name] = np.mean(np.array(corr_dict[layer_id][roi_name], dtype=np.float16),axis=0)
+                    # Store correlation results
+                    if return_correlations:
+                        corr_dict[layer_id][roi_name].append(r_lst)
+                        if fold_ii == n_folds-1:
+                            corr_dict[layer_id][roi_name] = np.mean(np.array(corr_dict[layer_id][roi_name], dtype=np.float16),axis=0)
+                else:
+                    r = train_regression_per_ROI(pca_trn, pca_tst, fmri_trn, fmri_tst, roi_name, save_path,
+                                                     model_name, layer_id, veRSA=True)
                 fold_dict[layer_id][roi_name].append(r)
                 
     # Compile all results into a DataFrame for easy analysis
