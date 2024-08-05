@@ -7,13 +7,11 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import IncrementalPCA
 from sklearn.linear_model import LinearRegression
-from scipy.stats import pearsonr, ttest_1samp, sem
+from scipy.stats import pearsonr, spearmanr, ttest_1samp, sem
 import warnings
 
+from net2brain.evaluations.eval_helper import sq
 
-from scipy.stats import ttest_1samp
-import pandas as pd
-import numpy as np
 
 def aggregate_df_by_layer(df):
     """
@@ -190,6 +188,13 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y, roi_name, save_path, model
     Returns:
         correlation_lst (numpy.ndarray): List of correlation coefficients for each ROI.
     """
+
+    def raw2rdm(raw, dim=None):
+        if dim is not None:
+            raw = (raw - np.mean(raw, axis=dim, keepdims=True)) / (np.std(raw, axis=dim, keepdims=True) + 1e-7)
+        rdm = 1 - np.corrcoef(raw)
+        return rdm
+
     if not os.path.exists(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy"):
         if trn_x is None:
             raise ValueError("Not all ROI regressions were computed on previous run - PCA needs to be re-run.")
@@ -218,7 +223,7 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y, roi_name, save_path, model
 
 def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, random_state=14, shuffle=True,
                     n_components=100, batch_size=100,
-                    just_corr=True, return_correlations=False, save_path="Linear_Encoding_Results"):
+                    just_corr=True, return_correlations=False, save_path="Linear_Encoding_Results", veRSA=False):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -260,7 +265,8 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
                                             batch_size=batch_size, 
                                             just_corr=just_corr, 
                                             return_correlations=return_correlations,
-                                            save_path=save_path)
+                                            save_path=save_path,
+                                            veRSA=veRSA)
         
 
         # Collect dataframes in list
@@ -400,7 +406,7 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
                             corr_dict[layer_id][roi_name] = np.mean(np.array(corr_dict[layer_id][roi_name], dtype=np.float16),axis=0)
                 else:
                     r = train_regression_per_ROI(pca_trn, pca_tst, fmri_trn, fmri_tst, roi_name, save_path,
-                                                     model_name, layer_id, veRSA=True)
+                                                 model_name, layer_id, veRSA=True)
                 fold_dict[layer_id][roi_name].append(r)
                 
     # Compile all results into a DataFrame for easy analysis
