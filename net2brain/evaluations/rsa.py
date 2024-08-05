@@ -19,7 +19,8 @@ class RSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, model_name, datatype="None", save_path="./", distance_metric="spearman"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, skips=(), datatype="None", save_path="./",
+                 distance_metric="spearman"):
         """Initiate RSA
         Args:
             json_dir (str/path): Path to json dir
@@ -29,6 +30,7 @@ class RSA():
         self.model_rdms_path = model_rdms_path
         self.model_rdms = self.folderlookup(model_rdms_path)
         self.model_rdms.sort(key=natural_keys)
+        self.skips = skips
 
         # Find all Brain RDMs
         self.brain_rdms_path = brain_rdms_path
@@ -185,6 +187,8 @@ class RSA():
 
         # For each layer to RSA with the current ROI
         for counter, layer in enumerate(self.model_rdms):
+            if layer.split("RDM_")[1].strip(".npz") in self.skips:
+                continue
 
             # Load RDMS
             roi_rdm = load(op.join(self.brain_rdms_path, roi))
