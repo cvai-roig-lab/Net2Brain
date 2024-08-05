@@ -131,45 +131,53 @@ def encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path
     - pca_trn (numpy.ndarray): PCA-encoded features of the training set.
     - pca_tst (numpy.ndarray): PCA-encoded features of the test set.
     """
-    activations = []
     feat_files = glob.glob(feat_path + '/*.npz')
     feat_files.sort()  # Ensure consistent order
 
     # Load a sample feature to check its dimensions after processing
     sample_feat = np.load(feat_files[0], allow_pickle=True)[layer_id]
-    processed_sample_feat = np.mean(sample_feat, axis=1).flatten()
+    processed_sample_feat = sample_feat.flatten()
 
     # Determine whether to use PCA based on the dimensionality of the processed features
     use_pca = processed_sample_feat.ndim > 1 or (processed_sample_feat.ndim == 1 and processed_sample_feat.shape[0] > 1)
 
     if use_pca:
         pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
+        activations = []
         for jj,ii in enumerate(trn_Idx):  # for each datafile for the current layer
             feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
-            activations.append(np.mean(feat[layer_id], axis=1).flatten())
+            activations.append(feat[layer_id].flatten())
         
             # Partially fit the PCA model in batches
+            # TODO: Takes too much time, maybe fit only on a subset sample???
             if ((jj + 1) % batch_size) == 0 or (jj + 1) == len(trn_Idx):
-                pca.partial_fit(np.stack(activations[-batch_size:],axis=0))
-                
-        # Transform the training set using the trained PCA model
-        pca_trn = pca.transform(np.stack(activations,axis=0))
+                pca.partial_fit(np.stack(activations, axis=0))
+                del activations
+                # activations = []
+                break  # hacky - only temporary
+
+        transformed_activations = []
+        for ii in trn_Idx:  # for each datafile for the current layer
+            feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
+            # Transform the training set using the trained PCA model
+            transformed_activations.append(pca.transform(feat[layer_id].flatten().reshape(1, -1)))
+        pca_trn = np.concatenate(transformed_activations, axis=0)
         
         # Repeat the process for the test set
-        activations = []
+        transformed_activations = []
         for ii in tst_Idx:  # for each datafile for the current layer
             feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
-            activations.append(np.mean(feat[layer_id], axis=1).flatten())
-        pca_tst = pca.transform(np.stack(activations,axis=0))
+            transformed_activations.append(pca.transform(feat[layer_id].flatten().reshape(1, -1)))
+        pca_tst = np.concatenate(transformed_activations, axis=0)
     else:
         # Directly use the activations without PCA transformation and ensure they are reshaped to 2D arrays
-        pca_trn = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in trn_Idx]).reshape(-1, 1)
-        pca_tst = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in tst_Idx]).reshape(-1, 1)
+        pca_trn = np.array([np.load(feat_files[ii], allow_pickle=True)[layer_id].flatten() for ii in trn_Idx]).reshape(-1, 1)
+        pca_tst = np.array([np.load(feat_files[ii], allow_pickle=True)[layer_id].flatten() for ii in tst_Idx]).reshape(-1, 1)
 
     return pca_trn, pca_tst
 
 
-def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y):
+def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y, roi_name, save_path, model_name, layer_id):
     """
     Train a linear regression model for each ROI and compute correlation coefficients.
 
@@ -182,8 +190,16 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y):
     Returns:
         correlation_lst (numpy.ndarray): List of correlation coefficients for each ROI.
     """
-    reg = LinearRegression().fit(trn_x, trn_y)
-    y_prd = reg.predict(tst_x)
+    if not os.path.exists(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy"):
+        if trn_x is None:
+            raise ValueError("Not all ROI regressions were computed on previous run - PCA needs to be re-run.")
+        reg = LinearRegression().fit(trn_x, trn_y)
+        y_prd = reg.predict(tst_x)
+        if not os.path.exists(f"{save_path}/{model_name}/{layer_id}"):
+            os.makedirs(f"{save_path}/{model_name}/{layer_id}")
+        np.save(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy", y_prd)
+    else:
+        y_prd = np.load(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy")
     correlation_lst = np.zeros(y_prd.shape[1])
     for v in range(y_prd.shape[1]):
         correlation_lst[v] = pearsonr(y_prd[:,v], tst_y[:,v])[0]
@@ -191,7 +207,9 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y):
 
 
 
-def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, batch_size=100, just_corr=True, return_correlations = False,random_state=14, save_path="Linear_Encoding_Results"):
+def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, random_state=14, shuffle=True,
+                    n_components=100, batch_size=100,
+                    just_corr=True, return_correlations=False, save_path="Linear_Encoding_Results"):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -226,16 +244,19 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
                                             roi_path, 
                                             model_name, 
                                             trn_tst_split=trn_tst_split, 
-                                            n_folds=n_folds, 
+                                            n_folds=n_folds,
+                                            random_state=random_state,
+                                            shuffle=shuffle,
                                             n_components=n_components, 
                                             batch_size=batch_size, 
                                             just_corr=just_corr, 
                                             return_correlations=return_correlations,
-                                            random_state=random_state)
+                                            save_path=save_path)
         
 
         # Collect dataframes in list
-        list_dataframes.append(result_dataframe[0])
+        list_dataframes.append(result_dataframe)
+        # wtf do you do with the return_correlations option?
     
     # If just one dataframe, return it as it is
     if len(list_dataframes) == 1:
@@ -246,7 +267,7 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
     # Create the output folder if it doesn't exist
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-        
+
     csv_file_path = f"{save_path}/{model_name}.csv"
     final_df.to_csv(csv_file_path, index=False)
     
@@ -266,7 +287,9 @@ def linear_encoding(*args, **kwargs):
         
     
 
-def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, batch_size=100, just_corr=True, return_correlations = False,random_state=14):
+def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, random_state=14, shuffle=True,
+                    n_components=100, batch_size=100,
+                    just_corr=True, return_correlations = False, save_path="Linear_Encoding_Results"):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -291,9 +314,6 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
     fold_dict = {}  # To store fold-wise results
     corr_dict = {}  # To store correlations if requested
     
-    # Check if roi_path is a list, if not, make it a list
-    roi_paths = roi_path if isinstance(roi_path, list) else [roi_path]
-    
     # Load feature files and get layer information
     feat_files = glob.glob(feat_path+'/*.npz')
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
@@ -310,56 +330,65 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
         random.seed(fold_ii+random_state)
         
         # Split the data indices into training and testing sets
-        trn_Idx,tst_Idx = train_test_split(range(len(feat_files)),test_size=(1-trn_tst_split),train_size=trn_tst_split,random_state=fold_ii+random_state)
-        
+        trn_Idx,tst_Idx = train_test_split(range(len(feat_files)), train_size=trn_tst_split,
+                                           random_state=fold_ii+random_state, shuffle=shuffle)
+
+        pbar2 = tqdm(layer_list, desc="Model layers")
+
         # Process each layer of model activations
-        for layer_id in layer_list:
+        for layer_id in pbar2:
+            pbar2.set_description(f"Processing layer {layer_id}")
+
             if layer_id not in fold_dict.keys():
                 fold_dict[layer_id] = {}
                 corr_dict[layer_id] = {}
             
             # Encode the current layer using PCA and split into training and testing sets
-            pca_trn,pca_tst = encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path)
+            if not os.path.exists(f"{save_path}/{model_name}/{layer_id}"):
+                pca_trn,pca_tst = encode_layer(layer_id, n_components, batch_size, trn_Idx, tst_Idx, feat_path)
+            else:
+                pca_trn = None
+                pca_tst = None
 
-            for roi_path in roi_paths:
-                roi_files = []
-            
-                 # Check if the roi_path is a file or a directory
-                if os.path.isfile(roi_path) and roi_path.endswith('.npy'):
-                    # If it's a file, directly use it
-                    roi_files.append(roi_path)
-                elif os.path.isdir(roi_path):
-                    # If it's a directory, list all .npy files within it
-                    roi_files.extend(glob.glob(os.path.join(roi_path, '*.npy')))
-                else:
-                    print(f"Invalid ROI path: {roi_path}")
-                    continue  # Skip this roi_path if it's neither a valid file nor a directory
+            roi_files = []
 
-                # Process each ROI's fMRI data
-                if not roi_files:
-                    print(f"No roi_files found in {roi_path}")
-                    continue  # Skip to the next roi_path if no ROI files were found
+             # Check if the roi_path is a file or a directory
+            if os.path.isfile(roi_path) and roi_path.endswith('.npy'):
+                # If it's a file, directly use it
+                roi_files.append(roi_path)
+            elif os.path.isdir(roi_path):
+                # If it's a directory, list all .npy files within it
+                roi_files.extend(glob.glob(os.path.join(roi_path, '*.npy')))
+            else:
+                print(f"Invalid ROI path: {roi_path}")
+                continue  # Skip this roi_path if it's neither a valid file nor a directory
 
-                for roi_file in roi_files:
-                    roi_name = os.path.basename(roi_file)[:-4]
-                    if roi_name not in fold_dict[layer_id].keys():
-                        fold_dict[layer_id][roi_name] = []
-                        corr_dict[layer_id][roi_name] = []
-                        
-                    # Load fMRI data for the current ROI and split into training and testing sets
-                    fmri_data = np.load(os.path.join(roi_file))
-                    fmri_trn,fmri_tst = fmri_data[trn_Idx],fmri_data[tst_Idx]
-                    
-                    # Train a linear regression model and compute correlations for the current ROI
-                    r_lst = train_regression_per_ROI(pca_trn,pca_tst,fmri_trn,fmri_tst)
-                    r = np.mean(r_lst) # Mean of all train test splits
-                    
-                    # Store correlation results
-                    if return_correlations:                   
-                        corr_dict[layer_id][roi_name].append(r_lst)
-                        if fold_ii == n_folds-1:
-                            corr_dict[layer_id][roi_name] = np.mean(np.array(corr_dict[layer_id][roi_name], dtype=np.float16),axis=0)
-                    fold_dict[layer_id][roi_name].append(r)
+            # Process each ROI's fMRI data
+            if not roi_files:
+                print(f"No roi_files found in {roi_path}")
+                continue  # Skip to the next roi_path if no ROI files were found
+
+            for roi_file in roi_files:
+                roi_name = os.path.basename(roi_file)[:-4]
+                if roi_name not in fold_dict[layer_id].keys():
+                    fold_dict[layer_id][roi_name] = []
+                    corr_dict[layer_id][roi_name] = []
+
+                # Load fMRI data for the current ROI and split into training and testing sets
+                fmri_data = np.load(os.path.join(roi_file))
+                fmri_trn,fmri_tst = fmri_data[trn_Idx],fmri_data[tst_Idx]
+
+                # Train a linear regression model and compute correlations for the current ROI
+                r_lst = train_regression_per_ROI(pca_trn,pca_tst,fmri_trn,fmri_tst, roi_name, save_path,
+                                                 model_name, layer_id)
+                r = np.mean(r_lst) # Mean of all train test splits
+
+                # Store correlation results
+                if return_correlations:
+                    corr_dict[layer_id][roi_name].append(r_lst)
+                    if fold_ii == n_folds-1:
+                        corr_dict[layer_id][roi_name] = np.mean(np.array(corr_dict[layer_id][roi_name], dtype=np.float16),axis=0)
+                fold_dict[layer_id][roi_name].append(r)
                 
     # Compile all results into a DataFrame for easy analysis
     all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
