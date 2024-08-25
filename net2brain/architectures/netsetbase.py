@@ -7,6 +7,7 @@ import librosa
 import torch
 import torch.nn as nn
 import warnings
+import re
 
 # Base class for all NetSets
 class NetSetBase:
@@ -47,10 +48,17 @@ class NetSetBase:
                 warnings.warn(f"Some layers are not present in the model and will not be extracted: {invalid_layers}. "
                             "Please call the 'layers_to_extract()' function from the FeatureExtractor to see all available layers.")
             return valid_layers
-        elif network_layers:
-            return [layer for layer in network_layers if layer != '']
+        # elif network_layers:
+        #     return [layer for layer in network_layers if layer != '']
         else:
-            return [layer for layer in tx.list_module_names(loaded_model) if layer != '']
+            valid_layers = [layer for layer in tx.list_module_names(loaded_model) if layer != ''
+                            and not re.search(r"\d\.", layer)]
+            to_remove = set()
+            for i in range(len(valid_layers)-1):
+                if valid_layers[i+1].startswith(valid_layers[i]+'.'):
+                    to_remove.add(valid_layers[i])
+            valid_layers = [layer for layer in valid_layers if layer not in to_remove]
+            return valid_layers
 
 
 

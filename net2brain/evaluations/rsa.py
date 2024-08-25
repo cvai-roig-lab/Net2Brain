@@ -162,20 +162,21 @@ class RSA():
 
         # returns list of corrcoefs, depending on amount of participants in brain rdm
         corr = self.distance(model_rdm, fmri_rdm)
+        r = np.mean(corr)
 
-        # Square correlation
-        corr_squared = np.square(corr)
-
-        # Take mean to retrieve R2
-        r2 = np.mean(corr_squared)
+        # # Square correlation
+        # corr_squared = np.square(corr)
+        #
+        # # Take mean to retrieve R2
+        # r2 = np.mean(corr_squared)
 
         # ttest: Ttest_1sampResult(statistic=3.921946, pvalue=0.001534)
-        significance = stats.ttest_1samp(corr_squared, 0)[1]
+        significance = stats.ttest_1samp(corr, 0)[1]
 
         # standard error of mean
-        sem = stats.sem(corr_squared)
+        sem = stats.sem(corr)
 
-        return r2, significance, sem, corr_squared
+        return r, significance, sem, corr
 
     def evaluate_roi(self, roi):
         """Functiion to evaulate the layers to the current roi , either fmri or meg
@@ -187,7 +188,7 @@ class RSA():
 
         # For each layer to RSA with the current ROI
         for counter, layer in enumerate(self.model_rdms):
-            if layer.split("RDM_")[1].strip(".npz") in self.skips:
+            if layer.split("RDM_")[1].split(".npz")[0] in self.skips:
                 continue
 
             # Load RDMS
@@ -196,23 +197,23 @@ class RSA():
     
 
             # Calculate Correlations
-            r2, significance, sem, corr_squared = self.rsa(model_rdm, roi_rdm, layer)
+            r, significance, sem, corr = self.rsa(model_rdm, roi_rdm, layer)
 
             # Add relationship to Noise Ceiling to this data
-            lnc = self.this_nc["lnc"]
-            unc = self.this_nc["unc"]
-            area_percentNC = (r2 / lnc) * 100.
+            lnc = np.sqrt(self.this_nc["lnc"])
+            unc = np.sqrt(self.this_nc["unc"])
+            area_percentNC = (r / lnc) * 100.
 
             # Create dictionary to save data
             layer_key = "(" + str(counter) + ") " + layer
             output_dict = {"Layer": [layer_key],
-                           "R2": [r2],
-                           "%R2": [area_percentNC],
+                           "R": [r],
+                           "%R": [area_percentNC],
                            "Significance": [significance],
                            "SEM": [sem],
                            "LNC": [lnc],
                            "UNC": [unc],
-                           "R2_array" : corr_squared}
+                           "R_array": corr}
 
             # Add this dict to the total dickt
             all_layers_dicts.append(output_dict)
@@ -225,7 +226,7 @@ class RSA():
             dict: final dict containing all results
         """
 
-        all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R2', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
+        all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R', '%R', 'Significance', 'SEM', 'LNC', 'UNC'])
 
         for counter, roi in enumerate(self.brain_rdms):
 
@@ -243,7 +244,7 @@ class RSA():
             for layer_dict in all_layers_dict:
                 layer_dict["ROI"] = scan_key
                 layer_dict["Model"] = self.model_name
-                del layer_dict["R2_array"]
+                del layer_dict["R_array"]
                 layer_df = pd.DataFrame.from_dict(layer_dict)
                 if correction == "bonferroni":
                     layer_df['Significance'] = layer_df['Significance'] * len(all_layers_dict)
