@@ -46,19 +46,57 @@ class RSA():
         if distance_metric.lower() == "spearman":
             self.distance = self.model_spearman
 
-    def find_datatype(self, roi):
-        """Function to find out if we should apply MEG or FMRI algorithm to the data
-        Args:
-            roi (str): Name of ROI
-        """
 
-        if "fmri" in roi.lower():
+
+
+    def find_datatype(self, file_path):
+        """Function to determine if the input data corresponds to fMRI or MEG based on data shape.
+
+        Args:
+            file_path (str): Path to the numpy file (.npz) containing ROI data.
+        """
+        # Load the .npz file
+        data = np.load(file_path, allow_pickle=True)
+        
+        # Get the first key from the loaded file
+        keys = list(data.keys())
+        if not keys:
+            raise ValueError("The provided .npz file is empty.")
+        
+        rdm_data = data[keys[0]]
+        
+        # Get the shape of the RDM data
+        shape = rdm_data.shape
+
+        if len(shape) == 2 and shape[0] == shape[1]:
+            # fMRI data with shape (images, images)
             self.rsa = self.rsa_fmri
-        elif "meg" in roi.lower():
-            self.rsa = self.rsa_meg
+
+        elif len(shape) == 3:
+            if shape[1] == shape[2]:
+                # fMRI data with shape (subjects, images, images)
+                self.rsa = self.rsa_fmri
+            else:
+                raise ValueError(f"Invalid fMRI data shape: {shape}. Last two dimensions must be equal.")
+
+        elif len(shape) == 4:
+            if shape[2] == shape[3]:
+                # MEG data with shape (subjects, times, images, images)
+                self.rsa = self.rsa_meg
+            else:
+                raise ValueError(f"Invalid MEG data shape: {shape}. Last two dimensions must be equal.")
+
         else:
-            # TODO: On Value Error or something
-            error_message("No fmri/meg found in ROI-name. Error!")
+            raise ValueError(f"Unexpected data shape: {shape}. Expected 2D, 3D, or 4D array.")
+
+        if (len(shape) == 3 and shape[1] != shape[2]) or (len(shape) == 4 and shape[2] != shape[3]):
+            warnings.warn("The last two dimensions of the data do not match, which may indicate a problem.")
+
+
+
+
+            
+            
 
     def model_spearman(self, model_rdm, rdms):
         """Calculate Spearman for model
@@ -224,8 +262,10 @@ class RSA():
         all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R2', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
 
         for counter, roi in enumerate(self.brain_rdms):
+            
+            print(op.join(self.brain_rdms_path, roi))
 
-            self.find_datatype(roi)
+            self.find_datatype(op.join(self.brain_rdms_path, roi))
 
             # Calculate Noise Ceiing for this ROI
             self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
