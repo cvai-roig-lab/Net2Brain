@@ -82,3 +82,8 @@ notebooks/Workshops/*
 !notebooks/Workshops/*.ipynb
 *.npz
 demo_1_feature_extraction.ipynb
+Workshop_Harry_Potter_Cognition
+/__MACOSX
+/NSD_25_images
+/Tutorial_LE_Results
+/Tutorial_LE_Results_Harry
