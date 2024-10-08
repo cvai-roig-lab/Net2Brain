@@ -3,18 +3,25 @@ from scipy.stats import spearmanr
 import json
 import os.path as op
 from .eval_helper import *
+from .distance_functions import registered_nc_distance_functions
 
 
 class NoiseCeiling():
-    def __init__(self, roi, roi_path):
+    def __init__(self, roi, roi_path, distance_metric):
         """Initialize NoiseCeiling calculation
 
         Args:
             roi (str): name of roi
             roi_path (str/path): path to this roi
+            distance_func (function): distance function to be used (from the other module)
         """
         self.roi = roi
         self.roi_path = roi_path
+        
+        # Get distance function
+        self.distance_metric = distance_metric
+        self.distance_func = registered_nc_distance_functions[distance_metric]
+        
         
     def get_uppertriangular(self, rdm):
         """Get upper triangle of a RDM
@@ -29,7 +36,8 @@ class NoiseCeiling():
         num_conditions = rdm.shape[0]
         return rdm[np.triu_indices(num_conditions, 1)]
 
-        
+    
+
     def noise_ceiling_spearman(self, rdm1, rdm2):
         """Calculate Spearman for noiseceiling
 
@@ -42,7 +50,8 @@ class NoiseCeiling():
         """
         lt_rdm1 = self.get_uppertriangular(rdm1)
         lt_rdm2 = self.get_uppertriangular(rdm2)
-        return (spearmanr(lt_rdm1, lt_rdm2)[0]) ** 2
+        return self.distance_func(lt_rdm1, lt_rdm2)
+
 
 
     def get_uppernoiseceiling(self, rdm):
@@ -151,12 +160,55 @@ class NoiseCeiling():
 
         noise_ceilings = {"lnc": lnc, "unc": unc}
         return noise_ceilings
+    
+
+    def find_datatype(self, file_path):
+        """Function to determine if the input data corresponds to fMRI or MEG based on data shape.
+
+        Args:
+            file_path (str): Path to the numpy file (.npz) containing ROI data.
+
+        Returns:
+            str: Returns 'fmri' or 'meg' based on the data shape.
+        """
+        # Load the .npz file
+        data = np.load(file_path, allow_pickle=True)
+
+        # Get the first key from the loaded file
+        keys = list(data.keys())
+        if not keys:
+            raise ValueError("The provided .npz file is empty.")
+
+        rdm_data = data[keys[0]]  # Get the first RDM from the file
+        shape = rdm_data.shape  # Get the shape of the RDM
+
+        if len(shape) == 2 and shape[0] == shape[1]:
+            # fMRI data with shape (images, images)
+            return 'fmri'
+
+        elif len(shape) == 3:
+            if shape[1] == shape[2]:
+                # fMRI data with shape (subjects, images, images)
+                return 'fmri'
+            else:
+                raise ValueError(f"Invalid fMRI data shape: {shape}. Last two dimensions must be equal.")
+
+        elif len(shape) == 4:
+            if shape[2] == shape[3]:
+                # MEG data with shape (subjects, times, images, images)
+                return 'meg'
+            else:
+                raise ValueError(f"Invalid MEG data shape: {shape}. Last two dimensions must be equal.")
+
+        else:
+            raise ValueError(f"Unexpected data shape: {shape}. Expected 2D, 3D, or 4D array.")
+
         
         
     def noise_ceiling(self):
         """Calculates the noise ceiling for either meg or fmri data
         Checks if noise ceiling has already been calculated, if not it
-        calculates it
+        calculates it.
 
         Returns:
             dict: {"lnc": lnc, "unc": unc}
@@ -164,55 +216,43 @@ class NoiseCeiling():
         
         # First find out if there is a json file that already contains these values
         json_path = op.dirname(self.roi_path)
-        json_file = op.join(json_path, "noise_ceilin_log.json")
-        
+        json_file = op.join(json_path, "noise_ceiling_log.json")
         
         nc_exists = False 
+        data = {}
         
-        # If we have json file, grab its data
+        # If we have a json file, grab its data
         if op.exists(json_file):
             with open(json_file) as json_file_wrapper:
                 data = json.load(json_file_wrapper)
                 if self.roi in data:
-                    noise_ceiling = data[self.roi]
-                    nc_exists == True
-                    return noise_ceiling
-                else:
-                    pass
-        else:
-            pass
+                    if self.distance_metric in data[self.roi]:
+                        noise_ceiling = data[self.roi][self.distance_metric]
+                        nc_exists = True  # Set flag to true if noise ceiling already exists for the metric
+                        return noise_ceiling
         
-        # If we dont have json file, calculate NC and save into json file
-        if nc_exists == False:
-        
-            if "meg" in self.roi.lower():
-                # Returns {"lnc": lnc, "unc" : unc}
-                noise_ceiling = self.noise_ceiling_meg()
-            elif "fmri" in self.roi.lower():
-                noise_ceiling =self.noise_ceiling_fmri()  # Returns {"lnc": lnc, "unc" : unc}
+        # If we don't have a json file or if the distance metric doesn't exist, calculate NC and save into json file
+        if not nc_exists:
+            # Use find_datatype to determine if it's fMRI or MEG data
+            datatype = self.find_datatype(self.roi_path)
+            
+            # Based on the datatype, calculate the noise ceiling
+            if datatype == 'fmri':
+                noise_ceiling = self.noise_ceiling_fmri()  # fMRI case
+            elif datatype == 'meg':
+                noise_ceiling = self.noise_ceiling_meg()  # MEG case
             else:
-                error_message(
-                    "Could not calculate NC. No 'fmri' or 'meg' in scan name")
+                error_message("Could not calculate NC. Unexpected data type.")
                 noise_ceiling = {"lnc": 0, "unc": 0}
-                
 
-            # Write NoiseCeiling to json
-            args = [{self.roi: noise_ceiling}]
+            # Add the distance metric to the noise ceiling data
+            if self.roi not in data:
+                data[self.roi] = {}
             
-            
-            # If we already have a json, add the data, else create new
-            if op.exists(json_file):
-                with open(json_file) as json_file_wrapper:
-                    data = json.load(json_file_wrapper)
-                data[self.roi] = noise_ceiling
-                    
-                with open(json_file, 'w') as fp:
-                    json.dump(data, fp, sort_keys=True, indent=4)
+            data[self.roi][self.distance_metric] = noise_ceiling
 
-            else:
-                args = {self.roi: noise_ceiling}
-                # write individual json
-                with open(json_file, 'w') as fp:
-                    json.dump(args, fp, sort_keys=True, indent=4)
-            
+            # Write NoiseCeiling to JSON
+            with open(json_file, 'w') as fp:
+                json.dump(data, fp, sort_keys=True, indent=4)
+
         return noise_ceiling

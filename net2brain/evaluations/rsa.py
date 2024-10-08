@@ -4,9 +4,10 @@ import os.path as op
 import numpy as np
 import pandas as pd
 from scipy import stats
-from scipy.spatial.distance import squareform
+from scipy.spatial.distance import squareform, euclidean, cityblock, cosine
 from .noiseceiling import NoiseCeiling
 from .eval_helper import *
+from .distance_functions import registered_distance_functions
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -19,7 +20,7 @@ class RSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, model_name, datatype="None", save_path="./", distance_metric="spearman"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, datatype="None", save_path="./"):
         """Initiate RSA
         Args:
             json_dir (str/path): Path to json dir
@@ -42,11 +43,6 @@ class RSA():
         # For comparison
         self.other_rdms_path = None
         self.other_rdms = None
-
-        if distance_metric.lower() == "spearman":
-            self.distance = self.model_spearman
-
-
 
 
     def find_datatype(self, file_path):
@@ -93,22 +89,6 @@ class RSA():
             warnings.warn("The last two dimensions of the data do not match, which may indicate a problem.")
 
 
-
-
-            
-            
-
-    def model_spearman(self, model_rdm, rdms):
-        """Calculate Spearman for model
-        Args:
-            model_rdm (numpy array): RDM of model
-            rdms (list of numpy arrays): RDMs of ROI
-        Returns:
-            float: Spearman correlation of model and roi
-        """
-
-        model_rdm_sq = sq(model_rdm)
-        return [stats.spearmanr(sq(rdm), model_rdm_sq)[0] for rdm in rdms]
 
     def folderlookup(self, path):
         """Looks at the available files and returns the chosen one
@@ -253,22 +233,35 @@ class RSA():
 
         return all_layers_dicts
 
-    def evaluate(self,correction=None):
+
+    def evaluate(self,correction=None, distance_metric="spearman"):
         """Function to evaluate all DNN RDMs to all ROI RDMs
         Returns:
             dict: final dict containing all results
         """
+        
+        # Convert to lowercase for case-insensitive matching
+        self.distance_metric = distance_metric.lower()
+
+        # Check if the requested distance metric exists in the registered functions
+        if distance_metric in registered_distance_functions:
+            self.distance = registered_distance_functions[distance_metric]
+        else:
+            # Dynamically generate a list of available metrics for the warning
+            available_metrics = list(registered_distance_functions.keys())
+            warnings.warn(f"Invalid metric. Choose between: {', '.join(available_metrics)}")
+            return None
+
 
         all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R2', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
 
         for counter, roi in enumerate(self.brain_rdms):
-            
-            print(op.join(self.brain_rdms_path, roi))
 
             self.find_datatype(op.join(self.brain_rdms_path, roi))
 
             # Calculate Noise Ceiing for this ROI
-            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
+            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), distance_metric)
+            self.this_nc = noise_ceiling_calc.noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             all_layers_dict = self.evaluate_roi(roi)
@@ -298,17 +291,18 @@ class RSA():
 	
         for counter, roi in enumerate(self.brain_rdms):
 
-            self.find_datatype(roi)
-
+            self.find_datatype(op.join(self.brain_rdms_path, roi))
+            
             # Calculate Noise Ceiing for this ROI
-            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
+            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric)
+            self.this_nc = noise_ceiling_calc.noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             model_layers_dict = self.evaluate_roi(roi)
             
 
             # Calculate Noise Ceiing for this ROI
-            other_RSA.this_nc = NoiseCeiling(roi, op.join(other_RSA.brain_rdms_path, roi)).noise_ceiling()
+            other_RSA.this_nc = NoiseCeiling(roi, op.join(other_RSA.brain_rdms_path, roi), self.distance_metric).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             other_layers_dict = other_RSA.evaluate_roi(roi)
@@ -325,3 +319,4 @@ class RSA():
                 sig_pair = sorted(((scan_key,self.model_name),(scan_key,other_RSA.model_name)), key=lambda element: (element[1]))
                 sig_pairs.append(sig_pair)
         return comp_dic,sig_pairs
+
