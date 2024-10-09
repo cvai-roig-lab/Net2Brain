@@ -1,25 +1,56 @@
 from pathlib import Path
-
+import os
+import urllib.request
 import pytest
 from torchvision import models
-from torchvision import transforms as T
-from torchvision import models
-from torchvision import transforms as T
 from torchvision import transforms as trn
 import torchextractor as tx
-
+import torch
 from net2brain.feature_extraction import FeatureExtractor
 
+# Function to download model checkpoints before the tests run
+def download_checkpoints(save_directory):
+    checkpoints = {
+        "Unet_unet_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi3BauasaDSSRkeCoZJV6H/Unet_unet_weights.pth",
+        "Timm_resnet50_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiWpZ85sv2NeLxFBe8CoiC/Timm_resnet50_weights.pth",
+        "Timm_vit_base_patch32_224_in21k_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiKErJtqPauJ5bJABULQAD/Timm_vit_base_patch32_224_in21k_weights.pth",
+        "Clip_RN50_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiUX9MtT75Rrbn2VgE4itw/Clip_RN50_weights.pth",
+        "Cornet_cornet_z_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi8XLK2rbyEEELrCahNJvZ/Cornet_cornet_z_weights.pth",
+        "Pytorch_deeplabv3_resnet101_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiANgiPXWswvazih59qxMs/Pytorch_deeplabv3_resnet101_weights.pth",
+        "Taskonomy_colorization_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi8vq1Wy7igLci1cfrTvs9/Taskonomy_colorization_weights.pth",
+        "Taskonomy_autoencoding_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiL7MRhk4JRo12Ub2pskWX/Taskonomy_autoencoding_weights.pth",
+        "Standard_AlexNet_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiPk9zRqKtq7rGfftJaaY7/Standard_AlexNet_weights.pth",
+        "Yolo_yolov5l_weights.pth": "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiUWzn75C6pCEKQMXhyLNp/Yolo_yolov5l_weights.pth"
+    }
 
+    # Download each checkpoint if not already downloaded
+    for filename, url in checkpoints.items():
+        file_path = os.path.join(save_directory, filename)
+        if not os.path.exists(file_path):
+            print(f"Downloading {filename}...")
+            urllib.request.urlretrieve(url, file_path)
+            print(f"Downloaded {filename}.")
+        else:
+            print(f"{filename} already exists, skipping download.")
+
+# Run this function before tests to ensure checkpoints are downloaded
+@pytest.fixture(scope="session", autouse=True)
+def setup_checkpoints(tmp_path_factory):
+    # Define the directory to save checkpoints
+    checkpoint_dir = tmp_path_factory.mktemp("checkpoints")
+    # Download checkpoints
+    download_checkpoints(checkpoint_dir)
+    # Return the path to the checkpoints
+    return checkpoint_dir
+
+# Define your tests
 @pytest.mark.parametrize(
     "netset,model",
     [
         ("Standard", "AlexNet"),
         ("Timm", "vit_base_patch32_224_in21k"),
         ("Timm", "resnet50"),
-        ("Pytorch", "deeplabv3_resnet101"),
         ("Unet", "unet"),
-        ("Yolo", "yolov5l"),
         ("Taskonomy", "autoencoding"),
         ("Taskonomy", "colorization"),
         ("Clip", "RN50"),
@@ -30,15 +61,24 @@ from net2brain.feature_extraction import FeatureExtractor
     "pretrained",
     [(True), (False)],
 )
-
-def test_extractor_outputs(
-    root_path, tmp_path, netset, model, pretrained
-):
+def test_extractor_outputs(root_path, tmp_path, setup_checkpoints, netset, model, pretrained):
     # Define paths
     imgs_path = root_path / Path("images")
+    
+    # Check if pretrained=True, and load from checkpoint if so
+    checkpoint_dir = setup_checkpoints
+    if pretrained:
+        checkpoint_file = os.path.join(checkpoint_dir, f"{netset}_{model}_weights.pth")
+        if os.path.exists(checkpoint_file):
+            print(f"Loading {netset} {model} weights from {checkpoint_file}")
+            fx = FeatureExtractor(model=model, netset=netset, pretrained=False, device='cpu')
+            fx.model.load_state_dict(torch.load(checkpoint_file))  # Load from checkpoint
+        else:
+            pytest.fail(f"Checkpoint for {netset} {model} not found.")
+    else:
+        fx = FeatureExtractor(model=model, netset=netset, pretrained=False, device='cpu')
 
     # Extract features
-    fx = FeatureExtractor(model, netset, pretrained=pretrained)
     fx.extract(imgs_path, save_path=tmp_path)
 
     # Layer consolidation
@@ -61,7 +101,7 @@ def test_own_model(root_path, tmp_path):
     image_path = root_path / Path("images")
 
     # Define a model
-    model = models.alexnet(pretrained=True)   # This one exists in the toolbox as well, it is just supposed to be an example!
+    model = models.alexnet(pretrained=False)   # This one exists in the toolbox as well, it is just supposed to be an example!
 
     ## Define extractor (Note: NO NETSET NEEDED HERE)
     fx = FeatureExtractor(model=model, device='cpu')
@@ -122,7 +162,7 @@ def test_with_own_functions(root_path, tmp_path):
     image_path = root_path / Path("images")
 
     # Define a model
-    model = models.alexnet(pretrained=True)  # This one exists in the toolbox as well, it is just supposed to be an example!
+    model = models.alexnet(pretrained=False)  # This one exists in the toolbox as well, it is just supposed to be an example!
 
     ## Define extractor (Note: NO NETSET NEEDED HERE)
     fx = FeatureExtractor(model=model, device='cpu', preprocessor=my_preprocessor, feature_cleaner=my_cleaner, extraction_function=my_extactor)
