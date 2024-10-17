@@ -220,13 +220,14 @@ class RSA():
 
         return all_layers_dicts
 
-    def evaluate(self,correction=None):
+    def evaluate(self,correction=None) -> pd.DataFrame:
         """Function to evaluate all DNN RDMs to all ROI RDMs
         Returns:
             dict: final dict containing all results
         """
 
-        all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R', '%R', 'Significance', 'SEM', 'LNC', 'UNC'])
+        all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R', '%R', 'R_array', 'Significance', 'SEM',
+                                            'LNC', 'UNC'])
 
         for counter, roi in enumerate(self.brain_rdms):
 
@@ -242,9 +243,9 @@ class RSA():
             scan_key = "(" + str(counter) + ") " + roi[:-4]
 
             for layer_dict in all_layers_dict:
-                layer_dict["ROI"] = scan_key
-                layer_dict["Model"] = self.model_name
-                del layer_dict["R_array"]
+                layer_dict["ROI"] = [scan_key]
+                layer_dict["Model"] = [self.model_name]
+                layer_dict['R_array'] = [layer_dict['R_array']]
                 layer_df = pd.DataFrame.from_dict(layer_dict)
                 if correction == "bonferroni":
                     layer_df['Significance'] = layer_df['Significance'] * len(all_layers_dict)
