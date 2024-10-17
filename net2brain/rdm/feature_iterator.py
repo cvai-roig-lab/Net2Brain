@@ -178,7 +178,8 @@ class NPZConsolidateEngine(FeatureEngine):
     def next(self, item) -> Tuple[str, List[str], np.ndarray]:
         feat_npz = open_npz(item)
         stimuli, feats = zip(*nsorted(feat_npz.items(), key=lambda x: x[0]))
-        layer = item.stem
+        pure_item = Path(str(item).split('consolidated_')[-1]) if 'consolidated' in str(item) else item
+        layer = pure_item.stem
         return layer, stimuli, np.stack(feats)
 
 
@@ -200,7 +201,7 @@ class NPZSeparateEngine(FeatureEngine):
     def next(self, item) -> Tuple[str, List[str], np.ndarray]:
         stimuli = []
         sample = open_npz(self._stimuli[0])[item]
-        feat_dim = sample.shape[1:]
+        feat_dim = sample.squeeze().shape
         # Check if dimensionality reduction is needed
         if self.dim_reduction and (not self.max_dim_allowed or len(sample.flatten()) > self.max_dim_allowed):
             # Estimate the dimensionality reduction from a subset of the data

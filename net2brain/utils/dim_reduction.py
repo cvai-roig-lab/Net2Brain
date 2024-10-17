@@ -27,7 +27,7 @@ def estimate_from_files(file_list: list, key: int, feat_dim: tuple, open_func: C
     # Estimate the dimensionality reduction from a subset of the data
     feats_for_estim = np.empty((n_samples_estim, *feat_dim))
     for i, file in enumerate(file_list[:n_samples_estim]):
-        feats_for_estim[i, :] = open_func(file)[key].squeeze(0)
+        feats_for_estim[i, :] = open_func(file)[key].squeeze()
     # Choose the dimensionality reduction method
     if dim_reduction == 'srp':
         fitted_transform = SparseRandomProjection(n_components=n_components) if n_components else (
