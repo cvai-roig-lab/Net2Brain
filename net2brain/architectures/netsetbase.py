@@ -175,7 +175,8 @@ class NetSetBase:
         raise NotImplementedError
     
     def combine_text_data(self, feature_list):
-        return feature_list[0]
+        return feature_list
+
     
     
     def combine_multimodal_data(self, feature_list):

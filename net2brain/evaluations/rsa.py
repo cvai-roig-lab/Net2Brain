@@ -4,9 +4,10 @@ import os.path as op
 import numpy as np
 import pandas as pd
 from scipy import stats
-from scipy.spatial.distance import squareform
+from scipy.spatial.distance import squareform, euclidean, cityblock, cosine
 from .noiseceiling import NoiseCeiling
 from .eval_helper import *
+from .distance_functions import registered_distance_functions
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -19,8 +20,7 @@ class RSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, model_name, skips=(), datatype="None", save_path="./",
-                 distance_metric="spearman"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, skips=(), datatype="None", save_path="./"):
         """Initiate RSA
         Args:
             json_dir (str/path): Path to json dir
@@ -45,34 +45,51 @@ class RSA():
         self.other_rdms_path = None
         self.other_rdms = None
 
-        if distance_metric.lower() == "spearman":
-            self.distance = self.model_spearman
 
-    def find_datatype(self, roi):
-        """Function to find out if we should apply MEG or FMRI algorithm to the data
+    def find_datatype(self, file_path):
+        """Function to determine if the input data corresponds to fMRI or MEG based on data shape.
+
         Args:
-            roi (str): Name of ROI
+            file_path (str): Path to the numpy file (.npz) containing ROI data.
         """
+        # Load the .npz file
+        data = np.load(file_path, allow_pickle=True)
 
-        if "fmri" in roi.lower():
+        # Get the first key from the loaded file
+        keys = list(data.keys())
+        if not keys:
+            raise ValueError("The provided .npz file is empty.")
+
+        rdm_data = data[keys[0]]
+
+        # Get the shape of the RDM data
+        shape = rdm_data.shape
+
+        if len(shape) == 2 and shape[0] == shape[1]:
+            # fMRI data with shape (images, images)
             self.rsa = self.rsa_fmri
-        elif "meg" in roi.lower():
-            self.rsa = self.rsa_meg
+
+        elif len(shape) == 3:
+            if shape[1] == shape[2]:
+                # fMRI data with shape (subjects, images, images)
+                self.rsa = self.rsa_fmri
+            else:
+                raise ValueError(f"Invalid fMRI data shape: {shape}. Last two dimensions must be equal.")
+
+        elif len(shape) == 4:
+            if shape[2] == shape[3]:
+                # MEG data with shape (subjects, times, images, images)
+                self.rsa = self.rsa_meg
+            else:
+                raise ValueError(f"Invalid MEG data shape: {shape}. Last two dimensions must be equal.")
+
         else:
-            # TODO: On Value Error or something
-            error_message("No fmri/meg found in ROI-name. Error!")
+            raise ValueError(f"Unexpected data shape: {shape}. Expected 2D, 3D, or 4D array.")
 
-    def model_spearman(self, model_rdm, rdms):
-        """Calculate Spearman for model
-        Args:
-            model_rdm (numpy array): RDM of model
-            rdms (list of numpy arrays): RDMs of ROI
-        Returns:
-            float: Spearman correlation of model and roi
-        """
+        if (len(shape) == 3 and shape[1] != shape[2]) or (len(shape) == 4 and shape[2] != shape[3]):
+            warnings.warn("The last two dimensions of the data do not match, which may indicate a problem.")
 
-        model_rdm_sq = sq(model_rdm)
-        return [stats.spearmanr(sq(rdm), model_rdm_sq)[0] for rdm in rdms]
+
 
     def folderlookup(self, path):
         """Looks at the available files and returns the chosen one
@@ -164,12 +181,6 @@ class RSA():
         corr = self.distance(model_rdm, fmri_rdm)
         r = np.mean(corr)
 
-        # # Square correlation
-        # corr_squared = np.square(corr)
-        #
-        # # Take mean to retrieve R2
-        # r2 = np.mean(corr_squared)
-
         # ttest: Ttest_1sampResult(statistic=3.921946, pvalue=0.001534)
         significance = stats.ttest_1samp(corr, 0)[1]
 
@@ -220,21 +231,34 @@ class RSA():
 
         return all_layers_dicts
 
-    def evaluate(self,correction=None) -> pd.DataFrame:
+    def evaluate(self,correction=None, distance_metric="spearman") -> pd.DataFrame:
         """Function to evaluate all DNN RDMs to all ROI RDMs
         Returns:
             dict: final dict containing all results
         """
 
-        all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R', '%R', 'R_array', 'Significance', 'SEM',
-                                            'LNC', 'UNC'])
+        # Convert to lowercase for case-insensitive matching
+        self.distance_metric = distance_metric.lower()
+
+        # Check if the requested distance metric exists in the registered functions
+        if distance_metric in registered_distance_functions:
+            self.distance = registered_distance_functions[distance_metric]
+        else:
+            # Dynamically generate a list of available metrics for the warning
+            available_metrics = list(registered_distance_functions.keys())
+            warnings.warn(f"Invalid metric. Choose between: {', '.join(available_metrics)}")
+            return None
+
+
+        all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R', '%R', 'R_array', 'Significance', 'SEM', 'LNC', 'UNC'])
 
         for counter, roi in enumerate(self.brain_rdms):
 
-            self.find_datatype(roi)
+            self.find_datatype(op.join(self.brain_rdms_path, roi))
 
             # Calculate Noise Ceiing for this ROI
-            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
+            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), distance_metric)
+            self.this_nc = noise_ceiling_calc.noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             all_layers_dict = self.evaluate_roi(roi)
@@ -264,17 +288,18 @@ class RSA():
 	
         for counter, roi in enumerate(self.brain_rdms):
 
-            self.find_datatype(roi)
+            self.find_datatype(op.join(self.brain_rdms_path, roi))
 
             # Calculate Noise Ceiing for this ROI
-            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
+            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric)
+            self.this_nc = noise_ceiling_calc.noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             model_layers_dict = self.evaluate_roi(roi)
             
 
             # Calculate Noise Ceiing for this ROI
-            other_RSA.this_nc = NoiseCeiling(roi, op.join(other_RSA.brain_rdms_path, roi)).noise_ceiling()
+            other_RSA.this_nc = NoiseCeiling(roi, op.join(other_RSA.brain_rdms_path, roi), self.distance_metric).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             other_layers_dict = other_RSA.evaluate_roi(roi)
@@ -291,3 +316,4 @@ class RSA():
                 sig_pair = sorted(((scan_key,self.model_name),(scan_key,other_RSA.model_name)), key=lambda element: (element[1]))
                 sig_pairs.append(sig_pair)
         return comp_dic,sig_pairs
+

@@ -16,6 +16,13 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
 
+# Updates 07/24
+1. Improved Dimensionality Reduction and included PCA next to SRP
+2. Fixing Plotting Visualization Errors
+3. Added new Workshop Notebooks with Datasets
+4. Improved RDM Creation Notebook
+
+
 # Updates 05/24
 Next to minor bug/api fixes these are the main changes:
 

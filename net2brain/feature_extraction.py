@@ -90,7 +90,7 @@ class FeatureExtractor:
         """
         Args:
             data_path: str
-                Path to stimuli data
+                Path to stimuli data or list of data_paths
             save_path: str
                 Path to where to save the extracted features
             layers_to_extract: list of str
@@ -137,11 +137,17 @@ class FeatureExtractor:
         all_supported_extensions = [ext for extensions in DataWrapper.supported_extensions.values() for ext in extensions]
 
         # Filter data_files to include only files with supported extensions
-        data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
+        if isinstance(data_path, (str, Path)):
+            data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
+        else:
+            data_files = [Path(f) for f in data_path if Path(f).suffix.lower() in all_supported_extensions]
         data_files.sort()
 
         # Detect data type for the current file
-        data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
+        if isinstance(data_path, (str, Path)):
+            data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
+        else:
+            data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
         
         if self.data_type == "multimodal":
             data_files = self._pair_modalities(data_files)
@@ -153,8 +159,9 @@ class FeatureExtractor:
         if self.data_type not in self.netset.supported_data_types:
             raise ValueError(f"Datatype {self.data_type} not supported by current model")
         
-
-        for data_file in tqdm(data_files):
+        progress_bar = tqdm(data_files, desc='Processing files')
+        
+        for data_file in progress_bar:
 
             # Get datapath
             file_name = str(data_file).split(os.sep)[-1].split(".")[0]
@@ -164,8 +171,14 @@ class FeatureExtractor:
 
             # Create empty list for data accumulation
             data_from_file_list = []
+            
+            # Total number of items in the inner loop
+            total_inner_items = len(data_from_file)
 
-            for data in data_from_file:
+            for idx, data in enumerate(data_from_file):
+                
+                # Update the progress bar description to show progress of the inner loop
+                progress_bar.set_postfix(subfiles=f'{idx + 1}/{total_inner_items}')
 
                 # Preprocess data
                 preprocessed_data = self.preprocessor(data, self.model_name, self.device)
@@ -191,14 +204,23 @@ class FeatureExtractor:
             final_features = self.data_combiner(data_from_file_list)
 
             # Convert the final_features dictionary to one that contains detached numpy arrays
-            final_features = {key: value.numpy() for key, value in final_features.items()}
+            if self.data_type == "text":
+                for idx, subfeature in enumerate(final_features):
+                    subfeature = {key: value.numpy() for key, value in subfeature.items()}
 
-            # Write the features for one image to a single file
-            file_path = os.path.join(self.save_path, f"{file_name}.npz")
-            np.savez(file_path, **final_features)
+                    # Write the features for one image to a single file
+                    file_path = os.path.join(self.save_path, f"{file_name}_sentence{idx:04d}.npz")
+                    np.savez(file_path, **subfeature)
 
-            # Clear variables to save RAM
-            del data_from_file_list, final_features
+            else:
+                final_features = {key: value.numpy() for key, value in final_features.items()}
+
+                # Write the features for one image to a single file
+                file_path = os.path.join(self.save_path, f"{file_name}.npz")
+                np.savez(file_path, **final_features)
+
+                # Clear variables to save RAM
+                del data_from_file_list, final_features
 
         if dim_reduction:
             print("Reducing dimensions...")
@@ -395,6 +417,19 @@ class DataTypeLoader:
                     modalities[base_name].append(modality)
                     break
         return modalities
+    
+    
+    def _get_modalities_in_files(self, files):
+        """Check which modalities exist in the provided list of files."""
+        modalities = defaultdict(list)
+        for file in files:
+            file_extension = os.path.splitext(file)[1].lower()
+            for modality, extensions in self.supported_extensions.items():
+                if file_extension in extensions:
+                    base_name = os.path.splitext(os.path.basename(file))[0]
+                    modalities[base_name].append(modality)
+                    break
+        return modalities
 
     def _check_modalities(self, modalities):
         """Check for multimodal files and their completeness."""
@@ -414,7 +449,14 @@ class DataTypeLoader:
         return multimodal_files, single_modal_files
 
     def _get_dataloader(self, folder_path):
-        modalities = self._get_modalities_in_folder(folder_path)
+        if isinstance(folder_path, (str, Path)):
+            modalities = self._get_modalities_in_folder(folder_path)
+        else:
+            if not os.path.isfile(folder_path[0]):
+                raise ValueError("You entered the path to a folder in the data_path=[] of the extractor or the file you entered does not exist. Either enter the path to the folder outside the list or enter single files as a list.")
+            else:
+                modalities = self._get_modalities_in_files(folder_path)
+                
         multimodal_files, single_modal_files = self._check_modalities(modalities)
 
         if multimodal_files and not single_modal_files:
@@ -429,7 +471,7 @@ class DataTypeLoader:
             data_combiner = getattr(self.netset, f'combine_{modality}_data')
             return data_loader, modality, data_combiner
         else:
-            raise ValueError("Mixed single and multimodal files found in the folder. Ensure all files are either single or multimodal.")
+            raise ValueError("You have mixed single and multimodal files found in the folder. Ensure all files are either single or multimodal.")
 
 
 
