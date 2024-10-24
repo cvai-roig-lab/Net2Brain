@@ -102,7 +102,7 @@ def get_layers_ncondns(feat_path):
     """
     
     # Find all npz files in the specified directory
-    activations = glob.glob(feat_path + "/*.npz")
+    activations = glob.glob(feat_path + '/*.np[zy]')
     
     # Count the number of npz files as the number of conditions (images)
     num_condns = len(activations)
@@ -144,7 +144,7 @@ def encode_layer(layer_id, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_f
     """
     
     activations = []
-    feat_files = glob.glob(feat_path+'/*.npz')
+    feat_files = glob.glob(feat_path + '/*.np[zy]')
     feat_files.sort()
     
     pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
@@ -447,7 +447,7 @@ def _linear_encoding(feat_path,
     roi_name = roi_file.split(os.sep)[-1].split(".")[0]
     
     # Load feature files and get layer information
-    feat_files = glob.glob(feat_path+'/*.npz')
+    feat_files = glob.glob(feat_path + '/*.np[zy]')
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
     
     # Loop over each fold for cross-validation
@@ -620,7 +620,7 @@ def encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, avg_across_feat):
     - trn (numpy.ndarray): features of the training set.
     - tst (numpy.ndarray): features of the test set.
     """
-    feat_files = glob.glob(feat_path + '/*.npz')
+    feat_files = glob.glob(feat_path + '/*.np[zy]')
     feat_files.sort()  # Ensure consistent order
 
     trn = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in trn_Idx])
@@ -668,7 +668,7 @@ def _ridge_encoding(feat_path,
     roi_name = roi_file.split(os.sep)[-1].split(".")[0]
     
     # Load feature files and get layer information
-    feat_files = glob.glob(feat_path+'/*.npz')
+    feat_files = glob.glob(feat_path + '/*.np[zy]')
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
     
     
