@@ -15,6 +15,13 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 **Bridging Neural and AI Research**:
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
+# Updates 10/24
+1. Added Ridge Regression to Linear Encoding
+     - Added more flexibility to the code
+     - Bugfix: In some cases only the last folds results were returned
+2. Added more distance functions to RSA
+3. Removed naming conventions for RSA (no fmri/meg needed in file name)
+
 
 # Updates 07/24
 1. Improved Dimensionality Reduction and included PCA next to SRP

@@ -1,86 +1,90 @@
-import glob
 import os
-from tqdm import tqdm
-import numpy as np
+import glob
 import random
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.decomposition import IncrementalPCA
-from sklearn.linear_model import LinearRegression
-from scipy.stats import pearsonr, ttest_1samp, sem
-from sklearn.model_selection import GridSearchCV, ShuffleSplit, train_test_split, cross_val_score
 import warnings
-from sklearn.linear_model import Ridge
-
-
-from scipy.stats import ttest_1samp
-import pandas as pd
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
+from scipy.stats import pearsonr, ttest_1samp, sem
+from sklearn.model_selection import train_test_split, GridSearchCV, ShuffleSplit, cross_val_score
+from sklearn.decomposition import IncrementalPCA
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.preprocessing import StandardScaler
 
-def aggregate_df_by_layer(df):
+
+def get_npy_files(input_path):
     """
-    Aggregates a single DataFrame by layer, averaging R values and computing combined significance,
-    ensuring scalar values for each column.
+    Returns a list of .npy files from the given input, which can be a single file, 
+    a list of files, or a folder. If the input is a folder, it retrieves all .npy 
+    files in that folder. If the input is a list of files or folders, it filters out 
+    the folders and returns only .npy files. A warning is raised if folders are present 
+    in the input list.
+
+    Parameters:
+    -----------
+    input_path : str or list
+        A single file path (str), a list of file/folder paths (list), or a folder path (str).
+
+    Returns:
+    --------
+    list
+        A list of .npy file paths.
     """
-    aggregated_data = []
+    # Convert single string input to list for consistent processing
+    if isinstance(input_path, str):
+        input_path = [input_path]
 
-    for layer, group in df.groupby('Layer'):
-        mean_r = group['R'].mean()
-        t_stat, significance = ttest_1samp(group['R'], 0)
-        
-        # Assuming all rows within a single DataFrame have the same ROI
-        common_roi_name = find_common_roi_name(group['ROI'].tolist())
+    # Separate files and folders
+    files = [f for f in input_path if os.path.isfile(f)]
+    folders = [f for f in input_path if os.path.isdir(f)]
 
-        layer_data = {
-            'ROI': common_roi_name,
-            'Layer': layer,
-            'Model': group['Model'].iloc[0],
-            'R': mean_r,  # Use scalar value
-            '%R2': mean_r ** 2,  # Use scalar value for %R2, computed from mean_r
-            'Significance': significance,  # Use scalar value
-            'SEM': group['R'].sem(),  # Use scalar value for SEM, if needed
-            'LNC': np.nan,  # Placeholder for LNC, adjust as needed
-            'UNC': np.nan  # Placeholder for UNC, adjust as needed
-        }
-
-        aggregated_data.append(layer_data)
-
-    return pd.DataFrame(aggregated_data)
-
-
-    return pd.DataFrame(aggregated_data)
-
-def find_common_roi_name(names):
-    """
-    Identifies the common ROI name within a single DataFrame.
-    """
-    if len(names) == 1:
-        return names[0]  # Directly return the name if there's only one
-
-    split_names = [name.split('_') for name in names]
-    common_parts = set(split_names[0]).intersection(*split_names[1:])
-    common_roi_name = '_'.join(common_parts)
-    return common_roi_name
-
-def aggregate_layers(dataframes):
-    """
-    Processes each DataFrame independently to aggregate by layer, then combines the results.
-    Each DataFrame represents its own ROI, maintaining a single aggregated value per layer.
-    """
-    # Ensure dataframes is a list
-    if isinstance(dataframes, pd.DataFrame):
-        dataframes = [dataframes]
-
-    aggregated_dfs = []
-
-    for df in dataframes:
-        aggregated_df = aggregate_df_by_layer(df)
-        aggregated_dfs.append(aggregated_df)
-
-    # Combine aggregated results from all DataFrames
-    final_df = pd.concat(aggregated_dfs, ignore_index=True)
+    # Raise warning if there are folders in the input list
+    if folders:
+        warnings.warn("Ignoring folders in the list.")
     
-    return final_df
+    # If input contains a folder, add its .npy files to the list
+    for folder in folders:
+        files.extend([os.path.join(folder, f) for f in os.listdir(folder) if f.endswith('.npy')])
+
+    # Filter only .npy files
+    npy_files = [f for f in files if f.endswith('.npy')]
+
+    if not npy_files:
+        raise ValueError("No valid .npy files found.")
+    
+    return npy_files
+
+
+
+def average_df_across_layers(dataframes):
+    """Function to average correlation values across layers and recalculate significance"""
+    
+    # Concatenate all DataFrames together for averaging across the 'Layer' dimension
+    combined_df = pd.concat(dataframes)
+
+    # Ensure the 'Layer' column is treated as a categorical type with original order
+    combined_df['Layer'] = pd.Categorical(combined_df['Layer'], categories=combined_df['Layer'].unique(), ordered=True)
+
+    # Group by 'Layer' and calculate the mean for the 'R' and '%R2' columns
+    averaged_df = combined_df.groupby('Layer', sort=False).agg({
+        'R': 'mean',
+        '%R2': 'mean'
+    }).reset_index()
+
+    # Recalculate significance across all 'R' values in the combined DataFrame
+    layer_significance = combined_df.groupby('Layer', sort=False)['R'].apply(lambda x: ttest_1samp(x, 0)[1])
+    layer_sem = combined_df.groupby('Layer', sort=False)['R'].apply(sem)
+
+    # Merge significance and SEM back into the averaged DataFrame
+    averaged_df['Significance'] = layer_significance.values
+    averaged_df['SEM'] = layer_sem.values
+
+    # Add placeholder values for 'LNC' and 'UNC'
+    averaged_df['LNC'] = np.nan
+    averaged_df['UNC'] = np.nan
+
+    return averaged_df
+
 
 
 def get_layers_ncondns(feat_path):
@@ -98,7 +102,7 @@ def get_layers_ncondns(feat_path):
     """
     
     # Find all npz files in the specified directory
-    activations = glob.glob(feat_path + "/*.npz")
+    activations = glob.glob(feat_path + '/*.np[zy]')
     
     # Count the number of npz files as the number of conditions (images)
     num_condns = len(activations)
@@ -120,7 +124,7 @@ def get_layers_ncondns(feat_path):
     return num_layers, layer_list, num_condns
 
 
-def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_feat, n_components=100):
+def encode_layer(layer_id, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_feat, n_components=100):
     """
     Encodes the layer activations using IncrementalPCA or Ridge Regression, for both training and test sets.
 
@@ -140,14 +144,12 @@ def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_
     """
     
     activations = []
-    feat_files = glob.glob(feat_path+'/*.npz')
+    feat_files = glob.glob(feat_path + '/*.np[zy]')
     feat_files.sort()
     
-    if metric == "pca":
-        pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
+    pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
  
-    
-    # Train encoding (PCA or Ridge)
+    # Train encoding
     for jj, ii in enumerate(trn_Idx):
         feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
         
@@ -162,13 +164,12 @@ def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_
         
         activations.append(new_activation)  # collect in a list
             
-        if metric == "pca" and ((jj + 1) % batch_size) == 0:
+        if ((jj + 1) % batch_size) == 0:
             pca.partial_fit(np.stack(activations[-batch_size:], axis=0))
 
     activations = np.stack(activations, axis=0)
 
-    if metric == "pca":
-        metric_trn = pca.transform(activations)
+    metric_trn = pca.transform(activations)
 
     # Encode test set
     activations = []
@@ -182,8 +183,7 @@ def encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_
         
     activations = np.stack(activations, axis=0)
 
-    if metric == "pca":
-        metric_tst = pca.transform(activations)
+    metric_tst = pca.transform(activations)
     
     return metric_trn, metric_tst
 
@@ -212,7 +212,89 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y):
 
 
 
-def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, metric="pca", batch_size=100, just_corr=True, avg_across_feat=False, return_correlations = False,random_state=14, save_path="Linear_Encoding_Results", file_name=None):
+
+
+def Ridge_Encoding(feat_path,
+                   roi_path, 
+                   model_name, 
+                   trn_tst_split=0.8, 
+                   n_folds=3, 
+                   n_components=100, 
+                   batch_size=100, 
+                   avg_across_feat=False, 
+                   return_correlations = False,
+                   random_state=42, 
+                   save_path="Linear_Encoding_Results", 
+                   file_name=None,
+                   average_across_layers=False):
+    
+    result = Encoding(feat_path, 
+             roi_path, 
+             model_name,
+             trn_tst_split=trn_tst_split, 
+             n_folds=n_folds, 
+             n_components=n_components, 
+             batch_size=batch_size, 
+             avg_across_feat=avg_across_feat, 
+             return_correlations = return_correlations,
+             random_state=random_state, 
+             save_path=save_path, 
+             file_name=file_name,
+             average_across_layers=average_across_layers,
+             metric="Ridge")
+    
+    return result
+    
+    
+def Linear_Encoding(feat_path, 
+                    roi_path, 
+                    model_name, 
+                    trn_tst_split=0.8, 
+                    n_folds=3, 
+                    n_components=100, 
+                    batch_size=100, 
+                    avg_across_feat=False, 
+                    return_correlations = False,
+                    random_state=42, 
+                    save_path="Linear_Encoding_Results", 
+                    file_name=None,
+                    average_across_layers=False):
+    
+    result = Encoding(feat_path, 
+             roi_path, 
+             model_name,
+             trn_tst_split=trn_tst_split, 
+             n_folds=n_folds, 
+             n_components=n_components, 
+             batch_size=batch_size, 
+             avg_across_feat=avg_across_feat, 
+             return_correlations = return_correlations,
+             random_state=random_state, 
+             save_path=save_path, 
+             file_name=file_name,
+             average_across_layers=average_across_layers,
+             metric="Linear")
+    
+    return result
+    
+
+
+
+
+def Encoding(feat_path, 
+                    roi_path, 
+                    model_name, 
+                    trn_tst_split=0.8, 
+                    n_folds=3, 
+                    n_components=100, 
+                    batch_size=100, 
+                    avg_across_feat=False, 
+                    return_correlations = False,
+                    random_state=42, 
+                    save_path="Linear_Encoding_Results", 
+                    file_name=None,
+                    average_across_layers=False,
+                    metric="Linear"):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -227,7 +309,6 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
         n_folds (int): Number of folds to split the data for cross-validation.
         n_components (int): Number of principal components to retain in PCA.
         batch_size (int): Batch size for Incremental PCA.
-        just_corr (bool): If True, only correlation values are considered in analysis (currently not used in function body).
         avg_across_feat (bool): If True it averages the activations across axis 1. Neccessary if different stimuli have a different size of features
         return_correlations (bool): If True, return correlation values for each ROI and layer.
         random_state (int): Seed for random operations to ensure reproducibility.
@@ -237,54 +318,82 @@ def Linear_Encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=
         corr_dict (dict): Dictionary containing correlation values for each layer and ROI (only if return_correlations is True).
     """
     
-    if metric == "ridge": 
-        raise NotImplementedError("Ridge regression is not implemented yet.")
-
+    # Turn the roi_path into a list of files
+    roi_paths = get_npy_files(roi_path)
     
-    # Check if its a list
-    roi_paths = roi_path if isinstance(roi_path, list) else [roi_path]
+    list_result_dataframes = []
+    list_correlations = []
+    all_results_df = pd.DataFrame()
     
-    list_dataframes = []
+    # Which encoding metric are we using?
+    if metric=="Linear":
+        encoding_metric = _linear_encoding
+    elif metric=="Ridge":
+        encoding_metric = _ridge_encoding
+        
+    if avg_across_feat == True:
+        print("avg_across_feat==True. This averages the activations across axis 1. Only neccessary if different stimuli have a different size of features (as with LLMs)")
+    
     
     # Iterate through all folder paths
-    for roi_path in tqdm(roi_paths):
-        result_dataframe = _linear_encoding(feat_path, 
+    for counter, roi_path in enumerate(roi_paths):
+        print(f"Processing file {counter}, {roi_path}")
+        result_dataframe = encoding_metric(feat_path, 
                                             roi_path, 
                                             model_name, 
                                             trn_tst_split=trn_tst_split, 
                                             n_folds=n_folds, 
                                             n_components=n_components, 
                                             batch_size=batch_size, 
-                                            just_corr=just_corr,
                                             avg_across_feat=avg_across_feat, 
                                             return_correlations=return_correlations,
-                                            random_state=random_state,
-                                            metric=metric)
+                                            random_state=random_state)
         
-
-        # Collect dataframes in list
-        if return_correlations:
-            list_dataframes.append(result_dataframe[0])
-        else:
-            list_dataframes.append(result_dataframe)
     
-    # If just one dataframe, return it as it is
-    if len(list_dataframes) == 1:
-        final_df = list_dataframes[0]
-    else:
-        final_df = aggregate_layers(list_dataframes)
+        
+        
+        
+        if average_across_layers:
+            list_result_dataframes.append(result_dataframe[0])  # Collect DataFrames for averaging later
+        else:
+            all_results_df = pd.concat([all_results_df, result_dataframe[0]], ignore_index=True)  # Append DataFrames
+
+        if return_correlations:
+            list_correlations.append(result_dataframe[1])
+            
+    if average_across_layers:
+        if len(list_result_dataframes) > 1:
+            warnings.warn("Code will now average the layer values across all given brain data with average_across_layers=True")
+            all_results_df = average_df_across_layers(list_result_dataframes)
+        else:
+            warnings.warn("Only one DataFrame available. Averaging across layers is not possible. Returning the single DataFrame.")
+            all_results_df = pd.concat(list_result_dataframes, ignore_index=True)  # Convert the single DataFrame to a Pandas DataFrame
+ 
         
     # Create the output folder if it doesn't exist
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-        
-    if file_name == None:
+
+    # Determine the file name
+    if file_name is None:
         csv_file_path = f"{save_path}/{model_name}.csv"
+        dataframe_path = f"{save_path}/{model_name}.npy"
+        correlations_file_path = f"{save_path}/{model_name}_correlations.npy"
     else:
         csv_file_path = f"{save_path}/{file_name}.csv"
-    final_df.to_csv(csv_file_path, index=False)
-    
-    return final_df
+        dataframe_path = f"{save_path}/{file_name}.npy"
+        correlations_file_path = f"{save_path}/{file_name}_correlations.npy"
+
+    # Save the DataFrame as a CSV file
+    all_results_df.to_csv(csv_file_path, index=False)
+    np.save(dataframe_path, all_results_df)
+
+    # If return_correlations is True, save the correlations dictionary as .npy
+    if return_correlations:
+        np.save(correlations_file_path, list_correlations)  # Save the list of correlations as .npy
+
+
+    return all_results_df
         
         
         
@@ -300,7 +409,236 @@ def linear_encoding(*args, **kwargs):
         
     
 
-def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds=3, n_components=100, batch_size=100, just_corr=True, avg_across_feat=False, return_correlations = False,random_state=14, metric="pca"):
+def _linear_encoding(feat_path, 
+                     roi_path, 
+                     model_name, 
+                     trn_tst_split=0.8, 
+                     n_folds=3, 
+                     n_components=100,
+                     batch_size=100, 
+                     avg_across_feat=False, 
+                     return_correlations=False,
+                     random_state=42):
+    """
+    Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
+
+    Args:
+        feat_path (str): Path to the directory containing model activation .npz files for multiple layers.
+        roi_path (str): Path to the directory containing .npy fMRI data files for multiple ROIs.
+        model_name (str): Name of the model being analyzed (used for labeling in the output).
+        trn_tst_split (float): Proportion of data to use for training (rest is used for testing).
+        n_folds (int): Number of folds to split the data for cross-validation.
+        n_components (int): Number of principal components to retain in PCA.
+        batch_size (int): Batch size for Incremental PCA.
+        return_correlations (bool): If True, return correlation values for each ROI and layer.
+        random_state (int): Seed for random operations to ensure reproducibility.
+
+    Returns:
+        all_rois_df (pd.DataFrame): DataFrame summarizing the analysis results including correlations and statistical significance.
+        corr_dict (dict): Dictionary containing correlation values for each layer and ROI (only if return_correlations is True).
+    """
+    
+    # Initialize dictionaries to store results
+    fold_dict = {}  # To store fold-wise results
+    corr_dict = {}  # To store correlations if requested
+    
+    # Check if roi_path is a list, if not, make it a list
+    roi_file = roi_path 
+    roi_name = roi_file.split(os.sep)[-1].split(".")[0]
+    
+    # Load feature files and get layer information
+    feat_files = glob.glob(feat_path + '/*.np[zy]')
+    num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
+    
+    # Loop over each fold for cross-validation
+    for fold_ii in range(n_folds):
+        
+        # Set random seeds for reproducibility
+        np.random.seed(fold_ii+random_state)
+        random.seed(fold_ii+random_state)
+        
+        # Split the data indices into training and testing sets
+        trn_Idx,tst_Idx = train_test_split(range(len(feat_files)),test_size=(1-trn_tst_split),train_size=trn_tst_split,random_state=fold_ii+random_state)
+        
+        # Process each layer of model activations
+        for layer_id in tqdm(layer_list, desc=f"Layers in fold {fold_ii}"):
+            if fold_ii not in fold_dict.keys():
+                fold_dict[fold_ii] = {}
+                corr_dict[fold_ii] = {}
+            
+            # Encode the current layer using PCA and split into training and testing sets
+            pca_trn,pca_tst = encode_layer(layer_id, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_feat, n_components)
+
+            fold_dict[fold_ii][layer_id] = []
+            corr_dict[fold_ii][layer_id] = []
+                
+            # Load fMRI data for the current ROI and split into training and testing sets
+            fmri_data = np.load(os.path.join(roi_file))
+            fmri_trn,fmri_tst = fmri_data[trn_Idx],fmri_data[tst_Idx]
+            
+            # Train a linear regression model and compute correlations for the current ROI
+            r_lst = train_regression_per_ROI(pca_trn,pca_tst,fmri_trn,fmri_tst)
+            r = np.mean(r_lst) # Mean of the correlations of all train test splits
+            
+            # Store correlation results
+            if return_correlations:                   
+                corr_dict[fold_ii][layer_id].append(r_lst)
+            fold_dict[fold_ii][layer_id].append(r)
+
+            
+    # Compile all results into a DataFrame for easy analysis
+    layers = list(fold_dict[0].keys())  # Get the layer list from the first fold
+    rows = []
+
+    # Iterate through each layer
+    for layer_id in layers:
+        
+        # If we have more than one fold, collect the R values across folds from fold_dict
+        if n_folds > 1:
+            
+            # find r_values per layer across folds
+            r_values_across_folds = [fold_dict[fold_ii][layer_id][0] for fold_ii in range(n_folds)]
+            
+            # Get average R value across folds
+            R = np.mean(r_values_across_folds)
+            
+            # Perform t-test on the R values across folds
+            _, significance = ttest_1samp(r_values_across_folds, 0)
+
+            # Compute the Standard Error of the Mean (SEM)
+            sem_value = sem(r_values_across_folds)
+
+        # If there is only one fold, use the r_lst from the fold directly for testing
+        else:
+            # Get R Value
+            R = fold_dict[0][layer_id][0]
+            
+            # Perform t-test on the r_lst values since they are also correlation values
+            _, significance = ttest_1samp(r_lst, 0)
+
+            # Compute the Standard Error of the Mean (SEM)
+            sem_value = sem(r_lst)
+
+        # Construct the row dictionary for the DataFrame
+        output_dict = {
+            "ROI": roi_name,
+            "Layer": layer_id,
+            "Model": model_name,
+            "R": R,
+            "%R2": np.nan,
+            "Significance": significance,
+            "SEM": sem_value,
+            "LNC": np.nan, 
+            "UNC": np.nan 
+        }
+
+        # Append the row to the rows list
+        rows.append(output_dict)
+
+    # Create the DataFrame from the collected rows
+    all_rois_df = pd.DataFrame(rows, columns=['ROI', 'Layer', 'Model', 'R', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
+    
+    if return_correlations:
+        return all_rois_df, corr_dict  # Return both the DataFrame and correlation dictionary as-is
+    else:
+        return all_rois_df, None  # Only return the DataFrame
+    
+    
+    
+    
+    
+
+def train_Ridgeregression_per_ROI(trn_x,tst_x,trn_y,tst_y):
+    """
+    Train a linear regression model for each ROI and compute correlation coefficients.
+
+    Args:
+        trn_x (numpy.ndarray): PCA-transformed training set activations.
+        tst_x (numpy.ndarray): PCA-transformed test set activations.
+        trn_y (numpy.ndarray): fMRI training set data.
+        tst_y (numpy.ndarray): fMRI test set data.
+
+    Returns:
+        correlation_lst (numpy.ndarray): List of correlation coefficients for each ROI.
+    """
+    
+    # Standardize the features
+    scaler = StandardScaler()
+    trn_x = scaler.fit_transform(trn_x)
+    tst_x = scaler.transform(tst_x)
+
+    reg = Ridge()
+    param_grid = {'alpha': np.logspace(-2, 2, 5)}
+
+    # Define cross-validation strategies
+    inner_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
+    outer_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
+
+    # Inner loop: hyperparameter tuning
+    grid_search = GridSearchCV(estimator=reg, param_grid=param_grid, cv=inner_cv, n_jobs=-1)
+
+    X_sample, _, y_sample, _ = train_test_split(trn_x, trn_y, test_size=0.5, random_state=1)
+
+    # Outer loop: model evaluation
+    nested_cv_scores = cross_val_score(grid_search, X=X_sample, y=y_sample, cv=outer_cv, n_jobs=-1)
+
+    # # Results
+    # print(f"Nested CV Mean R^2: {nested_cv_scores.mean():.3f} ± {nested_cv_scores.std():.3f}")
+
+    
+    # print('for training:', trn_x.shape)
+    # print('for training:', trn_y.shape)
+    
+    # Train the best model on the full dataset
+    grid_search.fit(X_sample, y_sample)
+    best_params = grid_search.best_params_
+
+    best_model = Ridge(**best_params)
+    best_model.fit(trn_x, trn_y)
+
+    y_prd = best_model.predict(tst_x)
+
+    correlation_lst = np.zeros(y_prd.shape[1])
+    for v in range(y_prd.shape[1]):
+        correlation_lst[v] = pearsonr(y_prd[:,v], tst_y[:,v])[0]
+    return correlation_lst
+
+
+
+
+def encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, avg_across_feat):
+    """
+    Encodes the layer activations using IncrementalPCA, for both training and test sets.
+
+    Parameters:
+    - layer_id (str): The layer name whose activations are to be encoded.
+    - trn_Idx (list of int): Indices of the training set files.
+    - tst_Idx (list of int): Indices of the test set files.
+    - feat_path (str): Path to the directory containing npz files with model features.
+
+    Returns:
+    - trn (numpy.ndarray): features of the training set.
+    - tst (numpy.ndarray): features of the test set.
+    """
+    feat_files = glob.glob(feat_path + '/*.np[zy]')
+    feat_files.sort()  # Ensure consistent order
+
+    trn = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in trn_Idx])
+    tst = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in tst_Idx])
+    return trn, tst
+
+
+    
+def _ridge_encoding(feat_path, 
+                    roi_path, 
+                    model_name, 
+                    trn_tst_split=0.8, 
+                    n_folds=3, 
+                    n_components=100, 
+                    batch_size=100, 
+                    avg_across_feat=False,
+                    return_correlations=False,
+                    random_state=14):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -326,19 +664,16 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
     corr_dict = {}  # To store correlations if requested
     
     # Check if roi_path is a list, if not, make it a list
-    roi_paths = roi_path if isinstance(roi_path, list) else [roi_path]
+    roi_file = roi_path 
+    roi_name = roi_file.split(os.sep)[-1].split(".")[0]
     
     # Load feature files and get layer information
-    feat_files = glob.glob(feat_path+'/*.npz')
+    feat_files = glob.glob(feat_path + '/*.np[zy]')
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
     
-    # Create a tqdm object with an initial description
-    
-    pbar = tqdm(range(n_folds), desc="Initializing folds")
     
     # Loop over each fold for cross-validation
-    for fold_ii in pbar:
-        pbar.set_description(f"Processing fold {fold_ii + 1}/{n_folds}")
+    for fold_ii in range(n_folds):
         
         # Set random seeds for reproducibility
         np.random.seed(fold_ii+random_state)
@@ -348,77 +683,83 @@ def _linear_encoding(feat_path, roi_path, model_name, trn_tst_split=0.8, n_folds
         trn_Idx,tst_Idx = train_test_split(range(len(feat_files)),test_size=(1-trn_tst_split),train_size=trn_tst_split,random_state=fold_ii+random_state)
         
         # Process each layer of model activations
-        for layer_id in layer_list:
-            if layer_id not in fold_dict.keys():
-                fold_dict[layer_id] = {}
-                corr_dict[layer_id] = {}
-            
+        for layer_id in tqdm(layer_list, desc=f"Layers in fold {fold_ii}"):
+            if fold_ii not in fold_dict.keys():
+                fold_dict[fold_ii] = {}
+                corr_dict[fold_ii] = {}
             
             # Encode the current layer using PCA and split into training and testing sets
-            pca_trn,pca_tst = encode_layer(layer_id, metric, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_feat, n_components)
+            pca_trn,pca_tst = encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, avg_across_feat)
 
-            for roi_path in roi_paths:
-                roi_files = []
-            
-                 # Check if the roi_path is a file or a directory
-                if os.path.isfile(roi_path) and roi_path.endswith('.npy'):
-                    # If it's a file, directly use it
-                    roi_files.append(roi_path)
-                elif os.path.isdir(roi_path):
-                    # If it's a directory, list all .npy files within it
-                    roi_files.extend(glob.glob(os.path.join(roi_path, '*.npy')))
-                else:
-                    print(f"Invalid ROI path: {roi_path}")
-                    continue  # Skip this roi_path if it's neither a valid file nor a directory
-
-                # Process each ROI's fMRI data
-                if not roi_files:
-                    print(f"No roi_files found in {roi_path}")
-                    continue  # Skip to the next roi_path if no ROI files were found
-
-                for roi_file in roi_files:
-                    roi_name = os.path.basename(roi_file)[:-4]
-                    if roi_name not in fold_dict[layer_id].keys():
-                        fold_dict[layer_id][roi_name] = []
-                        corr_dict[layer_id][roi_name] = []
+            fold_dict[fold_ii][layer_id] = []
+            corr_dict[fold_ii][layer_id] = []
                         
-                    # Load fMRI data for the current ROI and split into training and testing sets
-                    fmri_data = np.load(os.path.join(roi_file))
-                    fmri_trn,fmri_tst = fmri_data[trn_Idx],fmri_data[tst_Idx]
-                    
-                    # Train a linear regression model and compute correlations for the current ROI
-                    r_lst = train_regression_per_ROI(pca_trn,pca_tst,fmri_trn,fmri_tst)
-                    r = np.mean(r_lst) # Mean of all train test splits
-                    
-                    # Store correlation results
-                    if return_correlations:                   
-                        corr_dict[layer_id][roi_name].append(r_lst)
-                        if fold_ii == n_folds-1:
-                            corr_dict[layer_id][roi_name] = np.mean(np.array(corr_dict[layer_id][roi_name], dtype=np.float16),axis=0)
-                    fold_dict[layer_id][roi_name].append(r)
+            # Load fMRI data for the current ROI and split into training and testing sets
+            fmri_data = np.load(os.path.join(roi_file))
+            fmri_trn,fmri_tst = fmri_data[trn_Idx],fmri_data[tst_Idx]
+            
+            # Train a linear regression model and compute correlations for the current ROI
+            r_lst = train_Ridgeregression_per_ROI(pca_trn,pca_tst,fmri_trn,fmri_tst)
+            r = np.mean(r_lst) # Mean of all train test splits
+            
+            # Store correlation results
+            if return_correlations:                   
+                corr_dict[fold_ii][layer_id].append(r_lst)
+            fold_dict[fold_ii][layer_id].append(r)
                 
     # Compile all results into a DataFrame for easy analysis
-    all_rois_df = pd.DataFrame(columns=['ROI', 'Layer', "Model", 'R', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
-    for layer_id,layer_dict in fold_dict.items():
-        for roi_name,r_lst in layer_dict.items():
+    layers = list(fold_dict[0].keys())  # Get the layer list from the first fold
+    rows = []
+
+    # Iterate through each layer
+    for layer_id in layers:
+        
+        # If we have more than one fold, collect the R values across folds from fold_dict
+        if n_folds > 1:
             
-            # Compute statistical significance of the correlations
-            significance = ttest_1samp(r_lst, 0)[1]
-            R = np.mean(r_lst)
-            r_lst_array = np.array(r_lst)  # Convert the list to a NumPy array
-            output_dict = {"ROI":roi_name,
+            # find r_values per layer across folds
+            r_values_across_folds = [fold_dict[fold_ii][layer_id][0] for fold_ii in range(n_folds)]
+            
+            # Get average R value across folds
+            R = np.mean(r_values_across_folds)
+            
+            # Perform t-test on the R values across folds
+            _, significance = ttest_1samp(r_values_across_folds, 0)
+
+            # Compute the Standard Error of the Mean (SEM)
+            sem_value = sem(r_values_across_folds)
+
+        # If there is only one fold, use the r_lst from the fold directly for testing
+        else:
+            # Get R Value
+            R = fold_dict[0][layer_id][0]
+            
+            # Perform t-test on the r_lst values since they are also correlation values
+            _, significance = ttest_1samp(r_lst, 0)
+
+            # Compute the Standard Error of the Mean (SEM)
+            sem_value = sem(r_lst)
+
+        # Construct the row dictionary for the DataFrame
+        output_dict = {
+            "ROI": roi_name,
             "Layer": layer_id,
             "Model": model_name,
-            "R": [R],
-            "%R2": [R ** 2],
-            "Significance": [significance],
-            "SEM": [sem(r_lst_array)],
-            "LNC": [np.nan],
-            "UNC": [np.nan]}
-            layer_df = pd.DataFrame.from_dict(output_dict)
-            all_rois_df = pd.concat([all_rois_df, layer_df], ignore_index=True)
-            
-    if return_correlations:
-        return all_rois_df,corr_dict
+            "R": R,
+            "%R2": np.nan,
+            "Significance": significance,
+            "SEM": sem_value,
+            "LNC": np.nan, 
+            "UNC": np.nan 
+        }
+
+        # Append the row to the rows list
+        rows.append(output_dict)
+
+    # Create the DataFrame from the collected rows
+    all_rois_df = pd.DataFrame(rows, columns=['ROI', 'Layer', 'Model', 'R', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
     
-    return all_rois_df
+    if return_correlations:
+        return all_rois_df, corr_dict  # Return both the DataFrame and correlation dictionary as-is
+    else:
+        return all_rois_df, None  # Only return the DataFrame
