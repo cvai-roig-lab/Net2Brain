@@ -1,6 +1,6 @@
 
 
-# Net2Brain (Update 05/24) 🧠
+# Net2Brain (Update 10/24) 🧠
 
 <img src="docs/source/Net2Brain_Logo.png" alt="Net2Brain Logo" width="50%"/>
 
