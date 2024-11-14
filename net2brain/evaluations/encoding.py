@@ -56,6 +56,12 @@ def get_npy_files(input_path):
     return npy_files
 
 
+def raw2rdm(raw, dim=None):
+    if dim is not None:
+        raw = (raw - np.mean(raw, axis=dim, keepdims=True)) / (np.std(raw, axis=dim, keepdims=True) + 1e-7)
+    rdm = 1 - np.corrcoef(raw)
+    return rdm
+
 
 def average_df_across_layers(dataframes):
     """Function to average correlation values across layers and recalculate significance"""
@@ -227,13 +233,6 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y, roi_name, save_path, model
     Returns:
         correlation_lst (numpy.ndarray): List of correlation coefficients for each ROI.
     """
-
-    def raw2rdm(raw, dim=None):
-        if dim is not None:
-            raw = (raw - np.mean(raw, axis=dim, keepdims=True)) / (np.std(raw, axis=dim, keepdims=True) + 1e-7)
-        rdm = 1 - np.corrcoef(raw)
-        return rdm
-
     if not os.path.exists(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy"):
         if trn_x is None:
             raise ValueError("Not all ROI regressions were computed on previous run - PCA needs to be re-run.")
@@ -253,9 +252,7 @@ def train_regression_per_ROI(trn_x,tst_x,trn_y,tst_y, roi_name, save_path, model
         prd_rdm = raw2rdm(y_prd)
         brain_rdm = raw2rdm(tst_y)
         corr = spearmanr(sq(brain_rdm), sq(prd_rdm))[0]
-        corr_squared = np.square(corr)
-        r2 = np.mean(corr_squared)
-        r = np.sqrt(r2)
+        r = np.mean(corr)
         return r
 
 
@@ -606,7 +603,7 @@ def _linear_encoding(feat_path,
 
 
 
-def train_Ridgeregression_per_ROI(trn_x,tst_x,trn_y,tst_y):
+def train_Ridgeregression_per_ROI(trn_x,tst_x,trn_y,tst_y, roi_name, save_path, model_name, layer_id, veRSA=False):
     """
     Train a linear regression model for each ROI and compute correlation coefficients.
 
@@ -619,49 +616,62 @@ def train_Ridgeregression_per_ROI(trn_x,tst_x,trn_y,tst_y):
     Returns:
         correlation_lst (numpy.ndarray): List of correlation coefficients for each ROI.
     """
+    if not os.path.exists(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy"):
+        if trn_x is None:
+            raise ValueError("Not all ROI regressions were computed on previous run - PCA needs to be re-run.")
+        # Standardize the features
+        scaler = StandardScaler()
+        trn_x = scaler.fit_transform(trn_x)
+        tst_x = scaler.transform(tst_x)
 
-    # Standardize the features
-    scaler = StandardScaler()
-    trn_x = scaler.fit_transform(trn_x)
-    tst_x = scaler.transform(tst_x)
+        reg = Ridge()
+        param_grid = {'alpha': np.logspace(-2, 2, 5)}
 
-    reg = Ridge()
-    param_grid = {'alpha': np.logspace(-2, 2, 5)}
+        # Define cross-validation strategies
+        inner_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
+        outer_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
 
-    # Define cross-validation strategies
-    inner_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
-    outer_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
+        # Inner loop: hyperparameter tuning
+        grid_search = GridSearchCV(estimator=reg, param_grid=param_grid, cv=inner_cv, n_jobs=-1)
 
-    # Inner loop: hyperparameter tuning
-    grid_search = GridSearchCV(estimator=reg, param_grid=param_grid, cv=inner_cv, n_jobs=-1)
+        X_sample, _, y_sample, _ = train_test_split(trn_x, trn_y, test_size=0.5, random_state=1)
 
-    X_sample, _, y_sample, _ = train_test_split(trn_x, trn_y, test_size=0.5, random_state=1)
+        # Outer loop: model evaluation
+        nested_cv_scores = cross_val_score(grid_search, X=X_sample, y=y_sample, cv=outer_cv, n_jobs=-1)
 
-    # Outer loop: model evaluation
-    nested_cv_scores = cross_val_score(grid_search, X=X_sample, y=y_sample, cv=outer_cv, n_jobs=-1)
-
-    # # Results
-    # print(f"Nested CV Mean R^2: {nested_cv_scores.mean():.3f} ± {nested_cv_scores.std():.3f}")
-
-
-    # print('for training:', trn_x.shape)
-    # print('for training:', trn_y.shape)
-
-    # Train the best model on the full dataset
-    grid_search.fit(X_sample, y_sample)
-    best_params = grid_search.best_params_
-
-    best_model = Ridge(**best_params)
-    best_model.fit(trn_x, trn_y)
-
-    y_prd = best_model.predict(tst_x)
-
-    correlation_lst = np.zeros(y_prd.shape[1])
-    for v in range(y_prd.shape[1]):
-        correlation_lst[v] = pearsonr(y_prd[:,v], tst_y[:,v])[0]
-    return correlation_lst
+        # # Results
+        # print(f"Nested CV Mean R^2: {nested_cv_scores.mean():.3f} ± {nested_cv_scores.std():.3f}")
 
 
+        # print('for training:', trn_x.shape)
+        # print('for training:', trn_y.shape)
+
+        # Train the best model on the full dataset
+        grid_search.fit(X_sample, y_sample)
+        best_params = grid_search.best_params_
+
+        best_model = Ridge(**best_params)
+        best_model.fit(trn_x, trn_y)
+
+        y_prd = best_model.predict(tst_x)
+
+        if not os.path.exists(f"{save_path}/{model_name}/{layer_id}"):
+            os.makedirs(f"{save_path}/{model_name}/{layer_id}")
+        np.save(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy", y_prd)
+    else:
+        y_prd = np.load(f"{save_path}/{model_name}/{layer_id}/{roi_name}.npy")
+
+    if not veRSA:
+        correlation_lst = np.zeros(y_prd.shape[1])
+        for v in range(y_prd.shape[1]):
+            correlation_lst[v] = pearsonr(y_prd[:,v], tst_y[:,v])[0]
+        return correlation_lst
+    else:
+        prd_rdm = raw2rdm(y_prd)
+        brain_rdm = raw2rdm(tst_y)
+        corr = spearmanr(sq(brain_rdm), sq(prd_rdm))[0]
+        r = np.mean(corr)
+        return r
 
 
 def encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, avg_across_feat):
@@ -766,7 +776,8 @@ def _ridge_encoding(feat_path,
 
             if not veRSA:
                 # Train a regression model and compute correlations for the current ROI
-                r_lst = train_Ridgeregression_per_ROI(pca_trn,pca_tst,fmri_trn,fmri_tst)
+                r_lst = train_Ridgeregression_per_ROI(pca_trn,pca_tst,fmri_trn,fmri_tst, roi_name, save_path,
+                                                      model_name, layer_id, veRSA)
                 r = np.mean(r_lst) # Mean of all train test splits
 
                 # Store correlation results
