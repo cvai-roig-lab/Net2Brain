@@ -202,6 +202,8 @@ class NPZSeparateEngine(FeatureEngine):
         stimuli = []
         sample = open_npz(self._stimuli[0])[item]
         feat_dim = sample.squeeze().shape
+        if feat_dim == ():
+            feat_dim = (1,)
         # Check if dimensionality reduction is needed
         if self.dim_reduction and (not self.max_dim_allowed or len(sample.flatten()) > self.max_dim_allowed):
             # Estimate the dimensionality reduction from a subset of the data
