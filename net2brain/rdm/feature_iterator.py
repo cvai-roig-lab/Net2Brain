@@ -213,7 +213,7 @@ class NPZSeparateEngine(FeatureEngine):
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                feats[i, :] = fitted_transform.transform(open_npz(file)[item].reshape(1, -1)).squeeze(0)
+                feats[i, :] = fitted_transform.transform(open_npz(file)[item].reshape(1, -1)).squeeze()
                 stimuli.append(file.stem)
         # Otherwise load features without dimensionality reduction
         else:
@@ -221,7 +221,7 @@ class NPZSeparateEngine(FeatureEngine):
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                feats[i, :] = open_npz(file)[item].squeeze(0)
+                feats[i, :] = open_npz(file)[item].squeeze()
                 stimuli.append(file.stem)
         return item, stimuli, feats
 
