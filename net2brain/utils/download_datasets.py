@@ -706,4 +706,30 @@ class DatasetNSD_25(DatasetNSD_872):
         viz_path = os.path.join(self.dataset_folder, "NSD_25_roi_masks")
 
         return {"stimuli_path": stimuli_path, "roi_path": roi_path, "viz_path": viz_path, "captions_path": captions_path}
+        
+ 
+class DatasetThings_fMRI(BaseDataset):
+    dataset_name = "Things_test"
+    DATASET_URLS = {
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiBk8D3GYTMefWCgvAt7mV/Things_test.zip"
+    }
+
+
+    def __init__(self, path=None):
+        super().__init__(path)
+        self.source_path = "Things_test"
+        
+    def _load(self):
+        self.download_and_extract_zip()
+        # Dictionary to store folder names and their paths
+        folder_paths = {}
+        
+        # Iterate over items in the dataset folder
+        for item in os.listdir(self.dataset_folder):
+            item_path = os.path.join(self.dataset_folder, item)
+            # Check if the item is a directory
+            if os.path.isdir(item_path):
+                folder_paths[item] = item_path
+                
+        return folder_paths
     
