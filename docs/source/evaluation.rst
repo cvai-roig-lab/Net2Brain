@@ -270,6 +270,7 @@ Prerequisites for the Distributional Comparison function include:
 - **metric**: The distance metric used to compare distributions. Options are:
   - **"jsd"**: Jensen-Shannon Divergence.
   - **"wasserstein"**: Wasserstein Distance.
+- **"bins":**  Number of bins for histogramming.
 - **model_name**: The identifier for the model, crucial for labeling the output.
 
 .. warning::
@@ -288,6 +289,7 @@ Returns:
         feat_path="path/to/features",
         brain_path="path/to/brain_data",
         metric="jsd",
+        bins=50,
         model_name="model_name"
     )
 
@@ -296,6 +298,7 @@ Returns:
         feat_path="path/to/features",
         brain_path="path/to/brain_data",
         metric="wasserstein",
+        bins=50,
         model_name="model_name"
     )
 

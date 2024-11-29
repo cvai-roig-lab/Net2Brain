@@ -98,7 +98,7 @@ class DistributionalComparison:
         return np.array(histograms), np.array(bin_centers)
 
     
-    def compare_distributions(self, X1, X2, metric='jsd', bins=50):
+    def compare_distributions(self, X1, X2, metric, bins):
         """
         Compare feature-wise distributions between two datasets.
 
@@ -138,7 +138,7 @@ class DistributionalComparison:
         return np.mean(distances)
     
 
-    def loop_dist_comp(self, feat_path, fmri_data, layer_name, metric):
+    def loop_dist_comp(self, feat_path, fmri_data, layer_name, metric, bins):
         """
         Perform Distributional Comparison for a single DNN layer and corresponding fMRI data.
         
@@ -179,11 +179,11 @@ class DistributionalComparison:
 
         # Compute Distributional Comparison for current layer and roi
         print("Calulating Distributional Comparison score...")
-        comp_score = self.compare_distributions(dnn_features, fmri_data, metric=metric)
+        comp_score = self.compare_distributions(dnn_features, fmri_data, metric, bins)
         
         return comp_score
     
-    def prepare_dist_comp(self, feat_path, brain_path, metric, model_name):
+    def prepare_dist_comp(self, feat_path, brain_path, metric, bins, model_name):
         """
         Compute Distributional Comparison scores for all layers of DNN activations with all ROIs' fMRI data
         and return a pandas DataFrame.
@@ -219,7 +219,7 @@ class DistributionalComparison:
             # Compute Distributional Comparison for each layer
             for layer_name in tqdm(layer_list, desc=f"Processing Layers for ROI: {roi_name}"):
                 # Compute Distributional Comparison score for the layer
-                comp_score = self.loop_dist_comp(feat_path, fmri_data, layer_name, metric)
+                comp_score = self.loop_dist_comp(feat_path, fmri_data, layer_name, metric, bins)
 
                 # Construct the row dictionary
                 row = {
@@ -242,7 +242,7 @@ class DistributionalComparison:
     
     
     @classmethod
-    def run(cls, feat_path, brain_path, metric="wasserstein", model_name="Results"):
+    def run(cls, feat_path, brain_path, metric="wasserstein", bins=50, model_name="Results"):
         """
         Unified entry point for running Distributional Comparison evaluation.
 
@@ -255,7 +255,7 @@ class DistributionalComparison:
             pd.DataFrame: DataFrame with Distributional Comparison results.
         """
         instance = cls()
-        return instance.prepare_dist_comp(feat_path, brain_path, metric, model_name)
+        return instance.prepare_dist_comp(feat_path, brain_path, metric, bins, model_name)
 
 
 
