@@ -1,0 +1,401 @@
+{
+  "PANNS_Cnn10": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4"
+    ]
+  },
+  "PANNS_Cnn14_16k": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "PANNS_Cnn14_8k": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "PANNS_Cnn14_DecisionLevelAtt": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "PANNS_Cnn14_DecisionLevelMax": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "PANNS_Cnn14_emb128": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "PANNS_Cnn14_emb32": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "PANNS_Cnn14_emb512": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "PANNS_Cnn14": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "PANNS_Cnn6": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4"
+    ]
+  },
+  "PANNS_DaiNet19": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4"
+    ]
+  },
+  "PANNS_LeeNet11": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6",
+      "conv_block7",
+      "conv_block8",
+      "conv_block9"
+    ]
+  },
+  "PANNS_LeeNet24": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6",
+      "conv_block7",
+      "conv_block8",
+      "conv_block9"
+    ]
+  },
+  "PANNS_MobileNetV1": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13"
+    ]
+  },
+  "PANNS_MobileNetV2": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18"
+    ]
+  },
+  "PANNS_Res1dNet31": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "layer1",
+      "layer2",
+      "layer3",
+      "layer4",
+      "layer5",
+      "layer6",
+      "layer7"
+    ]
+  },
+  "PANNS_Res1dNet51": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "layer1",
+      "layer2",
+      "layer3",
+      "layer4",
+      "layer5",
+      "layer6",
+      "layer7"
+    ]
+  },
+  "PANNS_ResNet22": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block_after1",
+      "layer1",
+      "layer2",
+      "layer3",
+      "layer4"
+    ]
+  },
+  "PANNS_ResNet38": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block_after1",
+      "layer1",
+      "layer2",
+      "layer3",
+      "layer4"
+    ]
+  },
+  "PANNS_ResNet54": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "conv_block1",
+      "conv_block_after1",
+      "layer1",
+      "layer2",
+      "layer3",
+      "layer4"
+    ]
+  },
+  "PANNS_Wavegram_Cnn14": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "pre_block1",
+      "pre_block2",
+      "pre_block3",
+      "pre_block4",
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "PANNS_Wavegram_Logmel_Cnn14": {
+    "model": ".implemented_models.audio.load_panns",
+    "nodes": [
+      "pre_block1",
+      "pre_block2",
+      "pre_block3",
+      "pre_block4",
+      "conv_block1",
+      "conv_block2",
+      "conv_block3",
+      "conv_block4",
+      "conv_block5",
+      "conv_block6"
+    ]
+  },
+  "MIT/ast-finetuned-audioset-14-14-0.443": {
+    "model": "transformers.ASTModel.from_pretrained",
+    "tokenizer": "transformers.ASTFeatureExtractor.from_pretrained",
+    "nodes": [
+      "encoder.layer.0",
+      "encoder.layer.1",
+      "encoder.layer.2",
+      "encoder.layer.3",
+      "encoder.layer.4",
+      "encoder.layer.5",
+      "encoder.layer.6",
+      "encoder.layer.7",
+      "encoder.layer.8",
+      "encoder.layer.9",
+      "encoder.layer.10",
+      "encoder.layer.11"
+    ]
+  },
+  "MIT/ast-finetuned-audioset-16-16-0.442": {
+    "model": "transformers.ASTModel.from_pretrained",
+    "tokenizer": "transformers.ASTFeatureExtractor.from_pretrained",
+    "nodes": [
+      "encoder.layer.0",
+      "encoder.layer.1",
+      "encoder.layer.2",
+      "encoder.layer.3",
+      "encoder.layer.4",
+      "encoder.layer.5",
+      "encoder.layer.6",
+      "encoder.layer.7",
+      "encoder.layer.8",
+      "encoder.layer.9",
+      "encoder.layer.10",
+      "encoder.layer.11"
+    ]
+  },
+  "MIT/ast-finetuned-audioset-10-10-0.4593": {
+    "model": "transformers.ASTModel.from_pretrained",
+    "tokenizer": "transformers.ASTFeatureExtractor.from_pretrained",
+    "nodes": [
+      "encoder.layer.0",
+      "encoder.layer.1",
+      "encoder.layer.2",
+      "encoder.layer.3",
+      "encoder.layer.4",
+      "encoder.layer.5",
+      "encoder.layer.6",
+      "encoder.layer.7",
+      "encoder.layer.8",
+      "encoder.layer.9",
+      "encoder.layer.10",
+      "encoder.layer.11"
+    ]
+  },
+  "MIT/ast-finetuned-audioset-10-10-0.448": {
+    "model": "transformers.ASTModel.from_pretrained",
+    "tokenizer": "transformers.ASTFeatureExtractor.from_pretrained",
+    "nodes": [
+      "encoder.layer.0",
+      "encoder.layer.1",
+      "encoder.layer.2",
+      "encoder.layer.3",
+      "encoder.layer.4",
+      "encoder.layer.5",
+      "encoder.layer.6",
+      "encoder.layer.7",
+      "encoder.layer.8",
+      "encoder.layer.9",
+      "encoder.layer.10",
+      "encoder.layer.11"
+    ]
+  },
+  "MIT/ast-finetuned-audioset-10-10-0.450": {
+    "model": "transformers.ASTModel.from_pretrained",
+    "tokenizer": "transformers.ASTFeatureExtractor.from_pretrained",
+    "nodes": [
+      "encoder.layer.0",
+      "encoder.layer.1",
+      "encoder.layer.2",
+      "encoder.layer.3",
+      "encoder.layer.4",
+      "encoder.layer.5",
+      "encoder.layer.6",
+      "encoder.layer.7",
+      "encoder.layer.8",
+      "encoder.layer.9",
+      "encoder.layer.10",
+      "encoder.layer.11"
+    ]
+  },
+  "MIT/ast-finetuned-audioset-12-12-0.447MIT/ast-finetuned-speech-commands-v2": {
+    "model": "transformers.ASTModel.from_pretrained",
+    "tokenizer": "transformers.ASTFeatureExtractor.from_pretrained",
+    "nodes": [
+      "encoder.layer.0",
+      "encoder.layer.1",
+      "encoder.layer.2",
+      "encoder.layer.3",
+      "encoder.layer.4",
+      "encoder.layer.5",
+      "encoder.layer.6",
+      "encoder.layer.7",
+      "encoder.layer.8",
+      "encoder.layer.9",
+      "encoder.layer.10",
+      "encoder.layer.11"
+    ]
+  },
+  "MIT/ast-finetuned-audioset-10-10-0.448-v2": {
+    "model": "transformers.ASTModel.from_pretrained",
+    "tokenizer": "transformers.ASTFeatureExtractor.from_pretrained",
+    "nodes": [
+      "encoder.layer.0",
+      "encoder.layer.1",
+      "encoder.layer.2",
+      "encoder.layer.3",
+      "encoder.layer.4",
+      "encoder.layer.5",
+      "encoder.layer.6",
+      "encoder.layer.7",
+      "encoder.layer.8",
+      "encoder.layer.9",
+      "encoder.layer.10",
+      "encoder.layer.11"
+    ]
+  }
+}
