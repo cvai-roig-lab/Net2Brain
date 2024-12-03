@@ -13,6 +13,7 @@ setup(
     install_requires=[
         'flake8',
         'librosa',
+        'torchlibrosa',
         'h5py',
         'sentencepiece',
         'flax',

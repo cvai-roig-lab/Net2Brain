@@ -7,6 +7,11 @@ import librosa
 import torch
 import torch.nn as nn
 import warnings
+from pathlib import Path
+
+CACHE_DIR = Path.home() / ".cache" / "net2brain"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
 
 # Base class for all NetSets
 class NetSetBase:
@@ -20,7 +25,9 @@ class NetSetBase:
     layers = None  # Layers in the model to be used for feature extraction
     loaded_model = None  # The loaded model instance
     extractor_model = None  # The feature extractor model instance
-    device = None # Device for computation
+    device = None  # Device for computation
+
+    audio_loader_kwargs = None  # can be set by the audio model
 
     @classmethod
     def register_netset(cls):
@@ -37,7 +44,7 @@ class NetSetBase:
     @classmethod
     def supports_data_type(cls, data_type):
         return data_type in cls.supported_data_types
-    
+
     def select_model_layers(self, layers_to_extract, network_layers, loaded_model):
         if layers_to_extract:
             available_layers = tx.list_module_names(loaded_model)
@@ -45,14 +52,12 @@ class NetSetBase:
             invalid_layers = set(layers_to_extract) - set(valid_layers)
             if invalid_layers:
                 warnings.warn(f"Some layers are not present in the model and will not be extracted: {invalid_layers}. "
-                            "Please call the 'layers_to_extract()' function from the FeatureExtractor to see all available layers.")
+                              "Please call the 'layers_to_extract()' function from the FeatureExtractor to see all available layers.")
             return valid_layers
         elif network_layers:
             return [layer for layer in network_layers if layer != '']
         else:
             return [layer for layer in tx.list_module_names(loaded_model) if layer != '']
-
-
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -101,23 +106,28 @@ class NetSetBase:
             img_tensor = img_tensor.cuda()
         return img_tensor
 
-
     def video_preprocessing(self, frame, model_name, device):
         # Convert numpy array to PIL Image
         pil_frame = Image.fromarray(frame)
-        
+
         return NetSetBase.image_preprocessing(self, pil_frame, model_name, device)
-    
 
     def text_preprocessing(self, text, model_name, device):
         return text
+
+    def audio_preprocessing(self, audio, model_name, device):
+        audio = torch.from_numpy(audio).unsqueeze(0)
+
+        if device == 'cuda':
+            audio = audio.cuda()
+        return audio
 
     def clean_extracted_features(self, features):
         # return features
         raise NotImplementedError
 
     def extraction_function(self, data, layers_to_extract=None):
-        
+
         """
         # Which layers to extract
         self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
@@ -127,11 +137,10 @@ class NetSetBase:
         """
 
         raise NotImplementedError
-    
-    
+
     def combine_image_data(self, feature_list):
         return feature_list[0]
-    
+
     def combine_video_data(self, feature_list):
         """
         Averages the features extracted from multiple frames of a video.
@@ -161,19 +170,15 @@ class NetSetBase:
         averaged_features = {layer: data / num_frames for layer, data in summed_features.items()}
 
         return averaged_features
-    
 
     def combine_audio_data(self, feature_list):
-        raise NotImplementedError
-    
+        return feature_list[0]
+
     def combine_text_data(self, feature_list):
         return feature_list
 
-    
-    
     def combine_multimodal_data(self, feature_list):
         return feature_list[0]
-    
 
     def load_multimodal_data(self, multimodal_data_tuple):
         # Define the order and corresponding loading functions for each modality
@@ -184,13 +189,13 @@ class NetSetBase:
             'text': self.load_text_data,
             'audio': self.load_audio_data,
         }
-        
+
         # Extension to modality mapping
         extension_to_modality = {
             '.jpg': 'image', '.jpeg': 'image', '.png': 'image',  # Image extensions
             '.mp4': 'video', '.avi': 'video',  # Video extensions
             '.txt': 'text',  # Text extensions
-            '.wav': 'audio', '.mp3': 'audio',  # Audio extensions
+            '.wav': 'audio', '.mp3': 'audio', '.flac': 'audio'  # Audio extensions
         }
 
         # Initialize a dictionary to store loaded data with modality as key
@@ -204,18 +209,18 @@ class NetSetBase:
                 raise ValueError(f"Unsupported file extension: {file_extension}")
 
             # Call the corresponding loading function for the modality
-            loaded_data_by_modality[modality] = loading_functions[modality](data_path)[0]  # Assuming loaders return a list with a single element
+            loaded_data_by_modality[modality] = loading_functions[modality](data_path)[
+                0]  # Assuming loaders return a list with a single element
 
         # Organize the loaded data according to the predefined order and include only the available modalities
-        ordered_loaded_data = tuple(loaded_data_by_modality[mod] for mod in modalities_order if mod in loaded_data_by_modality)
+        ordered_loaded_data = tuple(
+            loaded_data_by_modality[mod] for mod in modalities_order if mod in loaded_data_by_modality)
 
         return [ordered_loaded_data]
 
-    
-
     def load_image_data(self, data_path):
         return [Image.open(data_path).convert('RGB')]
-    
+
     def load_video_data(self, data_path):
         # Logic to load video data using cv2
         # This will return a list of frames. Each frame is a numpy array.
@@ -229,13 +234,14 @@ class NetSetBase:
             frames.append(frame)
         cap.release()
         return frames
-    
+
     def load_audio_data(self, data_path):
         # Logic to load audio data using librosa
         # This returns a numpy array representing the audio and its sample rate
-        y, sr = librosa.load(data_path, sr=None)
-        return y, sr
-    
+        kwargs = self.audio_loader_kwargs or {}
+        y, sr = librosa.load(data_path, **kwargs)
+        return [y]
+
     def load_text_data(self, data_path):
         """
         Load text data from a .txt file and return a list of sentences/words.
@@ -249,8 +255,6 @@ class NetSetBase:
         with open(data_path, 'r', encoding='utf-8') as file:
             text_data = file.read().splitlines()
         return text_data
-    
-
 
     def randomize_weights(self, m):
         warnings.warn("Will initiate random weights")
