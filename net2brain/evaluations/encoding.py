@@ -541,9 +541,13 @@ def encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, avg_across_feat):
     """
     feat_files = glob.glob(feat_path + '/*.np[zy]')
     feat_files.sort()  # Ensure consistent order
-
-    trn = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in trn_Idx])
-    tst = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in tst_Idx])
+    
+    if avg_across_feat:
+        trn = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in trn_Idx])
+        tst = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in tst_Idx])
+    else:
+        trn = np.array([np.load(feat_files[ii], allow_pickle=True)[layer_id].flatten() for ii in trn_Idx])
+        tst = np.array([np.load(feat_files[ii], allow_pickle=True)[layer_id].flatten() for ii in tst_Idx])
     return trn, tst
 
 

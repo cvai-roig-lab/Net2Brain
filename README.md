@@ -17,6 +17,7 @@ One of the primary objectives of Net2Brain is to facilitate the collaboration be
 
 # Updates 12/24:
 1. Added Centered Kernel Alignment (CKA) and Distributional Comparisons
+2. Added Stacked Regression (Linear & Ridge)
 
 # Updates 10/24
 1. Added Ridge Regression to Linear Encoding
