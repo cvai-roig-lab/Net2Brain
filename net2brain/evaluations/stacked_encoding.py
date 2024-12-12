@@ -474,6 +474,7 @@ def _stacked_linear_encoding(feat_path,
     
     # Load feature files and get layer information
     feat_files = glob.glob(feat_path + '/*.np[zy]')
+    feat_files.sort()
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
     
     train_test_split_ratio = trn_tst_split  # 80% for training, 10% for testing
@@ -809,6 +810,7 @@ def _stacked_ridge_encoding(feat_path,
     
     # Load feature files and get layer information
     feat_files = glob.glob(feat_path + '/*.np[zy]')
+    feat_files.sort()
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
     
     train_test_split_ratio = trn_tst_split  # 80% for training, 10% for testing
