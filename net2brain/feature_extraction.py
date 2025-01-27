@@ -375,7 +375,9 @@ class FeatureExtractor:
 
         for layer in layers:
             sample_feats_at_layer = sample[layer]
-            feat_dim = sample_feats_at_layer.shape[1:]
+            feat_dim = sample_feats_at_layer.squeeze().shape
+            if feat_dim == ():
+                feat_dim = (1,)
             # Check if the dimensionality reduction is necessary
             if not self.max_dim_allowed or len(sample_feats_at_layer.flatten()) > self.max_dim_allowed:
                 # Estimate the dimensionality reduction from a subset of the data
@@ -387,7 +389,7 @@ class FeatureExtractor:
                     # Apply the dimensionality reduction to the features at the layer
                     for key, value in feats.items():
                         if key == layer:
-                            reduced_feats_at_layer[key] = fitted_transform.transform(value.reshape(1, -1))
+                            reduced_feats_at_layer[key] = fitted_transform.transform(value.reshape(1, -1)).squeeze()
                         else:
                             reduced_feats_at_layer[key] = value
                     # Make sure no corrupted files are saved
