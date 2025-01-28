@@ -47,26 +47,35 @@ class NetSetBase:
         return data_type in cls.supported_data_types
 
     def select_model_layers(self, layers_to_extract, network_layers, loaded_model):
-        if layers_to_extract:
+        if isinstance(layers_to_extract, list) or isinstance(layers_to_extract, tuple):
             available_layers = tx.list_module_names(loaded_model)
             valid_layers = [layer for layer in layers_to_extract if layer in available_layers and layer != '']
             invalid_layers = set(layers_to_extract) - set(valid_layers)
             if invalid_layers:
                 warnings.warn(f"Some layers are not present in the model and will not be extracted: {invalid_layers}. "
                               "Please call the 'layers_to_extract()' function from the FeatureExtractor to see all available layers.")
-            return valid_layers
+        elif isinstance(layers_to_extract, str):
+            if layers_to_extract == 'top_level':
+                # this is a general solution to only extract the top level layers and remove nesting
+                valid_layers = [layer for layer in tx.list_module_names(loaded_model) if layer != ''
+                                and not re.search(r"\d\.", layer)]  # not a digit followed by a dot, e.g. layer1.1
+                to_remove = set()
+                for i in range(len(valid_layers) - 1):
+                    if valid_layers[i + 1].startswith(valid_layers[i] + '.'):
+                        to_remove.add(valid_layers[i])
+                        # when no digit precedes the dot, it is not always a sublayer, e.g cls_head.cls
+                        # in those cases it is better to remove the parent instead
+                valid_layers = [layer for layer in valid_layers if layer not in to_remove]
+            elif layers_to_extract == 'all':
+                valid_layers = [layer for layer in tx.list_module_names(loaded_model) if layer != '']
+            elif layers_to_extract == 'json' and network_layers:
+                valid_layers = [layer for layer in network_layers if layer != '']
+            else:
+                raise ValueError(f"Invalid value for layers_to_extract: {layers_to_extract}. "
+                                 f"Should be 'top_level', 'all', 'json', or a list of layer names.")
         else:
-            # this is a general solution to only extract the top level layers and remove nesting
-            valid_layers = [layer for layer in tx.list_module_names(loaded_model) if layer != ''
-                            and not re.search(r"\d\.", layer)]  # not a digit followed by a dot, e.g. layer1.1
-            to_remove = set()
-            for i in range(len(valid_layers) - 1):
-                if valid_layers[i + 1].startswith(valid_layers[i] + '.'):
-                    to_remove.add(valid_layers[i])
-                    # when no digit precedes the dot, it is not always a sublayer, e.g cls_head.cls
-                    # in those cases it is better to remove the parent instead
-            valid_layers = [layer for layer in valid_layers if layer not in to_remove]
-            return valid_layers
+            raise ValueError("layers_to_extract should be a list, tuple, or string.")
+        return valid_layers
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)

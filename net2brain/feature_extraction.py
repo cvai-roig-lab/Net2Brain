@@ -86,7 +86,7 @@ class FeatureExtractor:
 
 
 
-    def extract(self, data_path, save_path=None, layers_to_extract=None, consolidate_per_layer=True,
+    def extract(self, data_path, save_path=None, layers_to_extract="top_level", consolidate_per_layer=True,
                 dim_reduction=None, n_samples_estim=100, n_components=10000, max_dim_allowed=None):
         """
         Args:
@@ -94,9 +94,13 @@ class FeatureExtractor:
                 Path to stimuli data or list of data_paths
             save_path: str
                 Path to where to save the extracted features
-            layers_to_extract: list of str
-                List of layers to extract from model.
-                User "get_all_layers" function to see all avaiable layers
+            layers_to_extract: Either list of str, or str
+                If list of str, it is the list of layers to extract from model.
+                If str, it must be one of the options "all", "top_level", and "json".
+                "all" extracts all layers from the model.
+                "top_level" extracts only the top level block layers from the model.
+                "json" extracts layers from a json file in net2brain/architectures/configs/.
+                You can use the "get_all_layers" function to see all available layers.
             consolidate_per_layer: Bool
                 Whether to consolidate of one file per image to one file per layer
             dim_reduction: str or None
