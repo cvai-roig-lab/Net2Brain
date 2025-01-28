@@ -219,7 +219,8 @@ class RSA():
 
         # For each layer to RSA with the current ROI
         for counter, layer in enumerate(self.model_rdms):
-            if layer.split("RDM_")[1].split(".npz")[0] in self.layer_skips:
+            layer_name = layer.split("RDM_")[1].split(".npz")[0] if "RDM_" in layer else layer.split(".npz")[0]
+            if layer_name in self.layer_skips:
                 continue
 
             # Load RDMS
