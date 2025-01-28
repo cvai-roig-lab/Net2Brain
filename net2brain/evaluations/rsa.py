@@ -18,7 +18,8 @@ class RSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, model_name, layer_skips=(), datatype="None", save_path="./"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, layer_skips=(), squared=True,
+                 datatype="None", save_path="./"):
         """Initiate RSA
 
         Args:
@@ -32,7 +33,6 @@ class RSA():
         self.model_rdms_path = model_rdms_path
         self.model_rdms = self.folderlookup(model_rdms_path)
         self.model_rdms.sort(key=natural_keys)
-        self.layer_skips = layer_skips
 
         # Find all Brain RDMs
         self.brain_rdms_path = brain_rdms_path
@@ -42,6 +42,8 @@ class RSA():
         self.save_path = save_path
         self.datatype = datatype
         self.model_name = model_name
+        self.layer_skips = layer_skips
+        self.squared = squared
 
         # For comparison
         self.other_rdms_path = None
@@ -124,14 +126,21 @@ class RSA():
             # Convert to squareform.
             return squareform(rdm)
 
+    def get_rnames(self):
+        """Determine the names of the R variables based on the squared parameter"""
+        r_name = "R" if not self.squared else "R2"
+        r_percent_name = "%R" if not self.squared else "%R2"
+        r_array_name = "R_array" if not self.squared else "R2_array"
+        return r_name, r_percent_name, r_array_name
+
     def rsa_meg(self, model_rdm, brain_rdm, layername):
-        """Creates the output dictionary for MEG scans. Returns {layername: R², Significance}
+        """Creates the output dictionary for MEG scans.
         Args:
             model_rdm (numpy array): DNN rdm
             brain_rdm (list of numpy arrays): Subjects RDMs
             layername ([type]): [description]
         Returns:
-            dict: {layername: [r2, significance, sem]}
+            dict: {layername:  [r, significance, sem, corr_list]}
         """
 
         key = list(model_rdm.keys())[0]  # You need to access the keys to open a npy file
@@ -145,28 +154,31 @@ class RSA():
         # returns list of corrcoefs, depending on amount of participants in brain rdm
         corr = np.mean([self.distance(model_rdm, rdms) for rdms in meg_rdm], 1)
 
-        # Square correlation
-        corr_squared = np.square(corr)
+        if self.squared:
+            # Square correlation
+            corr_list = np.square(corr)
+        else:
+            corr_list = corr
 
-        # Take mean to retrieve R2
-        r2 = np.mean(corr_squared)
+        # Take mean
+        r = np.mean(corr_list)
 
         # ttest: Ttest_1sampResult(statistic=3.921946, pvalue=0.001534)
-        significance = stats.ttest_1samp(corr_squared, 0)[1]
+        significance = stats.ttest_1samp(corr_list, 0)[1]
 
         # standard error of mean
-        sem = stats.sem(corr_squared)  # standard error of mean
+        sem = stats.sem(corr_list)  # standard error of mean
 
-        return r2, significance, sem, corr_squared
+        return r, significance, sem, corr_list
 
     def rsa_fmri(self, model_rdm, brain_rdm, layername):
-        """Creates the output dictionary for fMRI scans. Returns {layername: R², Significance}
+        """Creates the output dictionary for fMRI scans.
         Args:
             model_rdm (numpy array): DNN rdm
             brain_rdm (list of numpy arrays): Subjects RDMs
             layername ([type]): [description]
         Returns:
-            dict: {layername: [r2, significance, sem]}
+            dict: {layername: [r, significance, sem, corr_list]}
         """
 
         key = list(model_rdm.keys())[0]  # You need to access the keys to open a npy file
@@ -179,15 +191,23 @@ class RSA():
 
         # returns list of corrcoefs, depending on amount of participants in brain rdm
         corr = self.distance(model_rdm, fmri_rdm)
-        r = np.mean(corr)
+
+        if self.squared:
+            # Square correlation
+            corr_list = np.square(corr)
+        else:
+            corr_list = corr
+
+        # Take mean
+        r = np.mean(corr_list)
 
         # ttest: Ttest_1sampResult(statistic=3.921946, pvalue=0.001534)
-        significance = stats.ttest_1samp(corr, 0)[1]
+        significance = stats.ttest_1samp(corr_list, 0)[1]
 
         # standard error of mean
-        sem = stats.sem(corr)
+        sem = stats.sem(corr_list)  # standard error of mean
 
-        return r, significance, sem, corr
+        return r, significance, sem, corr_list
 
     def evaluate_roi(self, roi):
         """Functiion to evaulate the layers to the current roi , either fmri or meg
@@ -210,20 +230,21 @@ class RSA():
             r, significance, sem, corr = self.rsa(model_rdm, roi_rdm, layer)
 
             # Add relationship to Noise Ceiling to this data
-            lnc = np.sqrt(self.this_nc["lnc"])
-            unc = np.sqrt(self.this_nc["unc"])
+            lnc = self.this_nc["lnc"]
+            unc = self.this_nc["unc"]
             area_percentNC = (r / lnc) * 100.
 
             # Create dictionary to save data
             layer_key = "(" + str(counter) + ") " + layer
+            r_name, r_percent_name, r_array_name = self.get_rnames()
             output_dict = {"Layer": [layer_key],
-                           "R": [r],
-                           "%R": [area_percentNC],
+                           r_name: [r],
+                           r_percent_name: [area_percentNC],
                            "Significance": [significance],
                            "SEM": [sem],
                            "LNC": [lnc],
                            "UNC": [unc],
-                           "R_array": corr}
+                           r_array_name: corr}
 
             # Add this dict to the total dickt
             all_layers_dicts.append(output_dict)
@@ -248,15 +269,16 @@ class RSA():
             warnings.warn(f"Invalid metric. Choose between: {', '.join(available_metrics)}")
             return None
 
+        r_name, r_percent_name, r_array_name = self.get_rnames()
         all_rois_df = pd.DataFrame(
-            columns=['ROI', 'Layer', "Model", 'R', '%R', 'R_array', 'Significance', 'SEM', 'LNC', 'UNC'])
+            columns=['ROI', 'Layer', "Model", r_name, r_percent_name, r_array_name, 'Significance', 'SEM', 'LNC', 'UNC'])
 
         for counter, roi in enumerate(self.brain_rdms):
 
             self.find_datatype(op.join(self.brain_rdms_path, roi))
 
             # Calculate Noise Ceiing for this ROI
-            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), distance_metric)
+            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), distance_metric, self.squared)
             self.this_nc = noise_ceiling_calc.noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
@@ -268,7 +290,7 @@ class RSA():
             for layer_dict in all_layers_dict:
                 layer_dict["ROI"] = [scan_key]
                 layer_dict["Model"] = [self.model_name]
-                layer_dict['R_array'] = [layer_dict['R_array']]
+                layer_dict[r_array_name] = [layer_dict[r_array_name]]
                 layer_df = pd.DataFrame.from_dict(layer_dict)
                 if correction == "bonferroni":
                     layer_df['Significance'] = layer_df['Significance'] * len(all_layers_dict)
@@ -303,10 +325,12 @@ class RSA():
             # Return Correlation Values for this ROI to all model layers
             other_layers_dict = other_RSA.evaluate_roi(roi)
 
-            model_ii = np.argmin([layer_dict["R"] for layer_dict in model_layers_dict])
-            other_ii = np.argmin([layer_dict["R"] for layer_dict in other_layers_dict])
+            r_name, _, r_array_name = self.get_rnames()
 
-            tstat, p = stats.ttest_ind(other_layers_dict[other_ii]["R_array"], model_layers_dict[model_ii]["R_array"])
+            model_ii = np.argmin([layer_dict[r_name] for layer_dict in model_layers_dict])
+            other_ii = np.argmin([layer_dict[r_name] for layer_dict in other_layers_dict])
+
+            tstat, p = stats.ttest_ind(other_layers_dict[other_ii][r_array_name], model_layers_dict[model_ii][r_array_name])
 
             scan_key = "(" + str(counter) + ") " + roi[:-4]
 
