@@ -481,7 +481,7 @@ def _linear_encoding(feat_path,
                     os.makedirs(prediction_save_path)
 
             # Encode the current layer using PCA and split into training and testing sets
-            pca_trn, pca_tst = encode_layer(layer_id, batch_size, trn_Idx, tst_Idx, feat_path, avg_across_feat,
+            pca_trn, pca_tst = encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_size,
                                             n_components, mem_mode=mem_mode, save_pca=save_pca,
                                             save_path=f'{prediction_save_path}/pca.pkl' if save_pca else None)
 
