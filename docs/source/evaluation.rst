@@ -223,5 +223,83 @@ graphical representation.
 
 
 
+Centered Kernel Alignment (CKA)
+----------------
+
+Centered Kernel Alignment (CKA) is a similarity metric used to compare two datasets, such as DNN-derived features and brain activity, based on the relationships within each dataset. Unlike traditional correlations, CKA is scale-invariant and focuses on the structure of pairwise similarities within each dataset.
+
+.. note::
+
+   Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/3_Evaluation.ipynb>`_!
+
+Prerequisites for the CKA function include:
+
+- **feat_path**: The file path directing to the model's feature `.npz` files, where each file contains multiple layer activations.
+- **brain_path**: The file path for `.npy` files containing brain data, with each file representing a specific ROI.
+- **model_name**: The identifier for the model, crucial for labeling the output.
+
+Returns:
+- **dataframe**: Contains CKA scores for each ROI and each layer of the DNN.
+
+.. code-block:: python
+
+    from net2brain.evaluations.cka import CKA
+
+    results_dataframe = CKA.run(
+        feat_path="path/to/features",
+        brain_path="path/to/brain_data",
+        model_name="model_name"
+    )
+
+
+Distributional Comparison (DC)
+----------------
+
+Distributional Comparison evaluates the similarity between datasets by comparing the feature-wise distributions. Two metrics are available:
+- **Jensen-Shannon Divergence (JSD):** Measures the divergence between two probability distributions. It is symmetric and bounded between 0 and 1.
+- **Wasserstein Distance (WD):** Also known as Earth Mover's Distance, measures the cost of transforming one distribution into the other.
+
+.. note::
+
+   Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/3_Evaluation.ipynb>`_!
+
+Prerequisites for the Distributional Comparison function include:
+
+- **feat_path**: The file path directing to the model's feature `.npz` files, where each file contains multiple layer activations.
+- **brain_path**: The file path for `.npy` files containing brain data, with each file representing a specific ROI.
+- **metric**: The distance metric used to compare distributions. Options are:
+  - **"jsd"**: Jensen-Shannon Divergence.
+  - **"wasserstein"**: Wasserstein Distance.
+- **"bins":**  Number of bins for histogramming.
+- **model_name**: The identifier for the model, crucial for labeling the output.
+
+.. warning::
+
+   If the feature lengths differ between the feature data and brain data, PCA is applied to reduce dimensionality to the same size. While this ensures compatibility, it alters the feature space.
+
+Returns:
+- **dataframe**: Contains distributional comparison scores for each ROI and each layer of the DNN.
+
+.. code-block:: python
+
+    from net2brain.evaluations.distributional_comparisons import DistributionalComparison
+
+    # Using Jensen-Shannon Divergence (JSD)
+    results_jsd = DistributionalComparison.run(
+        feat_path="path/to/features",
+        brain_path="path/to/brain_data",
+        metric="jsd",
+        bins=50,
+        model_name="model_name"
+    )
+
+    # Using Wasserstein Distance (WD)
+    results_wasserstein = DistributionalComparison.run(
+        feat_path="path/to/features",
+        brain_path="path/to/brain_data",
+        metric="wasserstein",
+        bins=50,
+        model_name="model_name"
+    )
 
 
