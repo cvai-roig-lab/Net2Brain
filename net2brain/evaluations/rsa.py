@@ -27,6 +27,7 @@ class RSA():
             brain_rdms_path (str): Path to the folder containing the brain RDMs.
             model_name (str): Name of the model.
             layer_skips (tuple, optional): Names of the model layers to skip. Use '_' instead of '.' in the names.
+            squared (bool): Whether to square the correlation values.
         """
 
         # Find all model RDMs
