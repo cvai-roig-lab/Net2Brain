@@ -56,7 +56,7 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
     - n_components (int): Number of components for PCA.
     - mem_mode (str): 'saver' or 'performance'; Choose 'saver' if you have large features or small RAM.
     - save_pca (bool): Whether to save the PCA transform to disk.
-    - save_path (str): The path to save the PCA transform in (if save_pca is True).
+    - save_path (str, optional): The path to save the PCA transform in (if save_pca is True).
 
     Returns:
     - metric_trn (numpy.ndarray): Encoded features of the training set.
@@ -67,7 +67,7 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
     feat_files = glob.glob(feat_path + '/*.np[zy]')
     feat_files.sort()
 
-    if not os.path.exists(save_path):
+    if save_path is None or not os.path.exists(save_path):
         pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
 
         # Train encoding
@@ -148,12 +148,12 @@ def train_regression_per_ROI(trn_x, tst_x, trn_y, tst_y, veRSA=False, save_model
         tst_y (numpy.ndarray): fMRI test set data.
         veRSA (bool): Whether to apply RSA on top of encoding (veRSA).
         save_model (bool): Save the linear regression model to disk.
-        save_path (str): The path to save the model in (if save_model is True).
+        save_path (str, optional): The path to save the model in (if save_model is True).
 
     Returns:
         List of correlation coefficients (numpy.ndarray) or single value output of veRSA (float).
     """
-    if not os.path.exists(save_path):
+    if save_path is None or not os.path.exists(save_path):
         reg = LinearRegression().fit(trn_x, trn_y)
         y_prd = reg.predict(tst_x)
         if save_model:
@@ -581,12 +581,12 @@ def train_Ridgeregression_per_ROI(trn_x, tst_x, trn_y, tst_y, veRSA=False, save_
         tst_y (numpy.ndarray): fMRI test set data.
         veRSA (bool): Whether to apply RSA on top of encoding (veRSA).
         save_model (bool): Save the ridge regression model to disk.
-        save_path (str): The path to save the model in (if save_model is True).
+        save_path (str, optional): The path to save the model in (if save_model is True).
 
     Returns:
         List of correlation coefficients (numpy.ndarray) or single value output of veRSA (float).
     """
-    if not os.path.exists(save_path):
+    if save_path is None or not os.path.exists(save_path):
         # Standardize the features
         scaler = StandardScaler()
         trn_x = scaler.fit_transform(trn_x)
