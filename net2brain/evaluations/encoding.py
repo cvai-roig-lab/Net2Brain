@@ -491,7 +491,7 @@ def _linear_encoding(feat_path,
                 roi_name = roi_path.split(os.sep)[-1].split(".")[0]
 
                 # Load fMRI data for the current ROI and split into training and testing sets
-                fmri_data = np.load(os.path.join(roi_path))
+                fmri_data = np.load(roi_path)
                 fmri_trn, fmri_tst = fmri_data[trn_Idx], fmri_data[tst_Idx]
 
                 # Train a linear regression model and compute correlations for the current ROI
@@ -720,7 +720,7 @@ def _ridge_encoding(feat_path,
                 roi_name = roi_path.split(os.sep)[-1].split(".")[0]
 
                 # Load fMRI data for the current ROI and split into training and testing sets
-                fmri_data = np.load(os.path.join(roi_path))
+                fmri_data = np.load(roi_path)
                 fmri_trn, fmri_tst = fmri_data[trn_Idx], fmri_data[tst_Idx]
 
                 # Train a regression model and compute correlations for the current ROI
