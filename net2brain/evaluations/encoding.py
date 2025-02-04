@@ -212,7 +212,7 @@ def Ridge_Encoding(feat_path,
             large features or small RAM, otherwise leave 'performance' as default.
         avg_across_feat (bool): If True it averages the activations across axis 1. Necessary if different stimuli have a
             different size of features.
-        return_correlations (bool): If True, return correlation values for each ROI and layer (only with veRSA False).
+        return_correlations (bool): If True, return correlation values for each voxel (only with veRSA False).
         random_state (int): Seed for random operations to ensure reproducibility.
         shuffle (bool): Whether to shuffle the data before splitting into training and testing sets.
         save_path (str): Path to the directory where the results will be saved. Pick a different name for each
@@ -291,7 +291,7 @@ def Linear_Encoding(feat_path,
             large features or small RAM, otherwise leave 'performance' as default.
         avg_across_feat (bool): If True it averages the activations across axis 1. Necessary if different stimuli have a
             different size of features.
-        return_correlations (bool): If True, return correlation values for each ROI and layer (only with veRSA False).
+        return_correlations (bool): If True, return correlation values for each voxel (only with veRSA False).
         random_state (int): Seed for random operations to ensure reproducibility.
         shuffle (bool): Whether to shuffle the data before splitting into training and testing sets.
         save_path (str): Path to the directory where the results will be saved. Pick a different name for each
