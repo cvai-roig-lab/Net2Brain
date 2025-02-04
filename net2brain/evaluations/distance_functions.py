@@ -95,9 +95,9 @@ def nc_spearman(rdm1, rdm2):
         rdm2 (numpy array): mean RDM of all subjects.
 
     Returns:
-        float: squared correlation between both RDMs.
+        float: correlation between both RDMs.
     """
-    return (stats.spearmanr(rdm1, rdm2)[0]) ** 2
+    return stats.spearmanr(rdm1, rdm2)[0]
 
 # 2. Euclidean distance for noise ceiling
 @register_nc_distance_function
@@ -151,6 +151,6 @@ def nc_pearson(rdm1, rdm2):
         rdm2 (numpy array): mean RDM of all subjects.
 
     Returns:
-        float: squared Pearson correlation between both RDMs.
+        float: Pearson correlation between both RDMs.
     """
-    return (stats.pearsonr(rdm1, rdm2)[0]) ** 2
+    return stats.pearsonr(rdm1, rdm2)[0]

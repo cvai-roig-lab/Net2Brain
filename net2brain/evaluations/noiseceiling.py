@@ -7,7 +7,7 @@ from .distance_functions import registered_nc_distance_functions
 
 
 class NoiseCeiling():
-    def __init__(self, roi, roi_path, distance_metric):
+    def __init__(self, roi, roi_path, distance_metric, squared):
         """Initialize NoiseCeiling calculation
 
         Args:
@@ -21,6 +21,7 @@ class NoiseCeiling():
         # Get distance function
         self.distance_metric = distance_metric
         self.distance_func = registered_nc_distance_functions[distance_metric]
+        self.squared = squared
         
         
     def get_uppertriangular(self, rdm):
@@ -50,7 +51,7 @@ class NoiseCeiling():
         """
         lt_rdm1 = self.get_uppertriangular(rdm1)
         lt_rdm2 = self.get_uppertriangular(rdm2)
-        return self.distance_func(lt_rdm1, lt_rdm2)
+        return self.distance_func(lt_rdm1, lt_rdm2) ** 2 if self.squared else self.distance_func(lt_rdm1, lt_rdm2)
 
 
 
@@ -122,8 +123,8 @@ class NoiseCeiling():
             key_list.append(keys)
 
         # lower nc and upper nc
-        lnc = self.get_lowernoiseceiling(target[key_list[0]])  # **2
-        unc = self.get_uppernoiseceiling(target[key_list[0]])  # **2
+        lnc = self.get_lowernoiseceiling(target[key_list[0]])
+        unc = self.get_uppernoiseceiling(target[key_list[0]])
 
         noise_ceilings = {"lnc": lnc, "unc": unc}
         return noise_ceilings
@@ -155,8 +156,8 @@ class NoiseCeiling():
             key_list.append(keys)
 
         # get noise ceilings
-        lnc = self.get_lowernoiseceiling(target[key_list[0]])  # **2
-        unc = self.get_uppernoiseceiling(target[key_list[0]])  # **2
+        lnc = self.get_lowernoiseceiling(target[key_list[0]])
+        unc = self.get_uppernoiseceiling(target[key_list[0]])
 
         noise_ceilings = {"lnc": lnc, "unc": unc}
         return noise_ceilings

@@ -178,7 +178,8 @@ class NPZConsolidateEngine(FeatureEngine):
     def next(self, item) -> Tuple[str, List[str], np.ndarray]:
         feat_npz = open_npz(item)
         stimuli, feats = zip(*nsorted(feat_npz.items(), key=lambda x: x[0]))
-        layer = item.stem
+        pure_item = Path(str(item).split('consolidated_')[-1]) if 'consolidated' in str(item) else item
+        layer = pure_item.stem
         return layer, stimuli, np.stack(feats)
 
 
@@ -200,7 +201,9 @@ class NPZSeparateEngine(FeatureEngine):
     def next(self, item) -> Tuple[str, List[str], np.ndarray]:
         stimuli = []
         sample = open_npz(self._stimuli[0])[item]
-        feat_dim = sample.shape[1:]
+        feat_dim = sample.squeeze().shape
+        if feat_dim == ():
+            feat_dim = (1,)
         # Check if dimensionality reduction is needed
         if self.dim_reduction and (not self.max_dim_allowed or len(sample.flatten()) > self.max_dim_allowed):
             # Estimate the dimensionality reduction from a subset of the data
@@ -210,7 +213,7 @@ class NPZSeparateEngine(FeatureEngine):
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                feats[i, :] = fitted_transform.transform(open_npz(file)[item].reshape(1, -1)).squeeze(0)
+                feats[i, :] = fitted_transform.transform(open_npz(file)[item].reshape(1, -1)).squeeze()
                 stimuli.append(file.stem)
         # Otherwise load features without dimensionality reduction
         else:
@@ -218,7 +221,7 @@ class NPZSeparateEngine(FeatureEngine):
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                feats[i, :] = open_npz(file)[item].squeeze(0)
+                feats[i, :] = open_npz(file)[item].squeeze()
                 stimuli.append(file.stem)
         return item, stimuli, feats
 
