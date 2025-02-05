@@ -15,6 +15,7 @@ setup(
         'librosa',
         'torchlibrosa',
         'h5py',
+        'eva-decord',  # for video models on mac devices
         'sentencepiece',
         'flax',
         'transformers',
