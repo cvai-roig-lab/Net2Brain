@@ -101,7 +101,7 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
         with open(save_path, "rb") as f:
             pca = pickle.load(f)
 
-    if mem_mode == 'saver' or os.path.exists(save_path):
+    if mem_mode == 'saver' or (save_path is not None and os.path.exists(save_path)):
         transformed_activations = []
         for ii in trn_Idx:
             feat = np.load(feat_files[ii], allow_pickle=True)
