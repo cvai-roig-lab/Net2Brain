@@ -367,6 +367,7 @@ def _linear_encoding(feat_path,
     
     # Load feature files and get layer information
     feat_files = glob.glob(feat_path + '/*.np[zy]')
+    feat_files.sort()
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
     
     # Loop over each fold for cross-validation
@@ -527,24 +528,54 @@ def train_Ridgeregression_per_ROI(trn_x,tst_x,trn_y,tst_y):
 
 def encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, avg_across_feat):
     """
-    Encodes the layer activations using IncrementalPCA, for both training and test sets.
-
+    Extracts and preprocesses neural network layer activations for ridge regression. 
+    For each input, flattens the layer's activation vectors and optionally averages 
+    across features.
+    
     Parameters:
-    - layer_id (str): The layer name whose activations are to be encoded.
-    - trn_Idx (list of int): Indices of the training set files.
-    - tst_Idx (list of int): Indices of the test set files.
-    - feat_path (str): Path to the directory containing npz files with model features.
+    - layer_id (str): Layer identifier
+    - trn_Idx (list): Training indices
+    - tst_Idx (list): Test indices 
+    - feat_path (str): Path to feature files
+    - avg_across_feat (bool): If True, averages activations across feature axis 1
 
     Returns:
-    - trn (numpy.ndarray): features of the training set.
-    - tst (numpy.ndarray): features of the test set.
+    - trn, tst (numpy.ndarray): Processed training and test activations
+    
     """
+    if avg_across_feat:
+        warnings.warn("avg_across_feat==True. This averages the activations across axis 1. Only necessary if different stimuli have a different size of features (as with LLMs)")
+        
     feat_files = glob.glob(feat_path + '/*.np[zy]')
-    feat_files.sort()  # Ensure consistent order
+    feat_files.sort()
 
-    trn = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in trn_Idx])
-    tst = np.array([np.mean(np.load(feat_files[ii], allow_pickle=True)[layer_id], axis=1).flatten() for ii in tst_Idx])
-    return trn, tst
+    trn = []
+    for ii in trn_Idx:
+        feat = np.load(feat_files[ii], allow_pickle=True)
+        if avg_across_feat:
+            activation = np.mean(feat[layer_id], axis=1).flatten()
+        else:
+            activation = feat[layer_id].flatten()
+            
+        if trn and activation.shape != trn[-1].shape:
+            raise ValueError("Elements in activations do not have the same shape. Please set 'avg_across_feat' to True to average across features.")
+            
+        trn.append(activation)
+        
+    tst = []
+    for ii in tst_Idx:
+        feat = np.load(feat_files[ii], allow_pickle=True)
+        if avg_across_feat:
+            activation = np.mean(feat[layer_id], axis=1).flatten()
+        else:
+            activation = feat[layer_id].flatten()
+            
+        if tst and activation.shape != tst[-1].shape:
+            raise ValueError("Elements in activations do not have the same shape. Please set 'avg_across_feat' to True to average across features.")
+            
+        tst.append(activation)
+
+    return np.array(trn), np.array(tst)
 
 
     
@@ -588,6 +619,7 @@ def _ridge_encoding(feat_path,
     
     # Load feature files and get layer information
     feat_files = glob.glob(feat_path + '/*.np[zy]')
+    feat_files.sort()
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
     
     
