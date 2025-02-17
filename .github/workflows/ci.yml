@@ -7,20 +7,30 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    
     runs-on: ${{ matrix.os }}
     
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      
-      - name: Switch to PR branch
-        run: git checkout ${{ env.BRANCH }}
+        uses: actions/checkout@v3
 
-      - name: Set-up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+      - name: Set-up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.10'  # Updated to a newer, likely available version
+          python-version: '3.10'
+          cache: 'pip'  # Caches pip dependencies
+      
+      - name: Cache model weights
+        uses: actions/cache@v3
+        id: cache-weights
+        with:
+          path: |
+            ~/.cache/torch
+            ~/.cache/huggingface
+            ~/.cache/timm
+            ${{ env.TORCH_HOME }}
+          key: ${{ runner.os }}-model-weights-${{ hashFiles('**/requirements.txt', 'setup.py') }}
+          restore-keys: |
+            ${{ runner.os }}-model-weights-
 
       
       - name: Install dependencies
@@ -29,7 +39,16 @@ jobs:
           pip install .
 
       - name: Run unit tests
-        run: python -m pytest --import-mode=append
+        env:
+          TORCH_HOME: ~/.cache/torch
+          TRANSFORMERS_CACHE: ~/.cache/huggingface
+          TIMM_CACHE: ~/.cache/timm
+          # Adjust paths for Windows
+          ${{ runner.os == 'Windows' && 'TORCH_HOME' }}: ~\.cache\torch
+          ${{ runner.os == 'Windows' && 'TRANSFORMERS_CACHE' }}: ~\.cache\huggingface
+          ${{ runner.os == 'Windows' && 'TIMM_CACHE' }}: ~\.cache\timm
+        run: |
+          python -m pytest --import-mode=append -v --cov=net2brain
 
       # - name: Run Flake8
       #   run: flake8 net2brain
