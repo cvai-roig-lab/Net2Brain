@@ -139,7 +139,7 @@ class LayerRDM(RDM):
         if not path.exists():
             raise FileNotFoundError(f"File {path} does not exist.")
         if path.suffix == ".pt":
-            data = torch.load(path)
+            data = torch.load(path, weights_only=False)
         elif path.suffix == ".npz":
             data = np.load(path, allow_pickle=True)
             # convert numpy object array to python object

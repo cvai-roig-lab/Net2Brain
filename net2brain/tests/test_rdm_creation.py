@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import torch
 from typing import Callable
 from net2brain.rdm_creation import RDMCreator
 from net2brain.rdm import LayerRDM
@@ -38,5 +39,7 @@ def test_rdm_creator(device, root_path, tmp_path, case, distance, save_format, c
     for gt_file in gt_path.iterdir():
         test_file = tmp_path / distance_name / gt_file.name
         gt = LayerRDM.from_file(gt_file)
-        test = LayerRDM.from_file(test_file)
+        with torch.serialization.safe_globals([custom_cosine]):
+            test = LayerRDM.from_file(test_file)
+
         assert np.allclose(gt.rdm, test.rdm, rtol=1e-3, atol=1e-3)
