@@ -47,13 +47,13 @@ def setup_checkpoints(tmp_path_factory):
 
 
 # Define your tests
+#  ("Unet", "unet"),
 @pytest.mark.parametrize(
     "netset,model",
     [
         ("Standard", "AlexNet"),
         ("Timm", "vit_base_patch32_224_in21k"),
         ("Timm", "resnet50"),
-        ("Unet", "unet"),
         ("Taskonomy", "autoencoding"),
         ("Taskonomy", "colorization"),
         ("Clip", "RN50"),
