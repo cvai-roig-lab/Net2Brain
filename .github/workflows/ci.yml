@@ -36,7 +36,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .
+          pip install .[test]  # Install package with test dependencies
+          pip install pytest pytest-cov  # Explicitly install test dependencies
       
       - name: Run unit tests
         env:
@@ -44,7 +45,4 @@ jobs:
           TRANSFORMERS_CACHE: ${{ runner.os == 'Windows' && '~\.cache\huggingface' || '~/.cache/huggingface' }}
           TIMM_CACHE: ${{ runner.os == 'Windows' && '~\.cache\timm' || '~/.cache/timm' }}
         run: |
-          python -m pytest --import-mode=append -v --cov=net2brain
-
-      # - name: Run Flake8
-      #   run: flake8 net2brain
+          python -m pytest --import-mode=append -v
