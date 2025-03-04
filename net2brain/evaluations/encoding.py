@@ -9,6 +9,7 @@ import pickle
 from scipy.stats import pearsonr, spearmanr, ttest_1samp, sem
 from sklearn.model_selection import train_test_split, GridSearchCV, ShuffleSplit, cross_val_score
 from sklearn.decomposition import IncrementalPCA
+from sklearn.random_projection import SparseRandomProjection
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.preprocessing import StandardScaler
 from net2brain.evaluations.eval_helper import sq, get_npy_files, get_layers_ncondns
@@ -41,26 +42,31 @@ def average_df_across_layers(combined_df):
     return averaged_df
 
 
-def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_size, n_components, mem_mode,
-                 save_pca, save_path):
+def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_size, n_components,
+                 srp_before_pca, srp_on_subset, mem_mode, save_pca, save_path):
     """
     Encodes the layer activations using IncrementalPCA for both training and test sets.
 
-    Parameters:
-    - trn_Idx (list of int): Indices of the training set files.
-    - tst_Idx (list of int): Indices of the test set files.
-    - feat_path (str): Path to the directory containing npz files with model features.
-    - layer_id (str): The layer name whose activations are to be encoded.
-    - avg_across_feat (bool): Whether to average across features.
-    - batch_size (int): Batch size for IncrementalPCA.
-    - n_components (int): Number of components for PCA.
-    - mem_mode (str): 'saver' or 'performance'; Choose 'saver' if you have large features or small RAM.
-    - save_pca (bool): Whether to save the PCA transform to disk.
-    - save_path (str, optional): The path to save the PCA transform in (if save_pca is True).
+    Args:
+        trn_Idx (list of int): Indices of the training set files.
+        tst_Idx (list of int): Indices of the test set files.
+        feat_path (str): Path to the directory containing npz files with model features.
+        layer_id (str): The layer name whose activations are to be encoded.
+        avg_across_feat (bool): Whether to average across features.
+        batch_size (int): Batch size for IncrementalPCA.
+        n_components (int): Number of components for PCA.
+        srp_before_pca (bool): Whether to apply Sparse Random Projection (SRP) before PCA. Use when features are so
+            high-dimensional that IncrementalPCA runs out of memory after some batches. Num of dims estimated by SRP.
+        srp_on_subset (int or None): Number of samples to use for SRP fitting. If None, all samples are used,
+            which is recommended if you have enough memory (if `srp_before_pca` is False it has no effect).
+        mem_mode (str): 'saver' or 'performance'; Choose 'saver' if you don't have enough memory to store all
+            training sample features, otherwise leave 'performance' as default. If you have `srp_before_pca` enabled,
+            in the first case you will also need to restrict the number of samples for SRP fitting with `srp_on_subset`.
+        save_pca (bool): Whether to save the PCA transform to disk.
+        save_path (str or None): The path to save the PCA transform in (if `save_pca` is True).
 
     Returns:
-    - metric_trn (numpy.ndarray): Encoded features of the training set.
-    - metric_tst (numpy.ndarray): Encoded features of the test set.
+        PCA-transformed training and test set features (tuple of numpy.ndarray).
     """
 
     activations = []
@@ -68,8 +74,30 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
     feat_files.sort()
 
     if save_path is None or not os.path.exists(save_path):
-        pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
 
+        if srp_before_pca:
+            srp = SparseRandomProjection()
+            all_data_for_estim = []
+            srp_trn = trn_Idx if srp_on_subset is None else trn_Idx[:srp_on_subset]
+            for jj, ii in enumerate(srp_trn):
+                feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
+                if avg_across_feat:
+                    new_activation = np.mean(feat[layer_id], axis=1).flatten()
+                else:
+                    new_activation = feat[layer_id].flatten()
+                if all_data_for_estim and new_activation.shape != all_data_for_estim[-1].shape:
+                    raise ValueError("Elements in activations do not have the same shape. "
+                                     "Please set 'avg_across_feat' to True to average across features.")
+                all_data_for_estim.append(new_activation)  # collect in a list
+            srp.fit(np.stack(all_data_for_estim, axis=0))
+            if save_pca:
+                with open(save_path.split('pca.pkl')[0]+'srp.pkl', "wb") as f:
+                    pickle.dump(srp, f)
+            del all_data_for_estim
+        else:
+            srp = lambda x: x
+
+        pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
         # Train encoding
         for jj, ii in enumerate(trn_Idx):
             feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
@@ -88,7 +116,7 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
             if ((jj + 1) % batch_size) == 0 or (jj + 1) == len(trn_Idx):
                 # second condition for the case of the last batch not being the same size
                 effective_batch_size = batch_size if jj != len(trn_Idx) - 1 else len(trn_Idx) % batch_size
-                pca.partial_fit(np.stack(activations[-effective_batch_size:], axis=0))
+                pca.partial_fit(srp.transform(np.stack(activations[-effective_batch_size:], axis=0)))
                 if mem_mode == 'saver':
                     # in saver mode, only fit and don't save activations in memory
                     del activations
@@ -100,6 +128,9 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
     else:
         with open(save_path, "rb") as f:
             pca = pickle.load(f)
+        if srp_before_pca:
+            with open(save_path.split('pca.pkl')[0] + 'srp.pkl', "rb") as f:
+                srp = pickle.load(f)
 
     if mem_mode == 'saver' or (save_path is not None and os.path.exists(save_path)):
         transformed_activations = []
@@ -112,12 +143,12 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
                 new_activation = feat[layer_id].flatten()
 
             # transform one at a time to only have a lightweight list in memory
-            transformed_activations.append(pca.transform(new_activation.reshape(1, -1)))
+            transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
 
         metric_trn = np.concatenate(transformed_activations, axis=0)
     else:
         activations = np.stack(activations, axis=0)
-        metric_trn = pca.transform(activations)
+        metric_trn = pca.transform(srp.transform(activations))
 
     # Encode test set
     transformed_activations = []
@@ -130,7 +161,7 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
             new_activation = feat[layer_id].flatten()
 
         # transform one at a time to only have a lightweight list in memory
-        transformed_activations.append(pca.transform(new_activation.reshape(1, -1)))
+        transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
 
     metric_tst = np.concatenate(transformed_activations, axis=0)
 
@@ -192,7 +223,8 @@ def Ridge_Encoding(feat_path,
                    average_across_layers=False,
                    veRSA=False,
                    save_model=False,
-                   save_pca=False):
+                   save_pca=False,
+                   layer_skips=()):
     """
     Perform ridge encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -224,6 +256,7 @@ def Ridge_Encoding(feat_path,
         veRSA (bool): If True, performs RSA on top of the voxelwise encoding.
         save_model (bool): Save the linear regression model to disk.
         save_pca (bool): Save the PCA transform to disk.
+        layer_skips (tuple, optional): Names of the model layers to skip during encoding. Use original layer names.
 
 
     Returns:
@@ -249,7 +282,8 @@ def Ridge_Encoding(feat_path,
                       metric="Ridge",
                       veRSA=veRSA,
                       save_model=save_model,
-                      save_pca=save_pca)
+                      save_pca=save_pca,
+                      layer_skips=layer_skips)
 
     return result
 
@@ -271,7 +305,8 @@ def Linear_Encoding(feat_path,
                     average_across_layers=False,
                     veRSA=False,
                     save_model=False,
-                    save_pca=False):
+                    save_pca=False,
+                    layer_skips=()):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -303,6 +338,7 @@ def Linear_Encoding(feat_path,
         veRSA (bool): If True, performs RSA on top of the voxelwise encoding.
         save_model (bool): Save the linear regression model to disk.
         save_pca (bool): Save the PCA transform to disk.
+        layer_skips (tuple, optional): Names of the model layers to skip during encoding. Use original layer names.
 
 
     Returns:
@@ -328,7 +364,8 @@ def Linear_Encoding(feat_path,
                       metric="Linear",
                       veRSA=veRSA,
                       save_model=save_model,
-                      save_pca=save_pca)
+                      save_pca=save_pca,
+                      layer_skips=layer_skips)
 
     return result
 
@@ -340,6 +377,8 @@ def Encoding(feat_path,
              n_folds=3,
              n_components=100,
              batch_size=100,
+             srp_before_pca=False,
+             srp_on_subset=None,
              mem_mode='performance',
              avg_across_feat=False,
              return_correlations=False,
@@ -351,7 +390,8 @@ def Encoding(feat_path,
              metric="Linear",
              veRSA=False,
              save_model=False,
-             save_pca=False):
+             save_pca=False,
+             layer_skips=()):
 
     # Which encoding metric are we using?
     if metric == "Linear":
@@ -381,13 +421,16 @@ def Encoding(feat_path,
                              shuffle=shuffle,
                              n_components=n_components,
                              batch_size=batch_size,
+                             srp_before_pca=srp_before_pca,
+                             srp_on_subset=srp_on_subset,
                              mem_mode=mem_mode,
                              avg_across_feat=avg_across_feat,
                              return_correlations=return_correlations,
                              save_path=save_path,
                              veRSA=veRSA,
                              save_model=save_model,
-                             save_pca=save_pca)
+                             save_pca=save_pca,
+                             layer_skips=layer_skips)
     if return_correlations:
         all_results_df, corr_dict = result
     else:
@@ -405,8 +448,8 @@ def Encoding(feat_path,
     # Determine the file name
     if file_name is None:
         file_name = model_name
-    if veRSA:
-        file_name += "_veRSA"
+        if veRSA:
+            file_name += "_veRSA"
 
     # Save the DataFrame as a CSV file
     csv_file_path = f"{save_path}/{file_name}.csv"
@@ -440,6 +483,8 @@ def _linear_encoding(feat_path,
                      n_folds=3,
                      n_components=100,
                      batch_size=100,
+                     srp_before_pca=False,
+                     srp_on_subset=None,
                      mem_mode='performance',
                      avg_across_feat=False,
                      return_correlations=False,
@@ -448,7 +493,8 @@ def _linear_encoding(feat_path,
                      save_path="Linear_Encoding_Results",
                      veRSA=False,
                      save_model=False,
-                     save_pca=False):
+                     save_pca=False,
+                     layer_skips=()):
     # Initialize dictionaries to store results
     all_rois_dict = {}
     corr_dict = {}
@@ -456,6 +502,8 @@ def _linear_encoding(feat_path,
     # Load feature files and get layer information
     feat_files = glob.glob(feat_path + '/*.np[zy]')
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
+    layer_list = [layer for layer in layer_list if layer not in layer_skips]
+    num_layers = len(layer_list)
 
     # Loop over each fold for cross-validation
     for fold_ii in range(n_folds):
@@ -482,7 +530,8 @@ def _linear_encoding(feat_path,
 
             # Encode the current layer using PCA and split into training and testing sets
             pca_trn, pca_tst = encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_size,
-                                            n_components, mem_mode=mem_mode, save_pca=save_pca,
+                                            n_components, srp_before_pca=srp_before_pca, srp_on_subset=srp_on_subset,
+                                            mem_mode=mem_mode, save_pca=save_pca,
                                             save_path=f'{prediction_save_path}/pca.pkl' if save_pca else None)
 
             # Iterate through all ROI folder paths
@@ -671,6 +720,8 @@ def _ridge_encoding(feat_path,
                     n_folds=3,
                     n_components=100,
                     batch_size=100,
+                    srp_before_pca=False,
+                    srp_on_subset=None,
                     mem_mode='performance',
                     avg_across_feat=False,
                     return_correlations=False,
@@ -679,7 +730,8 @@ def _ridge_encoding(feat_path,
                     save_path="Ridge_Encoding_Results",
                     veRSA=False,
                     save_model=False,
-                    save_pca=False):
+                    save_pca=False,
+                    layer_skips=()):
     # Initialize dictionaries to store results
     all_rois_dict = {}
     corr_dict = {}
@@ -687,6 +739,8 @@ def _ridge_encoding(feat_path,
     # Load feature files and get layer information
     feat_files = glob.glob(feat_path + '/*.np[zy]')
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
+    layer_list = [layer for layer in layer_list if layer not in layer_skips]
+    num_layers = len(layer_list)
 
     # Loop over each fold for cross-validation
     for fold_ii in range(n_folds):
@@ -706,7 +760,7 @@ def _ridge_encoding(feat_path,
             all_rois_dict[fold_ii][layer_id] = {}
             corr_dict[fold_ii][layer_id] = {}
 
-            if save_pca or save_model:
+            if save_model:
                 prediction_save_path = f"{save_path}/{model_name}/fold_{fold_ii}/{layer_id}"
                 if not os.path.exists(prediction_save_path):
                     os.makedirs(prediction_save_path)
