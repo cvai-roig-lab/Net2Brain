@@ -213,6 +213,8 @@ def Ridge_Encoding(feat_path,
                    n_folds=3,
                    n_components=100,
                    batch_size=100,
+                   srp_before_pca=False,
+                   srp_on_subset=None,
                    mem_mode='performance',
                    avg_across_feat=False,
                    return_correlations=False,
@@ -238,10 +240,6 @@ def Ridge_Encoding(feat_path,
         trn_tst_split (float or int): Data to use for training (rest is used for testing). If int,
             it is absolute number of samples, if float, it is a fraction of the whole dataset.
         n_folds (int): Number of folds to split the data for cross-validation.
-        n_components (int): Number of principal components to retain in PCA.
-        batch_size (int): Batch size for Incremental PCA.
-        mem_mode (str): For PCA feature accumulation, options are 'saver' or 'performance'; Choose 'saver' if you have
-            large features or small RAM, otherwise leave 'performance' as default.
         avg_across_feat (bool): If True it averages the activations across axis 1. Necessary if different stimuli have a
             different size of features.
         return_correlations (bool): If True, return correlation values for each voxel (only with veRSA False).
@@ -255,7 +253,6 @@ def Ridge_Encoding(feat_path,
         average_across_layers (bool): If True, average the layer values across all given brain data.
         veRSA (bool): If True, performs RSA on top of the voxelwise encoding.
         save_model (bool): Save the linear regression model to disk.
-        save_pca (bool): Save the PCA transform to disk.
         layer_skips (tuple, optional): Names of the model layers to skip during encoding. Use original layer names.
 
 
@@ -271,6 +268,8 @@ def Ridge_Encoding(feat_path,
                       n_folds=n_folds,
                       n_components=n_components,
                       batch_size=batch_size,
+                      srp_before_pca=srp_before_pca,
+                      srp_on_subset=srp_on_subset,
                       mem_mode=mem_mode,
                       avg_across_feat=avg_across_feat,
                       return_correlations=return_correlations,
@@ -295,6 +294,8 @@ def Linear_Encoding(feat_path,
                     n_folds=3,
                     n_components=100,
                     batch_size=100,
+                    srp_before_pca=False,
+                    srp_on_subset=None,
                     mem_mode='performance',
                     avg_across_feat=False,
                     return_correlations=False,
@@ -322,8 +323,13 @@ def Linear_Encoding(feat_path,
         n_folds (int): Number of folds to split the data for cross-validation.
         n_components (int): Number of principal components to retain in PCA.
         batch_size (int): Batch size for Incremental PCA.
-        mem_mode (str): For PCA feature accumulation, options are 'saver' or 'performance'; Choose 'saver' if you have
-            large features or small RAM, otherwise leave 'performance' as default.
+        srp_before_pca (bool): Whether to apply Sparse Random Projection (SRP) before PCA. Use when features are so
+            high-dimensional that IncrementalPCA runs out of memory after some batches. Num of dims estimated by SRP.
+        srp_on_subset (int or None): Number of samples to use for SRP fitting. If None, all samples are used,
+            which is recommended if you have enough memory (if `srp_before_pca` is False it has no effect).
+        mem_mode (str): 'saver' or 'performance'; Choose 'saver' if you don't have enough memory to store all
+            training sample features, otherwise leave 'performance' as default. If you have `srp_before_pca` enabled,
+            in the first case you will also need to restrict the number of samples for SRP fitting with `srp_on_subset`.
         avg_across_feat (bool): If True it averages the activations across axis 1. Necessary if different stimuli have a
             different size of features.
         return_correlations (bool): If True, return correlation values for each voxel (only with veRSA False).
@@ -353,6 +359,8 @@ def Linear_Encoding(feat_path,
                       n_folds=n_folds,
                       n_components=n_components,
                       batch_size=batch_size,
+                      srp_before_pca=srp_before_pca,
+                      srp_on_subset=srp_on_subset,
                       mem_mode=mem_mode,
                       avg_across_feat=avg_across_feat,
                       return_correlations=return_correlations,
