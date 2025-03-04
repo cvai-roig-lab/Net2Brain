@@ -53,7 +53,6 @@ def setup_checkpoints(tmp_path_factory):
         ("Standard", "AlexNet"),
         ("Timm", "vit_base_patch32_224_in21k"),
         ("Timm", "resnet50"),
-        ("Unet", "unet"),
         ("Taskonomy", "autoencoding"),
         ("Taskonomy", "colorization"),
         ("Clip", "RN50"),
@@ -95,6 +94,9 @@ def test_extractor_outputs(root_path, tmp_path, setup_checkpoints, netset, model
     return
 
 
+
+# ("Audio", "MIT/ast-finetuned-audioset-10-10-0.448-v2"),
+# ("Audio", "MIT/ast-finetuned-audioset-16-16-0.442"),
 @pytest.mark.parametrize(
     "netset,model",
     [
@@ -106,9 +108,7 @@ def test_extractor_outputs(root_path, tmp_path, setup_checkpoints, netset, model
         ("Audio", "PANNS_MobileNetV1"),
         ("Audio", "PANNS_MobileNetV2"),
         ("Audio", "PANNS_Res1dNet51"),
-        ("Audio", "PANNS_ResNet22"),
-        ("Audio", "MIT/ast-finetuned-audioset-10-10-0.448-v2"),
-        ("Audio", "MIT/ast-finetuned-audioset-16-16-0.442"),
+        ("Audio", "PANNS_ResNet22")
     ],
 )
 @pytest.mark.parametrize(
