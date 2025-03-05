@@ -94,8 +94,6 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
                 with open(save_path.split('pca.pkl')[0]+'srp.pkl', "wb") as f:
                     pickle.dump(srp, f)
             del all_data_for_estim
-        else:
-            srp = lambda x: x
 
         pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
         # Train encoding
@@ -116,7 +114,10 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
             if ((jj + 1) % batch_size) == 0 or (jj + 1) == len(trn_Idx):
                 # second condition for the case of the last batch not being the same size
                 effective_batch_size = batch_size if jj != len(trn_Idx) - 1 else len(trn_Idx) % batch_size
-                pca.partial_fit(srp.transform(np.stack(activations[-effective_batch_size:], axis=0)))
+                if srp_before_pca:
+                    pca.partial_fit(srp.transform(np.stack(activations[-effective_batch_size:], axis=0)))
+                else:
+                    pca.partial_fit(np.stack(activations[-effective_batch_size:], axis=0))
                 if mem_mode == 'saver':
                     # in saver mode, only fit and don't save activations in memory
                     del activations
@@ -143,12 +144,15 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
                 new_activation = feat[layer_id].flatten()
 
             # transform one at a time to only have a lightweight list in memory
-            transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
+            if srp_before_pca:
+                transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
+            else:
+                transformed_activations.append(pca.transform(new_activation.reshape(1, -1)))
 
         metric_trn = np.concatenate(transformed_activations, axis=0)
     else:
         activations = np.stack(activations, axis=0)
-        metric_trn = pca.transform(srp.transform(activations))
+        metric_trn = pca.transform(srp.transform(activations)) if srp_before_pca else pca.transform(activations)
 
     # Encode test set
     transformed_activations = []
@@ -161,7 +165,10 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
             new_activation = feat[layer_id].flatten()
 
         # transform one at a time to only have a lightweight list in memory
-        transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
+        if srp_before_pca:
+            transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
+        else:
+            transformed_activations.append(pca.transform(new_activation.reshape(1, -1)))
 
     metric_tst = np.concatenate(transformed_activations, axis=0)
 
