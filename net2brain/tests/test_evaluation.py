@@ -33,4 +33,6 @@ def test_rsa(root_path, case, model_name):
     gt["Layer"] = gt["Layer"].apply(lambda x: x.split(" ")[1])
     gt = gt.sort_values(by=["ROI", "Layer"]).reset_index(drop=True)
 
-    pd.testing.assert_frame_equal(df, gt)
+    pd.testing.assert_frame_equal(df.drop(columns=["R2_array"]), gt.drop(columns=["R2_array"]))
+    gt["R2_array"] = gt["R2_array"].apply(lambda x: list(map(float, x.strip("[]").split())) if isinstance(x, str) else x)
+    assert df["R2_array"].apply(tuple).equals(gt["R2_array"].apply(tuple))
