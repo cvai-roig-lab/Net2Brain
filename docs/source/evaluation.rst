@@ -223,5 +223,176 @@ graphical representation.
 
 
 
+Centered Kernel Alignment (CKA)
+----------------
+
+Centered Kernel Alignment (CKA) is a similarity metric used to compare two datasets, such as DNN-derived features and brain activity, based on the relationships within each dataset. Unlike traditional correlations, CKA is scale-invariant and focuses on the structure of pairwise similarities within each dataset.
+
+.. note::
+
+   Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/3_Evaluation.ipynb>`_!
+
+Prerequisites for the CKA function include:
+
+- **feat_path**: The file path directing to the model's feature `.npz` files, where each file contains multiple layer activations.
+- **brain_path**: The file path for `.npy` files containing brain data, with each file representing a specific ROI.
+- **model_name**: The identifier for the model, crucial for labeling the output.
+
+Returns:
+- **dataframe**: Contains CKA scores for each ROI and each layer of the DNN.
+
+.. code-block:: python
+
+    from net2brain.evaluations.cka import CKA
+
+    results_dataframe = CKA.run(
+        feat_path="path/to/features",
+        brain_path="path/to/brain_data",
+        model_name="model_name"
+    )
+
+
+Distributional Comparison (DC)
+----------------
+
+Distributional Comparison evaluates the similarity between datasets by comparing the feature-wise distributions. Two metrics are available:
+- **Jensen-Shannon Divergence (JSD):** Measures the divergence between two probability distributions. It is symmetric and bounded between 0 and 1.
+- **Wasserstein Distance (WD):** Also known as Earth Mover's Distance, measures the cost of transforming one distribution into the other.
+
+.. note::
+
+   Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/3_Evaluation.ipynb>`_!
+
+Prerequisites for the Distributional Comparison function include:
+
+- **feat_path**: The file path directing to the model's feature `.npz` files, where each file contains multiple layer activations.
+- **brain_path**: The file path for `.npy` files containing brain data, with each file representing a specific ROI.
+- **metric**: The distance metric used to compare distributions. Options are:
+  - **"jsd"**: Jensen-Shannon Divergence.
+  - **"wasserstein"**: Wasserstein Distance.
+- **"bins":**  Number of bins for histogramming.
+- **model_name**: The identifier for the model, crucial for labeling the output.
+
+.. warning::
+
+   If the feature lengths differ between the feature data and brain data, PCA is applied to reduce dimensionality to the same size. While this ensures compatibility, it alters the feature space.
+
+Returns:
+- **dataframe**: Contains distributional comparison scores for each ROI and each layer of the DNN.
+
+.. code-block:: python
+
+    from net2brain.evaluations.distributional_comparisons import DistributionalComparison
+
+    # Using Jensen-Shannon Divergence (JSD)
+    results_jsd = DistributionalComparison.run(
+        feat_path="path/to/features",
+        brain_path="path/to/brain_data",
+        metric="jsd",
+        bins=50,
+        model_name="model_name"
+    )
+
+    # Using Wasserstein Distance (WD)
+    results_wasserstein = DistributionalComparison.run(
+        feat_path="path/to/features",
+        brain_path="path/to/brain_data",
+        metric="wasserstein",
+        bins=50,
+        model_name="model_name"
+    )
+
+Stacked Encoding
+---------------------
+
+Stacked Encoding combines predictions from multiple feature spaces (such as different neural network layers) to improve brain activity prediction. Instead of using a single layer or concatenating features, stacked encoding:
+
+- Trains separate ridge regression models for each feature space.
+- Learns optimal weights to combine these predictions.
+- Produces weights that indicate each feature space's importance.
+
+.. note::
+
+   Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/3_Evaluation.ipynb>`_!
+
+Prerequisites for the Stacked Encoding function include:
+
+- **feat_path**: Path to model activation files (`.npz`), with one file per layer.
+- **roi_path**: Path to fMRI data files (`.npy`), or a list of paths for multiple ROIs/subjects.
+- **model_name**: Identifier for the model (e.g., 'AlexNet', 'ResNet50') for labeling results.
+- **n_folds**: Number of cross-validation folds for stacking (higher = more robust, but slower).
+- **n_components**: Number of principal components for dimensionality reduction (`None` to skip).
+- **vpa**: Whether to perform variance partitioning analysis automatically.
+- **save_path**: Directory to save encoding results and variance partitioning data.
+
+Returns:
+- **dataframe**: Contains model performance metrics per layer and ROI.
+
+.. code-block:: python
+
+    from brain_encoder import Stacked_Encoding
+
+    # Basic usage
+    results_df = Stacked_Encoding(
+        feat_path="path/to/model/features/",
+        roi_path="path/to/brain/data/",
+        model_name="AlexNet",
+        n_folds=5,
+        n_components=100,
+        vpa=True,
+        save_path="results/alexnet_encoding"
+    )
+
+    # Inspect results
+    print(results_df.head())
+
+---
+
+Stacked Variance Partitioning
+-----------------------------------
+
+Stacked Variance Partitioning analyzes the importance of different neural network layers in predicting brain activity. It operates in two directions:
+
+- **Forward direction**: Starts with simple layers and adds complexity.
+  - Identifies the minimum complexity required for prediction.
+
+- **Backward direction**: Starts with complex layers and removes them.
+  - Determines whether brain regions also process lower-level information.
+
+This method defines an *interval* of relevant layers for each brain region.
+
+.. note::
+
+   Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/3_Evaluation.ipynb>`_!
+
+Prerequisites for the Stacked Variance Partitioning function include:
+
+- **r2s**: Array of R² values for individual layer models (`n_layers × n_voxels`).
+- **stacked_r2s**: Array of R² values for the full stacked model (`n_voxels,`).
+- **save_path**: Path to save variance partitioning results as an `.npz` file.
+
+
+Returns:
+- **dictionary**: Contains variance partitioning results, including layer assignments.
+
+.. code-block:: python
+
+    from brain_encoder import Stacked_Variance_Partitioning
+    import numpy as np
+    
+    # Load R² values from stacked encoding
+    r2s = np.load("path/to/r2s.npy")                # R² values for individual layers
+    stacked_r2s = np.load("path/to/stacked_r2s.npy")  # R² values for stacked model
+
+    # Perform variance partitioning
+    vp_results = Stacked_Variance_Partitioning(
+        r2s=r2s,
+        stacked_r2s=stacked_r2s,
+        save_path="results/variance_partitioning"
+    )
+
+    # Access the results
+    forward_layers = vp_results["vp_sel_layer_forward"]   # Layers selected in forward analysis
+    backward_layers = vp_results["vpr_sel_layer_backward"]  # Layers selected in backward analysis
 
 

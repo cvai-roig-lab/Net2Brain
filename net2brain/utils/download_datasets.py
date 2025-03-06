@@ -132,6 +132,28 @@ class Dataset92images(BaseDataset):
         roi_path = os.path.join(self.dataset_folder, "brain_data")
         return {"stimuli_path": stimuli_path, "roi_path": roi_path}
     
+    
+
+class DatasetBoldMoments(BaseDataset):
+    dataset_name = "BoldMoments"
+    DATASET_URLS = {
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiMgXvrfGeFjNgm5wyTTSJ/BoldMoments.zip"
+    }
+
+    def __init__(self, path=None):
+        super().__init__(path)
+
+    def _load(self):
+        self.download_and_extract_zip()
+        print("Beware that this is a reduced dataset for testing purposes. For the full dataset please go to https://openneuro.org/datasets/ds005165/versions/1.0.4")
+        stimuli_train = os.path.join(self.dataset_folder, "stimuli_train")
+        stimuli_test = os.path.join(self.dataset_folder, "stimuli_test")
+        roi_path = os.path.join(self.dataset_folder, "fmri")
+        
+        return {"stimuli_train": stimuli_train, 
+                "stimuli_test": stimuli_test, 
+                "roi_path": roi_path}
+    
 
 class WorkshopCuttingGardens(BaseDataset):
     dataset_name = "cutting_gardens23"
@@ -706,4 +728,30 @@ class DatasetNSD_25(DatasetNSD_872):
         viz_path = os.path.join(self.dataset_folder, "NSD_25_roi_masks")
 
         return {"stimuli_path": stimuli_path, "roi_path": roi_path, "viz_path": viz_path, "captions_path": captions_path}
+        
+ 
+class DatasetThings_fMRI(BaseDataset):
+    dataset_name = "Things_test"
+    DATASET_URLS = {
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiBk8D3GYTMefWCgvAt7mV/Things_test.zip"
+    }
+
+
+    def __init__(self, path=None):
+        super().__init__(path)
+        self.source_path = "Things_test"
+        
+    def _load(self):
+        self.download_and_extract_zip()
+        # Dictionary to store folder names and their paths
+        folder_paths = {}
+        
+        # Iterate over items in the dataset folder
+        for item in os.listdir(self.dataset_folder):
+            item_path = os.path.join(self.dataset_folder, item)
+            # Check if the item is a directory
+            if os.path.isdir(item_path):
+                folder_paths[item] = item_path
+                
+        return folder_paths
     

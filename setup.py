@@ -13,10 +13,13 @@ setup(
     install_requires=[
         'flake8',
         'librosa',
+        'torchlibrosa',
         'h5py',
+        'eva-decord',  # for video models on mac devices
         'sentencepiece',
         'flax',
         'transformers',
+        'cvxopt',
         'einops',
         'accelerate',
         'matplotlib',
@@ -43,5 +46,12 @@ setup(
         'pytorchvideo @ git+https://github.com/facebookresearch/pytorchvideo.git@eb04d1b', # NOTE: Change when new release published
         'clip @ git+https://github.com/openai/CLIP.git',
         'mit_semseg @ git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master'
-    ]
+    ],
+        extras_require={
+        "test": [
+            "pytest",
+            "pytest-cov",
+            "flake8",
+        ],
+    },
 )

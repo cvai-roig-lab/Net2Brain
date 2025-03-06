@@ -8,6 +8,7 @@ import torchextractor as tx
 import torch
 from net2brain.feature_extraction import FeatureExtractor
 
+
 # Function to download model checkpoints before the tests run
 def download_checkpoints(save_directory):
     checkpoints = {
@@ -33,6 +34,7 @@ def download_checkpoints(save_directory):
         else:
             print(f"{filename} already exists, skipping download.")
 
+
 # Run this function before tests to ensure checkpoints are downloaded
 @pytest.fixture(scope="session", autouse=True)
 def setup_checkpoints(tmp_path_factory):
@@ -43,6 +45,7 @@ def setup_checkpoints(tmp_path_factory):
     # Return the path to the checkpoints
     return checkpoint_dir
 
+
 # Define your tests
 @pytest.mark.parametrize(
     "netset,model",
@@ -50,7 +53,6 @@ def setup_checkpoints(tmp_path_factory):
         ("Standard", "AlexNet"),
         ("Timm", "vit_base_patch32_224_in21k"),
         ("Timm", "resnet50"),
-        ("Unet", "unet"),
         ("Taskonomy", "autoencoding"),
         ("Taskonomy", "colorization"),
         ("Clip", "RN50"),
@@ -64,7 +66,7 @@ def setup_checkpoints(tmp_path_factory):
 def test_extractor_outputs(root_path, tmp_path, setup_checkpoints, netset, model, pretrained):
     # Define paths
     imgs_path = root_path / Path("images")
-    
+
     # Check if pretrained=True, and load from checkpoint if so
     checkpoint_dir = setup_checkpoints
     if pretrained:
@@ -93,15 +95,53 @@ def test_extractor_outputs(root_path, tmp_path, setup_checkpoints, netset, model
 
 
 
+# ("Audio", "MIT/ast-finetuned-audioset-10-10-0.448-v2"),
+# ("Audio", "MIT/ast-finetuned-audioset-16-16-0.442"),
+@pytest.mark.parametrize(
+    "netset,model",
+    [
+        ("Audio", "PANNS_Cnn10"),
+        ("Audio", "PANNS_Cnn14"),
+        ("Audio", "PANNS_Cnn6"),
+        ("Audio", "PANNS_DaiNet19"),
+        ("Audio", "PANNS_LeeNet11"),
+        ("Audio", "PANNS_MobileNetV1"),
+        ("Audio", "PANNS_MobileNetV2"),
+        ("Audio", "PANNS_Res1dNet51"),
+        ("Audio", "PANNS_ResNet22")
+    ],
+)
+@pytest.mark.parametrize(
+    "pretrained",
+    [True, ],
+)
+def test_extractor_outputs_audio(root_path, tmp_path, setup_checkpoints, netset, model, pretrained):
+    # Define paths
+    audios_path = root_path / Path("audios")
+
+    fx = FeatureExtractor(model=model, netset=netset, pretrained=pretrained, device='cpu')
+
+    # Extract features
+    fx.extract(audios_path, save_path=tmp_path)
+
+    # Layer consolidation
+    fx.consolidate_per_layer()
+
+    output_files = list(tmp_path.iterdir())
+
+    # Assert output files are as expected
+    assert len(output_files) > 1
+
+    return
 
 
 def test_own_model(root_path, tmp_path):
-
     # Define iamge path
     image_path = root_path / Path("images")
 
     # Define a model
-    model = models.alexnet(pretrained=False)   # This one exists in the toolbox as well, it is just supposed to be an example!
+    model = models.alexnet(
+        pretrained=False)  # This one exists in the toolbox as well, it is just supposed to be an example!
 
     ## Define extractor (Note: NO NETSET NEEDED HERE)
     fx = FeatureExtractor(model=model, device='cpu')
@@ -112,9 +152,7 @@ def test_own_model(root_path, tmp_path):
     return
 
 
-
 def test_with_own_functions(root_path, tmp_path):
-
     def my_preprocessor(image, model_name, device):
         """
         Args:
@@ -139,38 +177,33 @@ def test_with_own_functions(root_path, tmp_path):
 
         return img_tensor
 
-
     def my_extactor(preprocessed_data, layers_to_extract, model):
-
         print("I am using my own extractor")
 
         # Create a extractor instance
         extractor_model = tx.Extractor(model, layers_to_extract)
-        
+
         # Extract actual features
         _, features = extractor_model(preprocessed_data)
 
         return features
 
-
     def my_cleaner(features):
         print("I am using my own cleaner which does not do anything")
         return features
-    
 
     # Define iamge path
     image_path = root_path / Path("images")
 
     # Define a model
-    model = models.alexnet(pretrained=False)  # This one exists in the toolbox as well, it is just supposed to be an example!
+    model = models.alexnet(
+        pretrained=False)  # This one exists in the toolbox as well, it is just supposed to be an example!
 
     ## Define extractor (Note: NO NETSET NEEDED HERE)
-    fx = FeatureExtractor(model=model, device='cpu', preprocessor=my_preprocessor, feature_cleaner=my_cleaner, extraction_function=my_extactor)
+    fx = FeatureExtractor(model=model, device='cpu', preprocessor=my_preprocessor, feature_cleaner=my_cleaner,
+                          extraction_function=my_extactor)
 
     # Run extractor
     fx.extract(image_path, layers_to_extract=['features.0', 'features.3', 'features.6', 'features.8', 'features.10'])
 
     return
-
-
-

@@ -169,7 +169,7 @@ class Plotting:
     def plot_all_layers(self, metric='R2', columns_per_row=4, simplified_legend=False, rotation=45):
         for dataframe in self.dataframes:
             dataframe = self.prepare_dataframe(dataframe, metric)
-        rois = pd.concat(self.dataframes)['ROI'].unique()
+        rois = sorted(pd.concat(self.dataframes)['ROI'].unique())
         n_rois = len(rois)
         rows = int(np.ceil((n_rois) / columns_per_row))
 
@@ -227,7 +227,7 @@ class Plotting:
                 all_handles_labels.append((handles, labels))
 
             ax.set_xticks(model_positions)
-            ax.set_xticklabels([self.add_line_break(label) for label in models], fontsize=16, rotation=rotation, ha='right')
+            ax.set_xticklabels([self.add_line_break(label) for label in models], fontsize=16, rotation=rotation, ha='center')
             ax.set_title(f'Correlation Analysis for {roi}', fontsize=16)
             ax.set_xlabel('Model Architectures', fontsize=16)
             ax.set_ylabel('Correlation Coefficient (R)', fontsize=16)
