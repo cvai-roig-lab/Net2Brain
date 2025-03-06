@@ -80,3 +80,6 @@ notebooks/Workshops/*
 *.npz
 /__MACOSX
 
+/test_nsd
+/sample_data
+test.ipynb
