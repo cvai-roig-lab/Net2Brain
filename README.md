@@ -15,7 +15,7 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 **Bridging Neural and AI Research**:
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
-To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks)
+To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks).
 
 # Updates 03/25:
 1. Added Centered Kernel Alignment (CKA) and Distributional Comparisons
