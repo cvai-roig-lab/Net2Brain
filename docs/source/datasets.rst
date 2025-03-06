@@ -33,6 +33,7 @@ Available datasets include:
 - ``"bonner_pnas2017"`` from the study by Micheal F. Bonner et al.
 - ``"Algonauts"`` from the Algonauts Challenge, by EJ Allen et al.
 - ``"NSD_872"`` a subset of the NSD Dataset with 872 images viewed by all participants
+- ``"Things_test"`` : the test split of the original Thing fMRI dataset, contains 12 trials of 100 images for 3 participants 
 - ``"BoldMoment-Dataset"`` a subset of the BoldMoment-Dataset by Lahner et al.
 
 
@@ -49,12 +50,14 @@ These datasets can be loaded using specific classes in the Net2Brain toolkit:
 
 .. code-block:: python
 
-    from net2brain.utils.download_datasets import Dataset78images, Dataset92images, DatasetBonnerPNAS2017, DatasetAlgonauts_NSD, DatasetNSD_872, DatasetBoldMoments
+
+    from net2brain.utils.download_datasets import Dataset78images, Dataset92images, DatasetBonnerPNAS2017, DatasetAlgonauts_NSD, DatasetNSD_872, DatasetThings_fMRI, DatasetBoldMoments
     paths_78 = Dataset78images().load_dataset()
     paths_92 = Dataset92images().load_dataset()
     paths_bonner = DatasetBonnerPNAS2017().load_dataset()
     paths_Algonauts = DatasetAlgonauts_NSD().load_dataset()
     paths_NSD_872 = DatasetNSD_872().load_dataset()
+    paths_things = DatasetThings_fMRI.load_dataset()
     paths_BoldMoments = DatasetBoldMoments.load_dataset()
 
     # Example to access stimuli and ROI data for the `78images` Dataset:
