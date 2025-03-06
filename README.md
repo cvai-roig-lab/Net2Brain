@@ -72,9 +72,10 @@ To further facilitate your exploration, we also offer pre-downloaded datasets th
 ## Available Datasets:
 - The 78Images-Dataset from [Algonauts2019 Challenge Training Set A](http://algonauts.csail.mit.edu/2019/download.html)
 - The 92Images-Dataset from [Algonauts2019 Challenge Test Set](http://algonauts.csail.mit.edu/2019/download.html)
-- The bonnerpnas2017-Dataset from [Micheal F. Bonner et. al](https://www.pnas.org/doi/full/10.1073/pnas.1618228114)
-- The NSD-Dataset (Algonauts Challenge) from [EJ Allen et. al](https://www.nature.com/articles/s41593-021-00962-x)
+- The bonnerpnas2017-Dataset from [Micheal F. Bonner et al.](https://www.pnas.org/doi/full/10.1073/pnas.1618228114)
+- The NSD-Dataset (Algonauts Challenge) from [EJ Allen et al.](https://www.nature.com/articles/s41593-021-00962-x)
 - A subset of the NSD-Dataset with the 872 images that all participants have seen from [EJ Allen et. al](https://www.nature.com/articles/s41593-021-00962-x)
+- The test split of the Things Dataset from [Hebart et al.](https://elifesciences.org/articles/82580), which contains 12 trials for each image in the stimuli for 3 subjects
 - A subset of the BoldMoment-Dataset by [Lahner et al.](https://www.nature.com/articles/s41467-024-50310-3)
 
 
@@ -86,6 +87,18 @@ The NSD-Datasets offers an additional range of functions designed to bridge NSD 
 * **Caption Downloads**: Obtain COCO original caption to each downloaded image.
 * **Image and Mask Manipulation**: Crop and rename files for consistency with NSD conventions.
 * **Visualization**: Display the images along with their segmentaion masks.
+
+
+| Dataset                              | Regions of Interest (ROIs) |
+|--------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Algonauts 2019**                   | EVC, IT, whole brain MEG |
+| **Algonauts 2021 (Bold Moments)**    | V1, V2, V3, V3ab, V4, 7AL, BA2, BMDgeneral, EBA, FFA, IPS0, IPS1-2-3, LOC, MT, OFA, PPA, PF, PFop, PFt, RSC, STS, TOS, whole brain, hemi-left, hemi-right |
+| **Algonauts 2023 (NSD-Subset)**      | V1, V2, V3, hV4, EBA, FBA-1, FBA-2, FFA-1, FFA-2, Mfs-words, OFA, OPA, OWFA, PPA, RSC, VWFA-1, VWFA-2, hemi-left, hemi-right |
+| **Algonauts 2023 (872 Subjects Subset)** | V1d, V2d, V3d, V1v, V2v, V3v, hV4, EBA, FBA-1, FBA-2, FFA-1, FFA-2, Mfs-words, OFA, OPA, OWFA, PPA, RSC |
+| **THINGS-fMRI**                      | V1, V2, V3, hV4, VO1, VO2, lTOS, rTOS, lLOC, rLOC, lFFA, rFFA, lPPA, rPPA |
+| **Bonner et al.**                    | V1d, V1v, V2d, V2v, V3a, V3b, V3d, V3v, hV4, LO1, LO2, PHC1, PHC2, VO1, VO2 |
+
+
 
 # Key Functions
 
