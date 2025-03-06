@@ -15,8 +15,11 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 **Bridging Neural and AI Research**:
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
-# Updates 12/24:
+To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks)
+
+# Updates 03/25:
 1. Added Centered Kernel Alignment (CKA) and Distributional Comparisons
+2. Added Stacked Encoding and Structured Variance Partitioning
 
 # Updates 10/24
 1. Added Ridge Regression to Linear Encoding
@@ -66,6 +69,7 @@ To further facilitate your exploration, we also offer pre-downloaded datasets th
 - The bonnerpnas2017-Dataset from [Micheal F. Bonner et. al](https://www.pnas.org/doi/full/10.1073/pnas.1618228114)
 - The NSD-Dataset (Algonauts Challenge) from [EJ Allen et. al](https://www.nature.com/articles/s41593-021-00962-x)
 - A subset of the NSD-Dataset with the 872 images that all participants have seen from [EJ Allen et. al](https://www.nature.com/articles/s41593-021-00962-x)
+- A subset of the BoldMoment-Dataset by [Lahner et al.](https://www.nature.com/articles/s41467-024-50310-3)
 
 
 The NSD-Datasets offers an additional range of functions designed to bridge NSD and COCO, enhancing the utility of the NSD dataset for comprehensive visual studies:
@@ -252,6 +256,8 @@ Refer to the provided notebooks and documentation for detailed instructions on c
 5. Variance Partitioning Analysis
 6. CKA
 7. Distributional Comparisons
+8. Stacked Encoding
+9. Structured Variance Paritioning
 
 To delve deeper into how they work, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks)
 

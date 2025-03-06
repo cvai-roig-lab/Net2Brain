@@ -19,6 +19,7 @@ setup(
         'sentencepiece',
         'flax',
         'transformers',
+        'cvxopt',
         'einops',
         'accelerate',
         'matplotlib',
