@@ -20,6 +20,12 @@ To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.
 # Updates 03/25:
 1. Added Centered Kernel Alignment (CKA) and Distributional Comparisons
 2. Added Stacked Encoding and Structured Variance Partitioning
+3. Added BoldMoments Dataset from [Lahner et al.](https://www.nature.com/articles/s41467-024-50310-3)
+4. Added test-split from Things-Dataset from [Hebart et al.](https://elifesciences.org/articles/82580)
+5. Added compability for Audio Models [see here](net2brain/architectures/audio_models.py)
+6. Added veRSA [Khaligh-Razavi et al.](https://www.nature.com/articles/s41467-024-53147-y) and [Conwwell at al.](https://www.sciencedirect.com/science/article/pii/S0022249616301134)
+6. Plotting Bugfixes
+7. Making RSA more robust
 
 # Updates 10/24
 1. Added Ridge Regression to Linear Encoding
