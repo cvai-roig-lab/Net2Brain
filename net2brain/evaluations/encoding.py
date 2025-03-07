@@ -9,6 +9,7 @@ import pickle
 from scipy.stats import pearsonr, spearmanr, ttest_1samp, sem
 from sklearn.model_selection import train_test_split, GridSearchCV, ShuffleSplit, cross_val_score
 from sklearn.decomposition import IncrementalPCA
+from sklearn.random_projection import johnson_lindenstrauss_min_dim
 from sklearn.random_projection import SparseRandomProjection
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.preprocessing import StandardScaler
@@ -76,7 +77,6 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
     if save_path is None or not os.path.exists(save_path):
 
         if srp_before_pca:
-            srp = SparseRandomProjection()
             all_data_for_estim = []
             srp_trn = trn_Idx if srp_on_subset is None else trn_Idx[:srp_on_subset]
             for jj, ii in enumerate(srp_trn):
@@ -89,6 +89,7 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
                     raise ValueError("Elements in activations do not have the same shape. "
                                      "Please set 'avg_across_feat' to True to average across features.")
                 all_data_for_estim.append(new_activation)  # collect in a list
+            srp = SparseRandomProjection(n_components=johnson_lindenstrauss_min_dim(len(all_data_for_estim)))
             srp.fit(np.stack(all_data_for_estim, axis=0))
             if save_pca:
                 with open(save_path.split('pca.pkl')[0]+'srp.pkl', "wb") as f:
