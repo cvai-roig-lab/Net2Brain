@@ -89,8 +89,7 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
                     raise ValueError("Elements in activations do not have the same shape. "
                                      "Please set 'avg_across_feat' to True to average across features.")
                 all_data_for_estim.append(new_activation)  # collect in a list
-            target_dim = min(all_data_for_estim[0].shape[0], johnson_lindenstrauss_min_dim(len(all_data_for_estim)))
-            srp = SparseRandomProjection(n_components=target_dim)
+            srp = SparseRandomProjection(n_components=johnson_lindenstrauss_min_dim(len(all_data_for_estim)))
             srp.fit(np.stack(all_data_for_estim, axis=0))
             if save_pca:
                 with open(save_path.split('pca.pkl')[0]+'srp.pkl', "wb") as f:
