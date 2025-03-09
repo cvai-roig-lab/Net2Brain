@@ -301,6 +301,7 @@ We hope Net2Brain proves to be a valuable resource in your neuroscientific inves
 - M. Sc. Martina Vilas
 - M. Sc. Timothy Schaumlöffel
 - Dr. Kshitij Dwivedi
+- M. Sc. Christina Sartzetaki
 - Dr. Radoslaw Martin Cichy
 - Prof. Dr. Gemma Roig
 
