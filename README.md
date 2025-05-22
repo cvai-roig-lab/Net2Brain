@@ -5,7 +5,7 @@
 <img src="docs/source/Net2Brain_Logo.png" alt="Net2Brain Logo" width="50%"/>
 
 
-Welcome to __Net2Brain__, a powerful toolbox designed to facilitate the comparison of human brain activity patterns with the activations of Deep Neural Networks (DNNs). With over 600 pre-trained DNNs available, Net2Brain empowers neuroscientists to explore and analyze the relationships between artificial and biological neural representations.
+Welcome to [__Net2Brain__](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full), a powerful toolbox designed to facilitate the comparison of human brain activity patterns with the activations of Deep Neural Networks (DNNs). With over 600 pre-trained DNNs available, Net2Brain empowers neuroscientists to explore and analyze the relationships between artificial and biological neural representations.
 
 Net2Brain is a collaborative effort between CVAI and Radek Cichy's lab, aimed at providing a user-friendly toolbox for neural research with deep neural networks. 
 
@@ -15,7 +15,7 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 **Bridging Neural and AI Research**:
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
-To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks).
+To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks), or our latest [paper release](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full).
 
 # Updates 03/25
 1. Added Centered Kernel Alignment (CKA) and Distributional Comparisons
@@ -26,6 +26,7 @@ To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.
 6. Added veRSA [Khaligh-Razavi et al.](https://www.nature.com/articles/s41467-024-53147-y) and [Conwwell at al.](https://www.sciencedirect.com/science/article/pii/S0022249616301134)
 6. Plotting Bugfixes
 7. Making RSA more robust
+8. Official [paper release](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full) in [Frontiers in Neuroinformatics](https://www.frontiersin.org/journals/neuroinformatics)
 
 # Updates 10/24
 1. Added Ridge Regression to Linear Encoding
@@ -296,28 +297,20 @@ We hope Net2Brain proves to be a valuable resource in your neuroscientific inves
 
 ## Contributors of Net2Brain
 
-- M.Sc. Domenic Bersch
+- M. Sc. Domenic Bersch
 - Dr. Sari Saba-Sadiya
 - M. Sc. Martina Vilas
 - M. Sc. Timothy Schaumlöffel
 - Dr. Kshitij Dwivedi
+- M. Sc. Christina Sartzetaki
 - Dr. Radoslaw Martin Cichy
 - Prof. Dr. Gemma Roig
 
 
 ## Citing Net2Brain
-If you use Net2Brain in your research, please don't forget to cite us:
+If you use Net2Brain in your research, please don't forget to cite our [paper in Frontiers](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full):
 ```bash
-@misc{https://doi.org/10.48550/arxiv.2208.09677,
-     doi = {10.48550/ARXIV.2208.09677},
-     url = {https://arxiv.org/abs/2208.09677},
-     author = {Bersch, Domenic and Dwivedi, Kshitij and Vilas, 
-     Martina and Cichy, Radoslaw M. and Roig, Gemma},
-     title = {Net2Brain: A Toolbox to compare artificial vision models 
-     with human brain responses},
-     publisher = {arXiv},
-     year = {2022},
-     copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}}
+Bersch D, Vilas MG, Saba-Sadiya S, Schaumlöffel T, Dwivedi K, Sartzetaki C, Cichy RM and Roig G (2025) Net2Brain: a toolbox to compare artificial vision models with human brain responses. Front. Neuroinform. 19:1515873. doi: 10.3389/fninf.2025.1515873
 ```
 
 
@@ -338,4 +331,4 @@ This toolbox is inspired by the Algonauts Project and contains collections of ar
 - **Torchextractor** https://github.com/antoinebrl/torchextractor
 
 ## Funding
-The project is supported by hessian.ai Connectom Networking and Innovation Fund 2023 and by the German Research Foundation (DFG) - DFG Research Unit FOR 5368. 
+This project was funded by the German Research Foundation (DFG)–DFG Research Unit FOR 5368 (GR) awarded to Gemma Roig; DFG (CI241/1-1, CI241/3-1, and CI241/7-1) awarded to Radoslaw M. Cichy and a European Research Council (ERC) starting grant (ERC-2018-STG 803370) awarded to Radoslaw M. Cichy. We are grateful for access to the computing facilities of the Center for Scientific Computing at Goethe University and Freie Universität Berlin.

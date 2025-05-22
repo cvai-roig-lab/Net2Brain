@@ -20,9 +20,25 @@ and DNN activations, propelling the frontier of cognitive computational research
 
 To get started with the project, see the :ref:`installation` guide.
 
+
 .. note::
 
    Please note that Net2Brain is currently under active development, and features may be updated regularly.
+
+
+Citing Net2Brain
+================
+
+If you use Net2Brain in your research, please don't forget to cite our 
+`paper in Frontiers <https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full>`_:
+
+.. code-block:: bash
+
+   Bersch D, Vilas MG, Saba-Sadiya S, Schaumlöffel T, Dwivedi K, Sartzetaki C, 
+   Cichy RM and Roig G (2025) Net2Brain: a toolbox to compare artificial vision 
+   models with human brain responses. Front. Neuroinform. 19:1515873. 
+   doi: 10.3389/fninf.2025.1515873
+
 
 Contents
 --------
