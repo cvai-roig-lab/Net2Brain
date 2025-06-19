@@ -18,8 +18,8 @@ class RSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, model_name, layer_skips=(), squared=True,
-                 datatype="None", save_path="./"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, layer_skips=(),
+                 squared=True, timepoint_agg=True, datatype="None", save_path="./"):
         """Initiate RSA
 
         Args:
@@ -28,6 +28,7 @@ class RSA():
             model_name (str): Name of the model.
             layer_skips (tuple, optional): Names of the model layers to skip. Use '_' instead of '.' in the names.
             squared (bool): Whether to square the correlation values.
+            timepoint_agg (bool): Whether to aggregate timepoints for MEG/EEG data.
         """
 
         # Find all model RDMs
@@ -45,6 +46,7 @@ class RSA():
         self.model_name = model_name
         self.layer_skips = layer_skips
         self.squared = squared
+        self.timepoint_agg = timepoint_agg
 
         # For comparison
         self.other_rdms_path = None
@@ -83,7 +85,7 @@ class RSA():
         elif len(shape) == 4:
             if shape[2] == shape[3]:
                 # MEG data with shape (subjects, times, images, images)
-                self.rsa = self.rsa_meg
+                self.rsa = self.rsa_meg_eeg
             else:
                 raise ValueError(f"Invalid MEG data shape: {shape}. Last two dimensions must be equal.")
 
@@ -134,8 +136,8 @@ class RSA():
         r_array_name = "R_array" if not self.squared else "R2_array"
         return r_name, r_percent_name, r_array_name
 
-    def rsa_meg(self, model_rdm, brain_rdm, layername):
-        """Creates the output dictionary for MEG scans.
+    def rsa_meg_eeg(self, model_rdm, brain_rdm, layername):
+        """Creates the output dictionary for MEG or EEG scans.
         Args:
             model_rdm (numpy array): DNN rdm
             brain_rdm (list of numpy arrays): Subjects RDMs
@@ -153,7 +155,10 @@ class RSA():
             model_rdm)  # Check if rdm is squareform #TODO Remove soon after reimplementing RSA
 
         # returns list of corrcoefs, depending on amount of participants in brain rdm
-        corr = np.mean([self.distance(model_rdm, rdms) for rdms in meg_rdm], 1)
+        corr = [self.distance(model_rdm, rdms) for rdms in meg_rdm]
+        if self.timepoint_agg:
+            # Aggregate timepoints by taking the mean across the second dimension
+            corr = np.mean(corr, axis=1)
 
         if self.squared:
             # Square correlation
@@ -162,7 +167,7 @@ class RSA():
             corr_list = corr
 
         # Take mean
-        r = np.mean(corr_list)
+        r = np.mean(corr_list, axis=0)
 
         # ttest: Ttest_1sampResult(statistic=3.921946, pvalue=0.001534)
         significance = stats.ttest_1samp(corr_list, 0)[1]
@@ -246,9 +251,9 @@ class RSA():
                            "SEM": [sem],
                            "LNC": [lnc],
                            "UNC": [unc],
-                           r_array_name: corr}
+                           r_array_name: [corr]}
 
-            # Add this dict to the total dickt
+            # Add this dict to the total dict
             all_layers_dicts.append(output_dict)
 
         return all_layers_dicts
@@ -292,7 +297,6 @@ class RSA():
             for layer_dict in all_layers_dict:
                 layer_dict["ROI"] = [scan_key]
                 layer_dict["Model"] = [self.model_name]
-                layer_dict[r_array_name] = [layer_dict[r_array_name]]
                 layer_df = pd.DataFrame.from_dict(layer_dict)
                 if correction == "bonferroni":
                     layer_df['Significance'] = layer_df['Significance'] * len(all_layers_dict)
