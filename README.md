@@ -17,6 +17,9 @@ One of the primary objectives of Net2Brain is to facilitate the collaboration be
 
 To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks), or our latest [paper release](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full).
 
+# Updates 06/25
+1. Added option to return all timepoints in RSA for MEG and EEG
+
 # Updates 03/25
 1. Added Centered Kernel Alignment (CKA) and Distributional Comparisons
 2. Added Stacked Encoding and Structured Variance Partitioning
