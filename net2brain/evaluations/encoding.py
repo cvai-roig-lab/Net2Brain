@@ -443,7 +443,7 @@ def Encoding(feat_path,
 
     if avg_across_feat is True:
         print("avg_across_feat==True. This averages the activations across axis 1. Only neccessary if different stimuli"
-              " have a different size of features (as with LLMs)")
+              " have a different size of features (as with LLMs). Be aware to only use this for example purposes, usually you would want to have the same amount of tokens across features")
 
     if return_correlations is True and veRSA is True:
         print("The option `return_correlations` is not supported with `veRSA`, because the voxel space is converted "
@@ -561,7 +561,8 @@ def _linear_encoding(feat_path,
                                             random_state=fold_ii + random_state, shuffle=shuffle)
 
         # Process each layer of model activations
-        for layer_id in tqdm(layer_list, desc=f"Layers in fold {fold_ii}"):
+        layer_progress = tqdm(layer_list, desc=f"Fold {fold_ii}")
+        for layer_id in layer_progress:
             all_rois_dict[fold_ii][layer_id] = {}
             corr_dict[fold_ii][layer_id] = {}
 
@@ -576,9 +577,15 @@ def _linear_encoding(feat_path,
                                             mem_mode=mem_mode, save_pca=save_pca,
                                             save_path=f'{prediction_save_path}/pca.pkl' if save_pca else None)
 
+            # Update progress bar with current layer and ROI info
+            roi_names = [roi_path.split(os.sep)[-1].split(".")[0] for roi_path in roi_paths]
+            if len(roi_names) == 1:
+                layer_progress.set_postfix({"Layer": layer_id, "ROI": roi_names[0]})
+            else:
+                layer_progress.set_postfix({"Layer": layer_id, "ROIs": f"{len(roi_names)} ROIs"})
+
             # Iterate through all ROI folder paths
             for counter, roi_path in enumerate(roi_paths):
-                print(f"Processing ROI file {counter}, {roi_path}")
                 roi_name = roi_path.split(os.sep)[-1].split(".")[0]
 
                 # Load fMRI data for the current ROI and split into training and testing sets
