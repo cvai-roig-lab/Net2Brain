@@ -43,6 +43,33 @@ def average_df_across_layers(combined_df):
     return averaged_df
 
 
+def _extract_and_process_activation(feat, layer_id, avg_across_feat):
+    """
+    Extract and process neural network layer activation data.
+    
+    Args:
+        feat (dict): Feature dictionary loaded from .npz file.
+        layer_id (str): The layer name whose activations are to be extracted.
+        avg_across_feat (bool): Whether to average across features for variable-length sequences.
+        
+    Returns:
+        numpy.ndarray: Processed activation vector.
+    """
+    if avg_across_feat:
+        # Handle different layer formats properly
+        layer_data = feat[layer_id]
+        if layer_data.ndim == 3:  # (1, seq_len, hidden_dim) format
+            new_activation = np.mean(layer_data.squeeze(0), axis=0)  # Average over sequence length
+        elif layer_data.ndim == 2:  # (seq_len, hidden_dim) format
+            new_activation = np.mean(layer_data, axis=0)  # Average over sequence length
+        else:
+            new_activation = layer_data.flatten()
+    else:
+        new_activation = feat[layer_id].flatten()
+    
+    return new_activation
+
+
 def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_size, n_components,
                  srp_before_pca, srp_on_subset, mem_mode, save_pca, save_path):
     """
@@ -74,21 +101,24 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
     feat_files = glob.glob(feat_path + '/*.np[zy]')
     feat_files.sort()
 
+    # Initialize srp to None
+    srp = None
+
+    # ===== SETUP PCA AND SRP =====
     if save_path is None or not os.path.exists(save_path):
 
+        # Setup Sparse Random Projection if needed
         if srp_before_pca:
             all_data_for_estim = []
             srp_trn = trn_Idx if srp_on_subset is None else trn_Idx[:srp_on_subset]
             for jj, ii in enumerate(srp_trn):
-                feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
-                if avg_across_feat:
-                    new_activation = np.mean(feat[layer_id], axis=1).flatten()
-                else:
-                    new_activation = feat[layer_id].flatten()
+                feat = np.load(feat_files[ii], allow_pickle=True)
+                new_activation = _extract_and_process_activation(feat, layer_id, avg_across_feat)
                 if all_data_for_estim and new_activation.shape != all_data_for_estim[-1].shape:
                     raise ValueError("Elements in activations do not have the same shape. "
                                      "Please set 'avg_across_feat' to True to average across features.")
-                all_data_for_estim.append(new_activation)  # collect in a list
+                all_data_for_estim.append(new_activation)
+            
             srp = SparseRandomProjection(n_components=johnson_lindenstrauss_min_dim(len(all_data_for_estim)))
             srp.fit(np.stack(all_data_for_estim, axis=0))
             if save_pca:
@@ -96,31 +126,33 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
                     pickle.dump(srp, f)
             del all_data_for_estim
 
+        # Setup and train IncrementalPCA
         pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
-        # Train encoding
         for jj, ii in enumerate(trn_Idx):
-            feat = np.load(feat_files[ii], allow_pickle=True)  # get activations of the current layer
+            feat = np.load(feat_files[ii], allow_pickle=True)
+            new_activation = _extract_and_process_activation(feat, layer_id, avg_across_feat)
 
-            if avg_across_feat:
-                new_activation = np.mean(feat[layer_id], axis=1).flatten()
-            else:
-                new_activation = feat[layer_id].flatten()
-
-            if activations and new_activation.shape != activations[-1].shape:
+            # Check if averaging is needed but not enabled
+            if not avg_across_feat and activations and new_activation.shape != activations[-1].shape:
                 raise ValueError("Elements in activations do not have the same shape. "
-                                 "Please set 'avg_across_feat' to True to average across features.")
+                                 "This likely means you have variable-length sequences (e.g., different sentence lengths in LLMs). "
+                                 "Please set 'avg_across_feat' to True to average across features."
+                                 "Be aware to only use this for example purposes, usually you would want to have the same amount of tokens across features")
+            activations.append(new_activation)
 
-            activations.append(new_activation)  # collect in a list
-
+            # Fit PCA in batches
             if ((jj + 1) % batch_size) == 0 or (jj + 1) == len(trn_Idx):
-                # second condition for the case of the last batch not being the same size
-                effective_batch_size = batch_size if jj != len(trn_Idx) - 1 else len(trn_Idx) % batch_size
+                if (jj + 1) == len(trn_Idx) and len(trn_Idx) % batch_size != 0:
+                    effective_batch_size = len(trn_Idx) % batch_size
+                else:
+                    effective_batch_size = batch_size
+                    
                 if srp_before_pca:
                     pca.partial_fit(srp.transform(np.stack(activations[-effective_batch_size:], axis=0)))
                 else:
                     pca.partial_fit(np.stack(activations[-effective_batch_size:], axis=0))
+                
                 if mem_mode == 'saver':
-                    # in saver mode, only fit and don't save activations in memory
                     del activations
                     activations = []
 
@@ -128,23 +160,20 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
             with open(save_path, "wb") as f:
                 pickle.dump(pca, f)
     else:
+        # Load existing PCA and SRP models
         with open(save_path, "rb") as f:
             pca = pickle.load(f)
         if srp_before_pca:
             with open(save_path.split('pca.pkl')[0] + 'srp.pkl', "rb") as f:
                 srp = pickle.load(f)
 
+    # ===== TRANSFORM TRAINING DATA =====
     if mem_mode == 'saver' or (save_path is not None and os.path.exists(save_path)):
         transformed_activations = []
         for ii in trn_Idx:
             feat = np.load(feat_files[ii], allow_pickle=True)
+            new_activation = _extract_and_process_activation(feat, layer_id, avg_across_feat)
 
-            if avg_across_feat:
-                new_activation = np.mean(feat[layer_id], axis=1).flatten()
-            else:
-                new_activation = feat[layer_id].flatten()
-
-            # transform one at a time to only have a lightweight list in memory
             if srp_before_pca:
                 transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
             else:
@@ -155,17 +184,12 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
         activations = np.stack(activations, axis=0)
         metric_trn = pca.transform(srp.transform(activations)) if srp_before_pca else pca.transform(activations)
 
-    # Encode test set
+    # ===== TRANSFORM TEST DATA =====
     transformed_activations = []
     for ii in tst_Idx:
         feat = np.load(feat_files[ii], allow_pickle=True)
+        new_activation = _extract_and_process_activation(feat, layer_id, avg_across_feat)
 
-        if avg_across_feat:
-            new_activation = np.mean(feat[layer_id], axis=1).flatten()
-        else:
-            new_activation = feat[layer_id].flatten()
-
-        # transform one at a time to only have a lightweight list in memory
         if srp_before_pca:
             transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
         else:
@@ -454,7 +478,8 @@ def Encoding(feat_path,
 
     if average_across_layers:
         warnings.warn(
-            "Code will now average the layer values across all given brain data with average_across_layers=True")
+            "Code will now average the layer values across all given brain data with average_across_layers=True"
+            "Be aware to only use this for example purposes, usually you would want to have the same amount of tokens across features")
         all_results_df = average_df_across_layers(all_results_df)
 
     # Create the output folder if it doesn't exist
