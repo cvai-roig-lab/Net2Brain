@@ -5,10 +5,16 @@ from enum import Enum
 from functools import lru_cache, cached_property
 from pathlib import Path
 from typing import Union, Tuple, List, Iterator, Dict, Type, Iterable, Callable, Optional
+from multiprocessing import Pool, get_context
+from functools import partial
 
 import numpy as np
 
 from net2brain.utils.dim_reduction import estimate_from_files
+
+
+def wrapper_helper(instance, sample, item, clip_idx, time_idx):
+    return instance.helper(sample, item, clip_idx=clip_idx, time_idx=time_idx)
 
 
 def natural_keys(text: str) -> List[Union[int, str]]:
@@ -95,14 +101,18 @@ class FeatureEngine(ABC):
     """
 
     def __init__(self, root: Path,
+                 multi_timepoint_rdms=None,
                  dim_reduction=None,
                  n_samples_estim=100,
                  n_components=10000,
+                 srp_before_pca=False,
                  max_dim_allowed=None):
         self.root = Path(root)
+        self.multi_timepoint_rdms = multi_timepoint_rdms
         self.dim_reduction = dim_reduction
         self.n_samples_estim = n_samples_estim
         self.n_components = n_components
+        self.srp_before_pca = srp_before_pca
         self.max_dim_allowed = max_dim_allowed
 
     @abstractmethod
@@ -198,22 +208,35 @@ class NPZSeparateEngine(FeatureEngine):
     def _stimuli(self) -> List[Path]:
         return nsorted(self.root.iterdir(), key=lambda x: x.stem)
 
-    def next(self, item) -> Tuple[str, List[str], np.ndarray]:
+    def helper(self, sample, item, clip_idx=None, time_idx=None) -> Tuple[List[str], np.ndarray]:
         stimuli = []
-        sample = open_npz(self._stimuli[0])[item]
+        if clip_idx is not None and time_idx is not None:
+            sample = sample[:, clip_idx, time_idx]
+        elif clip_idx is not None:
+            sample = sample[:, clip_idx]
+        else:
+            sample = sample
         feat_dim = sample.squeeze().shape
         if feat_dim == ():
             feat_dim = (1,)
         # Check if dimensionality reduction is needed
         if self.dim_reduction and (not self.max_dim_allowed or len(sample.flatten()) > self.max_dim_allowed):
             # Estimate the dimensionality reduction from a subset of the data
-            fitted_transform, self.n_components = estimate_from_files(self._stimuli, item, feat_dim, open_npz,
-                                                         self.dim_reduction, self.n_samples_estim, self.n_components)
+            fitted_transform, self.n_components = estimate_from_files(
+                self._stimuli, item, feat_dim, open_npz, self.dim_reduction,
+                self.n_samples_estim, self.n_components, self.srp_before_pca, clip_idx, time_idx
+            )
             feats = np.empty((len(self._stimuli), self.n_components))
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                feats[i, :] = fitted_transform.transform(open_npz(file)[item].reshape(1, -1)).squeeze()
+                if clip_idx is not None:
+                    if time_idx is not None:
+                        feats[i, :] = fitted_transform.transform(open_npz(file)[item][:, clip_idx, time_idx].reshape(1, -1)).squeeze()
+                    else:
+                        feats[i, :] = fitted_transform.transform(open_npz(file)[item][:, clip_idx].reshape(1, -1)).squeeze()
+                else:
+                    feats[i, :] = fitted_transform.transform(open_npz(file)[item].reshape(1, -1)).squeeze()
                 stimuli.append(file.stem)
         # Otherwise load features without dimensionality reduction
         else:
@@ -221,8 +244,42 @@ class NPZSeparateEngine(FeatureEngine):
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                feats[i, :] = open_npz(file)[item].squeeze()
+                if clip_idx is not None:
+                    if time_idx is not None:
+                        feats[i, :] = open_npz(file)[item][:, clip_idx, time_idx].squeeze()
+                    else:
+                        feats[i, :] = open_npz(file)[item][:, clip_idx].squeeze()
+                else:
+                    feats[i, :] = open_npz(file)[item].squeeze()
                 stimuli.append(file.stem)
+        return stimuli, feats
+
+    def next(self, item) -> Tuple[str, List[str], np.ndarray]:
+        sample = open_npz(self._stimuli[0])[item]
+        if self.multi_timepoint_rdms is None:
+            stimuli, feats = self.helper(sample, item)
+        else:
+            clips = sample.shape[1]
+            feats_c = []
+            for clip_idx in range(clips):
+                if self.multi_timepoint_rdms == 'clip':
+                    stimuli, feats_t = self.helper(sample, item, clip_idx)
+                else:
+                    timepoints = sample.shape[2]
+                    feats_t = []
+                    for time_idx in range(timepoints):
+                        stimuli, feats_ct = self.helper(sample, item, clip_idx, time_idx)
+                        feats_t.append(feats_ct)
+                    feats_t = np.stack(feats_t, axis=0)
+                    # # cannot pickle self so should rewrite self.helper as top level function ...
+                    # with Pool(8) as p:
+                    #     stimuli, feats_t = p.map(
+                    #         partial(wrapper_helper, instance=self, sample=sample, item=item, clip_idx=clip_idx), range(timepoints)
+                    #     )
+                    # stimuli = stimuli[0]  # All timepoints should have the same stimuli
+                    # feats_t = np.stack(feats_t, axis=0)
+                feats_c.append(feats_t)
+            feats = np.stack(feats_c, axis=0)
         return item, stimuli, feats
 
 

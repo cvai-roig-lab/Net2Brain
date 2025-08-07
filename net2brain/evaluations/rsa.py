@@ -19,7 +19,7 @@ class RSA():
     """
 
     def __init__(self, model_rdms_path, brain_rdms_path, model_name, layer_skips=(),
-                 squared=True, timepoint_agg=True, datatype="None", save_path="./"):
+                 squared=True, timepoint_agg=True, model_timepoints=False, datatype="None", save_path="./"):
         """Initiate RSA
 
         Args:
@@ -29,6 +29,7 @@ class RSA():
             layer_skips (tuple, optional): Names of the model layers to skip. Use '_' instead of '.' in the names.
             squared (bool): Whether to square the correlation values.
             timepoint_agg (bool): Whether to aggregate timepoints for MEG/EEG data.
+            model_timepoints (bool): Whether the model RDMs contain timepoints.
         """
 
         # Find all model RDMs
@@ -47,6 +48,7 @@ class RSA():
         self.layer_skips = layer_skips
         self.squared = squared
         self.timepoint_agg = timepoint_agg
+        self.model_timepoints = model_timepoints
 
         # For comparison
         self.other_rdms_path = None
@@ -151,30 +153,54 @@ class RSA():
         key = list(brain_rdm.keys())[0]  # You need to access the keys to open a npy file
         meg_rdm = brain_rdm[key]
 
-        model_rdm = self.check_squareform(
-            model_rdm)  # Check if rdm is squareform #TODO Remove soon after reimplementing RSA
+        if not self.model_timepoints:
+            model_rdm = self.check_squareform(
+                model_rdm)  # Check if rdm is squareform #TODO Remove soon after reimplementing RSA
 
-        # returns list of corrcoefs, depending on amount of participants in brain rdm
-        corr = [self.distance(model_rdm, rdms) for rdms in meg_rdm]
-        if self.timepoint_agg:
-            # Aggregate timepoints by taking the mean across the second dimension
-            corr = np.mean(corr, axis=1)
+            # returns list of corrcoefs, depending on amount of participants in brain rdm
+            corr = np.array([self.distance(model_rdm, rdms) for rdms in meg_rdm])
+            if self.timepoint_agg:
+                # Aggregate timepoints by taking the mean across the second dimension
+                corr = np.mean(corr, axis=1)
 
-        if self.squared:
-            # Square correlation
-            corr_list = np.square(corr)
+            if self.squared:
+                # Square correlation
+                corr_list = np.square(corr)
+            else:
+                corr_list = corr
+
+            # Take mean
+            r = np.mean(corr_list, axis=0)
+
+            # ttest: Ttest_1sampResult(statistic=3.921946, pvalue=0.001534)
+            significance = stats.ttest_1samp(corr_list, 0)[1]
+            # standard error of mean
+            sem = stats.sem(corr_list)  # standard error of mean
         else:
-            corr_list = corr
+            if model_rdm.ndim == 3 and not model_rdm.shape[-1] == model_rdm.shape[-2]:
+                # this means that timepoints are divided in 2
+                model_rdm = model_rdm.reshape(-1, model_rdm.shape[-1])
 
-        # Take mean
-        r = np.mean(corr_list, axis=0)
+            timepoint_rs = []
+            timepoint_corrs = []
+            for model_rdm_timepoint in model_rdm:
+                model_rdm_timepoint = self.check_squareform(model_rdm_timepoint)
+                corr = np.array([self.distance(model_rdm_timepoint, rdms) for rdms in meg_rdm])
+                if self.timepoint_agg:
+                    corr = np.mean(corr, axis=1)
+                if self.squared:
+                    corr_list = np.square(corr)
+                else:
+                    corr_list = corr
+                r = np.mean(corr_list, axis=0)
+                timepoint_rs.append(r)
+                timepoint_corrs.append(corr_list)
+            r = np.array(timepoint_rs)
+            corr_list = np.array(timepoint_corrs)
+            significance = sem = None
 
-        # ttest: Ttest_1sampResult(statistic=3.921946, pvalue=0.001534)
-        significance = stats.ttest_1samp(corr_list, 0)[1]
-
-        # standard error of mean
-        sem = stats.sem(corr_list)  # standard error of mean
-
+        r = r.tolist() if isinstance(r, np.ndarray) else r
+        corr_list = corr_list.tolist()
         return r, significance, sem, corr_list
 
     def rsa_fmri(self, model_rdm, brain_rdm, layername):
