@@ -26,6 +26,39 @@ def nsorted(iterable: Iterable, key: Optional[Callable] = None, reverse: bool = 
     return sorted(iterable, key=lambda x: natural_keys(key(x)), reverse=reverse)
 
 
+def apply_pooling_numpy(features: np.ndarray, pooling: str) -> np.ndarray:
+    """
+    Apply pooling to numpy features that may have variable length.
+    
+    Args:
+        features: np.ndarray
+            Features of shape (seq_len, feature_dim) or (feature_dim,)
+        pooling: str
+            Pooling method. Options: 'mean', 'max', 'first', 'last'
+    
+    Returns:
+        np.ndarray: Pooled features of shape (feature_dim,)
+    """
+    if features.ndim == 1:
+        # Already pooled or fixed-length features
+        return features
+    
+    if features.ndim != 2:
+        raise ValueError(f"Features must be 1D or 2D array, got {features.ndim}D")
+    
+    if pooling == 'mean':
+        return features.mean(axis=0)
+    elif pooling == 'max':
+        return features.max(axis=0)
+    elif pooling == 'first':
+        return features[0, :]
+    elif pooling == 'last':
+        return features[-1, :]
+    else:
+        raise ValueError(f"Unknown pooling method: {pooling}. "
+                        f"Supported methods: 'mean', 'max', 'first', 'last'")
+
+
 class FeatureFormat(Enum):
     NPZ_CONSOLIDATED = 1
     # - layer1.npz
@@ -98,12 +131,14 @@ class FeatureEngine(ABC):
                  dim_reduction=None,
                  n_samples_estim=100,
                  n_components=10000,
-                 max_dim_allowed=None):
+                 max_dim_allowed=None,
+                 pooling=None):
         self.root = Path(root)
         self.dim_reduction = dim_reduction
         self.n_samples_estim = n_samples_estim
         self.n_components = n_components
         self.max_dim_allowed = max_dim_allowed
+        self.pooling = pooling
 
     @abstractmethod
     def get_iterator(self) -> Iterator:
@@ -180,6 +215,14 @@ class NPZConsolidateEngine(FeatureEngine):
         stimuli, feats = zip(*nsorted(feat_npz.items(), key=lambda x: x[0]))
         pure_item = Path(str(item).split('consolidated_')[-1]) if 'consolidated' in str(item) else item
         layer = pure_item.stem
+        
+        # Apply pooling if specified
+        if self.pooling is not None:
+            pooled_feats = []
+            for feat in feats:
+                pooled_feats.append(apply_pooling_numpy(feat, self.pooling))
+            feats = pooled_feats
+        
         return layer, stimuli, np.stack(feats)
 
 
@@ -201,28 +244,70 @@ class NPZSeparateEngine(FeatureEngine):
     def next(self, item) -> Tuple[str, List[str], np.ndarray]:
         stimuli = []
         sample = open_npz(self._stimuli[0])[item]
+        
+        # Check if features have variable length and pooling is needed
+        if sample.ndim > 1 and self.pooling is None:
+            # Check a few files to see if they have different sequence lengths
+            shapes = [sample.shape]
+            for i, file in enumerate(self._stimuli[1:min(5, len(self._stimuli))]):  # Check up to 5 files
+                other_sample = open_npz(file)[item]
+                shapes.append(other_sample.shape)
+                if other_sample.shape != sample.shape:
+                    raise ValueError(
+                        f"Variable-length features detected for layer '{item}'. "
+                        f"Found shapes: {shapes[0]} and {other_sample.shape}. "
+                        f"Please specify a pooling method: 'mean', 'max', 'first', or 'last'."
+                    )
+        
+        
+        # Apply pooling to sample to get the correct feature dimension
+        if self.pooling is not None:
+            sample = apply_pooling_numpy(sample, self.pooling)
+        
         feat_dim = sample.squeeze().shape
         if feat_dim == ():
             feat_dim = (1,)
+        
         # Check if dimensionality reduction is needed
         if self.dim_reduction and (not self.max_dim_allowed or len(sample.flatten()) > self.max_dim_allowed):
-            # Estimate the dimensionality reduction from a subset of the data
-            fitted_transform, self.n_components = estimate_from_files(self._stimuli, item, feat_dim, open_npz,
-                                                         self.dim_reduction, self.n_samples_estim, self.n_components)
-            feats = np.empty((len(self._stimuli), self.n_components))
-            for i, file in enumerate(self._stimuli):
+            # For dimensionality reduction, we need to prepare data differently
+            # First, load and pool all features
+            all_features = []
+            for file in self._stimuli:
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                feats[i, :] = fitted_transform.transform(open_npz(file)[item].reshape(1, -1)).squeeze()
+                    continue
+                feat = open_npz(file)[item]
+                if self.pooling is not None:
+                    feat = apply_pooling_numpy(feat, self.pooling)
+                all_features.append(feat.reshape(1, -1))
                 stimuli.append(file.stem)
-        # Otherwise load features without dimensionality reduction
+            
+            # Stack for dimensionality reduction estimation
+            stacked_features = np.vstack(all_features)
+            
+            # Estimate the dimensionality reduction from a subset of the data
+            fitted_transform, self.n_components = estimate_from_files(self._stimuli, item, feat_dim, open_npz,
+                                                     self.dim_reduction, self.n_samples_estim, self.n_components)
+            
+            feats = np.empty((len(self._stimuli), self.n_components))
+            for i, feat in enumerate(all_features):
+                feats[i, :] = fitted_transform.transform(feat).squeeze()
         else:
+            # Load features without dimensionality reduction
             feats = np.empty((len(self._stimuli), *feat_dim))
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                feats[i, :] = open_npz(file)[item].squeeze()
+                    continue
+                feat = open_npz(file)[item]
+                
+                if self.pooling is not None:
+                    feat = apply_pooling_numpy(feat, self.pooling)
+                
+                feats[i, :] = feat.squeeze()
                 stimuli.append(file.stem)
+        
         return item, stimuli, feats
 
 
@@ -241,7 +326,7 @@ class HDF5Engine(FeatureEngine):
 
 
 class FeatureIterator:
-    def __init__(self, root: Path, **kwargs):
+    def __init__(self, root: Path, pooling: Optional[str] = None, **kwargs):
         """
         Iterator for extracting features from feature files. It automatically detects the format of the feature files
         and uses the corresponding feature engine to extract features.
@@ -249,6 +334,9 @@ class FeatureIterator:
         Args:
             root: str or Path
                 Path to the directory containing the feature files.
+            pooling: str or None
+                Pooling method for variable-length features. Options: 'mean', 'max', 'first', 'last'.
+                Required when features have variable lengths (e.g., LLM features).
             **kwargs: dict
                 Keyword arguments for dimensionality reduction at the feature loading, currently only implemented for
                 the NPZSeperateEngine.
@@ -256,6 +344,7 @@ class FeatureIterator:
         if not isinstance(root, (Path, str)):
             raise TypeError(f"Expected Path or str for feature path, got {type(root)}")
         self.root = Path(root)
+        self.pooling = pooling
 
         self.format: FeatureFormat = detect_feature_format(self.root)
 
@@ -267,7 +356,9 @@ class FeatureIterator:
             warnings.warn(f"Keyword arguments provided for dimensionality reduction only supported for NPZ_SEPARATE, "
                           f"and will have no effect for the provided format {self.format}.")
 
-        self.engine: FeatureEngine = engine_registry.get_engine(self.format)(self.root, **kwargs)
+        # Pass pooling to the engine
+        self.engine: FeatureEngine = engine_registry.get_engine(self.format)(
+            self.root, pooling=pooling, **kwargs)
 
         self._iter = None
 

@@ -16,6 +16,39 @@ from sklearn.preprocessing import StandardScaler
 from net2brain.evaluations.eval_helper import sq, get_npy_files, get_layers_ncondns
 
 
+def apply_pooling_numpy(features: np.ndarray, pooling: str) -> np.ndarray:
+    """
+    Apply pooling to numpy features that may have variable length.
+    
+    Args:
+        features: np.ndarray
+            Features of shape (seq_len, feature_dim) or (feature_dim,)
+        pooling: str
+            Pooling method. Options: 'mean', 'max', 'first', 'last'
+    
+    Returns:
+        np.ndarray: Pooled features of shape (feature_dim,)
+    """
+    if features.ndim == 1:
+        # Already pooled or fixed-length features
+        return features
+    
+    if features.ndim != 2:
+        raise ValueError(f"Features must be 1D or 2D array, got {features.ndim}D")
+    
+    if pooling == 'mean':
+        return features.mean(axis=0)
+    elif pooling == 'max':
+        return features.max(axis=0)
+    elif pooling == 'first':
+        return features[0, :]
+    elif pooling == 'last':
+        return features[-1, :]
+    else:
+        raise ValueError(f"Unknown pooling method: {pooling}. "
+                        f"Supported methods: 'mean', 'max', 'first', 'last'")
+
+
 def average_df_across_layers(combined_df):
     """Function to average correlation values across layers and recalculate significance"""
 
@@ -43,35 +76,38 @@ def average_df_across_layers(combined_df):
     return averaged_df
 
 
-def _extract_and_process_activation(feat, layer_id, avg_across_feat):
+def _extract_and_process_activation(feat, layer_id, pooling=None):
     """
     Extract and process neural network layer activation data.
     
     Args:
         feat (dict): Feature dictionary loaded from .npz file.
         layer_id (str): The layer name whose activations are to be extracted.
-        avg_across_feat (bool): Whether to average across features for variable-length sequences.
+        pooling (str or None): Pooling method for variable-length sequences.
+            Options: 'mean', 'max', 'first', 'last'. If None, features are flattened.
         
     Returns:
         numpy.ndarray: Processed activation vector.
     """
-    if avg_across_feat:
+    layer_data = feat[layer_id]
+    
+    if pooling is not None:
         # Handle different layer formats properly
-        layer_data = feat[layer_id]
         if layer_data.ndim == 3:  # (1, seq_len, hidden_dim) format
-            new_activation = np.mean(layer_data.squeeze(0), axis=0)  # Average over sequence length
+            new_activation = apply_pooling_numpy(layer_data.squeeze(0), pooling)
         elif layer_data.ndim == 2:  # (seq_len, hidden_dim) format
-            new_activation = np.mean(layer_data, axis=0)  # Average over sequence length
+            new_activation = apply_pooling_numpy(layer_data, pooling)
         else:
             new_activation = layer_data.flatten()
     else:
-        new_activation = feat[layer_id].flatten()
+        new_activation = layer_data.flatten()
     
     return new_activation
 
 
-def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_size, n_components,
-                 srp_before_pca, srp_on_subset, mem_mode, save_pca, save_path):
+def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, pooling, batch_size, n_components,
+                 srp_before_pca, srp_on_subset, mem_mode, save_pca, save_path, 
+                 avg_across_feat=None):
     """
     Encodes the layer activations using IncrementalPCA for both training and test sets.
 
@@ -80,7 +116,8 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
         tst_Idx (list of int): Indices of the test set files.
         feat_path (str): Path to the directory containing npz files with model features.
         layer_id (str): The layer name whose activations are to be encoded.
-        avg_across_feat (bool): Whether to average across features.
+        pooling (str or None): Pooling method for variable-length features.
+            Options: 'mean', 'max', 'first', 'last'. If None, features are flattened.
         batch_size (int): Batch size for IncrementalPCA.
         n_components (int): Number of components for PCA.
         srp_before_pca (bool): Whether to apply Sparse Random Projection (SRP) before PCA. Use when features are so
@@ -92,10 +129,23 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
             in the first case you will also need to restrict the number of samples for SRP fitting with `srp_on_subset`.
         save_pca (bool): Whether to save the PCA transform to disk.
         save_path (str or None): The path to save the PCA transform in (if `save_pca` is True).
+        avg_across_feat (bool, deprecated): Deprecated parameter. Use `pooling='mean'` instead.
 
     Returns:
         PCA-transformed training and test set features (tuple of numpy.ndarray).
     """
+    # Handle deprecated avg_across_feat parameter
+    if avg_across_feat is not None:
+        warnings.warn(
+            "The 'avg_across_feat' parameter is deprecated and will be removed in a future version. "
+            "Use 'pooling=\"mean\"' instead of 'avg_across_feat=True', or 'pooling=None' instead of 'avg_across_feat=False'.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        if avg_across_feat and pooling is None:
+            pooling = 'mean'
+        elif not avg_across_feat and pooling is None:
+            pooling = None
 
     activations = []
     feat_files = glob.glob(feat_path + '/*.np[zy]')
@@ -113,10 +163,10 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
             srp_trn = trn_Idx if srp_on_subset is None else trn_Idx[:srp_on_subset]
             for jj, ii in enumerate(srp_trn):
                 feat = np.load(feat_files[ii], allow_pickle=True)
-                new_activation = _extract_and_process_activation(feat, layer_id, avg_across_feat)
+                new_activation = _extract_and_process_activation(feat, layer_id, pooling)
                 if all_data_for_estim and new_activation.shape != all_data_for_estim[-1].shape:
                     raise ValueError("Elements in activations do not have the same shape. "
-                                     "Please set 'avg_across_feat' to True to average across features.")
+                                     "Please specify a pooling method: 'mean', 'max', 'first', or 'last'.")
                 all_data_for_estim.append(new_activation)
             
             srp = SparseRandomProjection(n_components=johnson_lindenstrauss_min_dim(len(all_data_for_estim)))
@@ -130,14 +180,13 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
         pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
         for jj, ii in enumerate(trn_Idx):
             feat = np.load(feat_files[ii], allow_pickle=True)
-            new_activation = _extract_and_process_activation(feat, layer_id, avg_across_feat)
+            new_activation = _extract_and_process_activation(feat, layer_id, pooling)
 
-            # Check if averaging is needed but not enabled
-            if not avg_across_feat and activations and new_activation.shape != activations[-1].shape:
+            # Check if pooling is needed but not enabled
+            if pooling is None and activations and new_activation.shape != activations[-1].shape:
                 raise ValueError("Elements in activations do not have the same shape. "
                                  "This likely means you have variable-length sequences (e.g., different sentence lengths in LLMs). "
-                                 "Please set 'avg_across_feat' to True to average across features."
-                                 "Be aware to only use this for example purposes, usually you would want to have the same amount of tokens across features")
+                                 "Please specify a pooling method: 'mean', 'max', 'first', or 'last'.")
             activations.append(new_activation)
 
             # Fit PCA in batches
@@ -172,7 +221,7 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
         transformed_activations = []
         for ii in trn_Idx:
             feat = np.load(feat_files[ii], allow_pickle=True)
-            new_activation = _extract_and_process_activation(feat, layer_id, avg_across_feat)
+            new_activation = _extract_and_process_activation(feat, layer_id, pooling)
 
             if srp_before_pca:
                 transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
@@ -188,7 +237,7 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_s
     transformed_activations = []
     for ii in tst_Idx:
         feat = np.load(feat_files[ii], allow_pickle=True)
-        new_activation = _extract_and_process_activation(feat, layer_id, avg_across_feat)
+        new_activation = _extract_and_process_activation(feat, layer_id, pooling)
 
         if srp_before_pca:
             transformed_activations.append(pca.transform(srp.transform(new_activation.reshape(1, -1))))
@@ -248,7 +297,7 @@ def Ridge_Encoding(feat_path,
                    srp_before_pca=False,
                    srp_on_subset=None,
                    mem_mode='performance',
-                   avg_across_feat=False,
+                   pooling=None,
                    return_correlations=False,
                    random_state=42,
                    shuffle=True,
@@ -258,7 +307,8 @@ def Ridge_Encoding(feat_path,
                    veRSA=False,
                    save_model=False,
                    save_pca=False,
-                   layer_skips=()):
+                   layer_skips=(),
+                   avg_across_feat=None):
     """
     Perform ridge encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -272,8 +322,8 @@ def Ridge_Encoding(feat_path,
         trn_tst_split (float or int): Data to use for training (rest is used for testing). If int,
             it is absolute number of samples, if float, it is a fraction of the whole dataset.
         n_folds (int): Number of folds to split the data for cross-validation.
-        avg_across_feat (bool): If True it averages the activations across axis 1. Necessary if different stimuli have a
-            different size of features.
+        pooling (str or None): Pooling method for variable-length features. Options: 'mean', 'max', 'first', 'last'.
+            Required when features have variable lengths (e.g., LLM features).
         return_correlations (bool): If True, return correlation values for each voxel (only with veRSA False).
         random_state (int): Seed for random operations to ensure reproducibility.
         shuffle (bool): Whether to shuffle the data before splitting into training and testing sets.
@@ -286,12 +336,22 @@ def Ridge_Encoding(feat_path,
         veRSA (bool): If True, performs RSA on top of the voxelwise encoding.
         save_model (bool): Save the linear regression model to disk.
         layer_skips (tuple, optional): Names of the model layers to skip during encoding. Use original layer names.
-
+        avg_across_feat (bool, deprecated): Deprecated parameter. Use `pooling='mean'` instead.
 
     Returns:
         all_rois_df (pd.DataFrame): DataFrame summarizing the analysis results including correlations and statistical significance.
         corr_dict (dict): Dictionary containing correlation values for each layer and ROI (only if return_correlations is True).
     """
+    # Handle deprecated avg_across_feat parameter
+    if avg_across_feat is not None:
+        warnings.warn(
+            "The 'avg_across_feat' parameter is deprecated and will be removed in a future version. "
+            "Use 'pooling=\"mean\"' instead of 'avg_across_feat=True', or 'pooling=None' instead of 'avg_across_feat=False'.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        if avg_across_feat and pooling is None:
+            pooling = 'mean'
 
     result = Encoding(feat_path,
                       roi_path,
@@ -303,7 +363,7 @@ def Ridge_Encoding(feat_path,
                       srp_before_pca=srp_before_pca,
                       srp_on_subset=srp_on_subset,
                       mem_mode=mem_mode,
-                      avg_across_feat=avg_across_feat,
+                      pooling=pooling,
                       return_correlations=return_correlations,
                       random_state=random_state,
                       shuffle=shuffle,
@@ -329,7 +389,7 @@ def Linear_Encoding(feat_path,
                     srp_before_pca=False,
                     srp_on_subset=None,
                     mem_mode='performance',
-                    avg_across_feat=False,
+                    pooling=None,
                     return_correlations=False,
                     random_state=42,
                     shuffle=True,
@@ -339,7 +399,8 @@ def Linear_Encoding(feat_path,
                     veRSA=False,
                     save_model=False,
                     save_pca=False,
-                    layer_skips=()):
+                    layer_skips=(),
+                    avg_across_feat=None):
     """
     Perform linear encoding analysis to relate model activations to fMRI data across multiple folds.
 
@@ -362,8 +423,8 @@ def Linear_Encoding(feat_path,
         mem_mode (str): 'saver' or 'performance'; Choose 'saver' if you don't have enough memory to store all
             training sample features, otherwise leave 'performance' as default. If you have `srp_before_pca` enabled,
             in the first case you will also need to restrict the number of samples for SRP fitting with `srp_on_subset`.
-        avg_across_feat (bool): If True it averages the activations across axis 1. Necessary if different stimuli have a
-            different size of features.
+        pooling (str or None): Pooling method for variable-length features. Options: 'mean', 'max', 'first', 'last'.
+            Required when features have variable lengths (e.g., LLM features).
         return_correlations (bool): If True, return correlation values for each voxel (only with veRSA False).
         random_state (int): Seed for random operations to ensure reproducibility.
         shuffle (bool): Whether to shuffle the data before splitting into training and testing sets.
@@ -377,12 +438,22 @@ def Linear_Encoding(feat_path,
         save_model (bool): Save the linear regression model to disk.
         save_pca (bool): Save the PCA transform to disk.
         layer_skips (tuple, optional): Names of the model layers to skip during encoding. Use original layer names.
-
+        avg_across_feat (bool, deprecated): Deprecated parameter. Use `pooling='mean'` instead.
 
     Returns:
         all_rois_df (pd.DataFrame): DataFrame summarizing the analysis results including correlations and statistical significance.
         corr_dict (dict): Dictionary containing correlation values for each layer and ROI (only if return_correlations is True).
     """
+    # Handle deprecated avg_across_feat parameter
+    if avg_across_feat is not None:
+        warnings.warn(
+            "The 'avg_across_feat' parameter is deprecated and will be removed in a future version. "
+            "Use 'pooling=\"mean\"' instead of 'avg_across_feat=True', or 'pooling=None' instead of 'avg_across_feat=False'.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        if avg_across_feat and pooling is None:
+            pooling = 'mean'
 
     result = Encoding(feat_path,
                       roi_path,
@@ -394,7 +465,7 @@ def Linear_Encoding(feat_path,
                       srp_before_pca=srp_before_pca,
                       srp_on_subset=srp_on_subset,
                       mem_mode=mem_mode,
-                      avg_across_feat=avg_across_feat,
+                      pooling=pooling,
                       return_correlations=return_correlations,
                       random_state=random_state,
                       shuffle=shuffle,
@@ -420,7 +491,7 @@ def Encoding(feat_path,
              srp_before_pca=False,
              srp_on_subset=None,
              mem_mode='performance',
-             avg_across_feat=False,
+             pooling=None,
              return_correlations=False,
              random_state=42,
              shuffle=True,
@@ -431,7 +502,19 @@ def Encoding(feat_path,
              veRSA=False,
              save_model=False,
              save_pca=False,
-             layer_skips=()):
+             layer_skips=(),
+             avg_across_feat=None):
+
+    # Handle deprecated avg_across_feat parameter
+    if avg_across_feat is not None:
+        warnings.warn(
+            "The 'avg_across_feat' parameter is deprecated and will be removed in a future version. "
+            "Use 'pooling=\"mean\"' instead of 'avg_across_feat=True', or 'pooling=None' instead of 'avg_across_feat=False'.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        if avg_across_feat and pooling is None:
+            pooling = 'mean'
 
     # Which encoding metric are we using?
     if metric == "Linear":
@@ -441,9 +524,9 @@ def Encoding(feat_path,
     else:
         raise ValueError(f"Unknown metric '{metric}'. Please choose 'Linear' or 'Ridge'.")
 
-    if avg_across_feat is True:
-        print("avg_across_feat==True. This averages the activations across axis 1. Only neccessary if different stimuli"
-              " have a different size of features (as with LLMs). Be aware to only use this for example purposes, usually you would want to have the same amount of tokens across features")
+    if pooling is not None:
+        print(f"Using pooling method '{pooling}' for variable-length features. "
+              f"This will {pooling} pool activations across the sequence dimension.")
 
     if return_correlations is True and veRSA is True:
         print("The option `return_correlations` is not supported with `veRSA`, because the voxel space is converted "
@@ -464,7 +547,7 @@ def Encoding(feat_path,
                              srp_before_pca=srp_before_pca,
                              srp_on_subset=srp_on_subset,
                              mem_mode=mem_mode,
-                             avg_across_feat=avg_across_feat,
+                             pooling=pooling,
                              return_correlations=return_correlations,
                              save_path=save_path,
                              veRSA=veRSA,
@@ -478,7 +561,7 @@ def Encoding(feat_path,
 
     if average_across_layers:
         warnings.warn(
-            "Code will now average the layer values across all given brain data with average_across_layers=True"
+            "Code will now average the layer values across all given brain data with average_across_layers=True. "
             "Be aware to only use this for example purposes, usually you would want to have the same amount of tokens across features")
         all_results_df = average_df_across_layers(all_results_df)
 
@@ -527,7 +610,7 @@ def _linear_encoding(feat_path,
                      srp_before_pca=False,
                      srp_on_subset=None,
                      mem_mode='performance',
-                     avg_across_feat=False,
+                     pooling=None,
                      return_correlations=False,
                      random_state=42,
                      shuffle=True,
@@ -572,7 +655,7 @@ def _linear_encoding(feat_path,
                     os.makedirs(prediction_save_path)
 
             # Encode the current layer using PCA and split into training and testing sets
-            pca_trn, pca_tst = encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, avg_across_feat, batch_size,
+            pca_trn, pca_tst = encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, pooling, batch_size,
                                             n_components, srp_before_pca=srp_before_pca, srp_on_subset=srp_on_subset,
                                             mem_mode=mem_mode, save_pca=save_pca,
                                             save_path=f'{prediction_save_path}/pca.pkl' if save_pca else None)
@@ -705,12 +788,6 @@ def train_Ridgeregression_per_ROI(trn_x, tst_x, trn_y, tst_y, veRSA=False, save_
         # Outer loop: model evaluation
         nested_cv_scores = cross_val_score(grid_search, X=X_sample, y=y_sample, cv=outer_cv, n_jobs=-1)
 
-        # # Results
-        # print(f"Nested CV Mean R^2: {nested_cv_scores.mean():.3f} ± {nested_cv_scores.std():.3f}")
-
-        # print('for training:', trn_x.shape)
-        # print('for training:', trn_y.shape)
-
         # Train the best model on the full dataset
         grid_search.fit(X_sample, y_sample)
         best_params = grid_search.best_params_
@@ -740,52 +817,44 @@ def train_Ridgeregression_per_ROI(trn_x, tst_x, trn_y, tst_y, veRSA=False, save_
         return r
 
 
-def encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, avg_across_feat):
+def encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, pooling=None):
     """
     Extracts and preprocesses neural network layer activations for ridge regression. 
-    For each input, flattens the layer's activation vectors and optionally averages 
-    across features.
+    For each input, flattens the layer's activation vectors and optionally applies pooling.
     
     Parameters:
     - layer_id (str): Layer identifier
     - trn_Idx (list): Training indices
     - tst_Idx (list): Test indices 
     - feat_path (str): Path to feature files
-    - avg_across_feat (bool): If True, averages activations across feature axis 1
+    - pooling (str or None): Pooling method for variable-length features.
+        Options: 'mean', 'max', 'first', 'last'. If None, features are flattened.
 
     Returns:
     - trn, tst (numpy.ndarray): Processed training and test activations
-    
     """
-    if avg_across_feat:
-        warnings.warn("avg_across_feat==True. This averages the activations across axis 1. Only necessary if different stimuli have a different size of features (as with LLMs)")
-        
     feat_files = glob.glob(feat_path + '/*.np[zy]')
     feat_files.sort()
 
     trn = []
     for ii in trn_Idx:
         feat = np.load(feat_files[ii], allow_pickle=True)
-        if avg_across_feat:
-            activation = np.mean(feat[layer_id], axis=1).flatten()
-        else:
-            activation = feat[layer_id].flatten()
+        activation = _extract_and_process_activation(feat, layer_id, pooling)
             
         if trn and activation.shape != trn[-1].shape:
-            raise ValueError("Elements in activations do not have the same shape. Please set 'avg_across_feat' to True to average across features.")
+            raise ValueError("Elements in activations do not have the same shape. "
+                             "Please specify a pooling method: 'mean', 'max', 'first', or 'last'.")
             
         trn.append(activation)
         
     tst = []
     for ii in tst_Idx:
         feat = np.load(feat_files[ii], allow_pickle=True)
-        if avg_across_feat:
-            activation = np.mean(feat[layer_id], axis=1).flatten()
-        else:
-            activation = feat[layer_id].flatten()
+        activation = _extract_and_process_activation(feat, layer_id, pooling)
             
         if tst and activation.shape != tst[-1].shape:
-            raise ValueError("Elements in activations do not have the same shape. Please set 'avg_across_feat' to True to average across features.")
+            raise ValueError("Elements in activations do not have the same shape. "
+                             "Please specify a pooling method: 'mean', 'max', 'first', or 'last'.")
             
         tst.append(activation)
 
@@ -802,7 +871,7 @@ def _ridge_encoding(feat_path,
                     srp_before_pca=False,
                     srp_on_subset=None,
                     mem_mode='performance',
-                    avg_across_feat=False,
+                    pooling=None,
                     return_correlations=False,
                     random_state=14,
                     shuffle=True,
@@ -845,12 +914,12 @@ def _ridge_encoding(feat_path,
                 if not os.path.exists(prediction_save_path):
                     os.makedirs(prediction_save_path)
 
-            # Encode the current layer using PCA and split into training and testing sets
-            pca_trn, pca_tst = encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, avg_across_feat)
+            # Encode the current layer using ridge-specific encoding
+            pca_trn, pca_tst = encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, pooling)
 
             # Iterate through all ROI folder paths
             for counter, roi_path in enumerate(roi_paths):
-                print(f"Processing ROI file {counter}, {roi_path}")
+                # print(f"Processing ROI file {counter}, {roi_path}")
                 roi_name = roi_path.split(os.sep)[-1].split(".")[0]
 
                 # Load fMRI data for the current ROI and split into training and testing sets
