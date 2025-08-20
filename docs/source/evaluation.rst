@@ -143,6 +143,8 @@ Prerequisites for the linear encoding function include:
 - **n_folds**: (Optional) The cross-validation folds count, preset to 3.
 - **n_components**: (Optional) The PCA components quantity, defaulting to 100.
 - **batch_size**: (Optional) The incremental PCA's batch size, with a standard value of 100.
+- **pooling** (Optional): Pooling method for variable-length features. Options: ``'mean'`` (average across sequence), ``'max'`` (maximum values across sequence), ``'first'`` (use first token/position, e.g., [CLS] token), ``'last'`` (use final token/position). Required when processing transformer/LLM features with different sequence lengths. Defaults to ``None`` for fixed-length features.
+
 
 .. code-block:: python
 
