@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import warnings
 from pathlib import Path
+import numpy as np
 
 CACHE_DIR = Path.home() / ".cache" / "net2brain"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -27,6 +28,8 @@ class NetSetBase:
     loaded_model = None  # The loaded model instance
     extractor_model = None  # The feature extractor model instance
     device = None  # Device for computation
+    agg_frames = 'average'  # stack or average frames for video data
+    pick_frames = None  # Number of frames to pick from video data, if None all frames are used
 
     audio_loader_kwargs = None  # can be set by the audio model
 
@@ -35,10 +38,18 @@ class NetSetBase:
         cls._registry[cls.__name__] = cls
 
     @classmethod
-    def initialize_netset(cls, model_name, netset_name, device):
+    def initialize_netset(cls, model_name, netset_name, device, agg_frames=None, pick_frames=None):
         # Return an instance of the netset class based on the netset_name from the registry
         if netset_name in cls._registry:
-            return cls._registry[netset_name](model_name, device)
+            # hacky way to pass optional args, TODO: improve
+            if agg_frames is None and pick_frames is None:
+                return cls._registry[netset_name](model_name, device)
+            elif agg_frames is not None and pick_frames is not None:
+                return cls._registry[netset_name](model_name, device, agg_frames=agg_frames, pick_frames=pick_frames)
+            elif agg_frames is not None:
+                return cls._registry[netset_name](model_name, device, agg_frames=agg_frames)
+            elif pick_frames is not None:
+                return cls._registry[netset_name](model_name, device, pick_frames=pick_frames)
         else:
             raise ValueError(f"Unknown netset: {netset_name}")
 
@@ -171,23 +182,41 @@ class NetSetBase:
             Dict[str, torch.Tensor]: A dictionary where the keys are the layer names, and the values are the averaged 
             feature tensors across all frames.
         """
-        # Initialize a dictionary to store the sum of features for each layer
-        summed_features = {}
+        if self.agg_frames == 'average':
+            # Initialize a dictionary to store the sum of features for each layer
+            summed_features = {}
 
-        for features in feature_list:
-            for layer, data in features.items():
-                if layer not in summed_features:
-                    # If the layer is not in the dictionary, add it
-                    summed_features[layer] = data.clone()
-                else:
-                    # If the layer is already in the dictionary, accumulate the features
-                    summed_features[layer] += data
+            for features in feature_list:
+                for layer, data in features.items():
+                    if layer not in summed_features:
+                        # If the layer is not in the dictionary, add it
+                        summed_features[layer] = data.clone()
+                    else:
+                        # If the layer is already in the dictionary, accumulate the features
+                        summed_features[layer] += data
 
-        # Calculate the average for each layer
-        num_frames = len(feature_list)
-        averaged_features = {layer: data / num_frames for layer, data in summed_features.items()}
+            # Calculate the average for each layer
+            num_frames = len(feature_list)
+            averaged_features = {layer: data / num_frames for layer, data in summed_features.items()}
+            final_features = averaged_features
+        elif self.agg_frames == 'stack':
+            # Stack the features for each layer across all frames
+            stacked_features = {}
+            for features in feature_list:
+                for layer, data in features.items():
+                    if layer not in stacked_features:
+                        stacked_features[layer] = [data.squeeze(0)]
+                    else:
+                        stacked_features[layer].append(data.squeeze(0))
+            # Convert lists to tensors
+            final_features = {
+                layer: torch.stack(data_list).unsqueeze(0).unsqueeze(0) for layer, data_list in stacked_features.items()
+            }
+            # unsqueeze to simulate batch dimension and clip dimension
+        else:
+            raise ValueError(f"Unsupported aggregation method: {self.agg_frames}. Supported methods are 'average' and 'stack'.")
 
-        return averaged_features
+        return final_features
 
     def combine_audio_data(self, feature_list):
         return feature_list[0]
@@ -251,6 +280,10 @@ class NetSetBase:
                 break
             frames.append(frame)
         cap.release()
+        if self.pick_frames is not None:
+            # get self.pick_frames uniform indices
+            indices = np.linspace(0, len(frames) - 1, self.pick_frames, dtype=int)
+            frames = [frames[i] for i in indices]
         return frames
 
     def load_audio_data(self, data_path):

@@ -44,7 +44,9 @@ class FeatureExtractor:
                  pretrained=True,
                  preprocessor=None,
                  extraction_function=None,
-                 feature_cleaner=None):
+                 feature_cleaner=None,
+                 agg_frames=None,  # this should only be provided if the netset supports it
+                 pick_frames=None,):  # this too
         # Parameters
         self.model_name = model
         self.device = device
@@ -60,7 +62,7 @@ class FeatureExtractor:
 
         if netset is not None:
             self.netset_name = netset
-            self.netset = NetSetBase.initialize_netset(self.model_name, netset, device)
+            self.netset = NetSetBase.initialize_netset(self.model_name, netset, device, agg_frames, pick_frames)
 
 
             # Initiate netset-based functions
@@ -72,9 +74,7 @@ class FeatureExtractor:
                 raise ValueError("If no netset is given, the model_name parameter needs to be a ready model")
             else:
                 # Initiate as the Netset structure of choice in case user does not select preprocessing, extractor, etc.
-                self.netset = NetSetBase.initialize_netset(
-                    model_name=None, netset_name=netset_fallback, device=self.device
-                )
+                self.netset = NetSetBase.initialize_netset(None, netset_fallback, device, agg_frames, pick_frames)
                 self.model = model
                 self.model.eval()
                 self.netset.loaded_model = self.model
