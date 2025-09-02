@@ -265,7 +265,7 @@ class RSA():
             # Add relationship to Noise Ceiling to this data
             lnc = self.this_nc["lnc"]
             unc = self.this_nc["unc"]
-            area_percentNC = (r / lnc) * 100.
+            area_percentNC = ((np.array(r) / lnc) * 100.).tolist()
 
             # Create dictionary to save data
             layer_key = "(" + str(counter) + ") " + layer
