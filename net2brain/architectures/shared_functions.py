@@ -1,6 +1,10 @@
 import warnings
 import json
 import importlib
+from pathlib import Path
+import shutil
+import urllib.request
+
 
 def get_function_from_module(function_string):
     module_name, function_name = function_string.rsplit('.', 1)
@@ -23,9 +27,11 @@ def get_function_from_module(function_string):
     return getattr(module, function_name)
 
 
-
-
-
+def download_to_path(url: str, dest: Path) -> None:
+    tmp = dest.with_suffix(dest.suffix + ".tmp")
+    with urllib.request.urlopen(url) as r, open(tmp, "wb") as f:
+        shutil.copyfileobj(r, f)
+    tmp.replace(dest)  # atomic-ish move
 
 
 def load_from_json(config_path, model_name):
