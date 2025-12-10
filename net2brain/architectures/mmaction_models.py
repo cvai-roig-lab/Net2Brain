@@ -3,6 +3,7 @@ import warnings
 import json
 from platformdirs import user_cache_dir
 from pathlib import Path
+from math import sqrt
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -31,11 +32,12 @@ class MMAction(NetSetBase):
     """
     """
 
-    def __init__(self, model_name, device):
+    def __init__(self, model_name, device, agg_frames):
         self.supported_data_types = ['video']
         self.netset_name = "MMAction"
         self.model_name = model_name
         self.device = device
+        self.agg_frames = agg_frames
 
         # Set config path:
         file_path = os.path.abspath(__file__)
@@ -54,6 +56,9 @@ class MMAction(NetSetBase):
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
 
+    def load_video_data(self, data_path):
+        return [data_path]
+
     def get_model(self, pretrained):
 
         # Load the JSON file
@@ -66,8 +71,10 @@ class MMAction(NetSetBase):
 
         # Retrieve the attributes for the given model_name
         model_entry = data[self.model_name]
-        checkpoint_url = model_entry["cfg"]["url_to_checkpoint"]
-        config_url = model_entry["cfg"]["url_to_config"]
+        checkpoint_url = model_entry["download_links"]["url_to_checkpoint"]
+        config_url = model_entry["download_links"]["url_to_config"]
+        self.layers = model_entry["extractor"]["layers"]
+        self.extractor_settings = model_entry["extractor"]
 
         cache_dir = Path(user_cache_dir("net2brain"))
         cache_dir.mkdir(parents=True, exist_ok=True)
@@ -143,6 +150,7 @@ class MMAction(NetSetBase):
         return video
 
     def clean_extracted_features(self, features):
+        # in mma slowfast has separate keys for slow and fast, so it doesn't need special handling
         clean_dict = {}
         for A_key, subtuple in features.items():
             if isinstance(subtuple, (list, tuple)):
@@ -160,51 +168,53 @@ class MMAction(NetSetBase):
     def load_video_data(self, data_path):
         return [data_path]
 
-    def extract_mmaction(self, preprocessed_data, layers_to_extract, model, stage, skips,
-                         main_format, format_exceptions, t_same=None, agg_clips=False):
-        layers = NetSetBase.select_model_layers(None, layers_to_extract, None, model)
+    def extract_mmaction(self, data, layers_to_extract, agg_frames='across_clips'):
+        # note: this function does not support multiple spatial crops
+        if layers_to_extract == "top_level" and self.layers is not None:
+            layers_to_extract = "json"
+        elif layers_to_extract == "json":
+            raise NotImplementedError("Use the `top_level` option instead of `json` for mmaction "
+                                      "models. JSON-defined layers will still be used if existing.")
+        layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+        skips = self.extractor_settings["skips"]
         layers = [layer for layer in layers if layer not in skips]
-        normalizer = model.data_preprocessor
-        preprocessed_data = pseudo_collate([preprocessed_data])
-        preprocessed_data = normalizer(preprocessed_data)["inputs"].squeeze(
-            0)  # squeeze out the fake batch
-
-        device = preprocessed_data.device
-        preprocessed_data = preprocessed_data.cpu()
-        if preprocessed_data.ndim == 6:
+        normalizer = self.loaded_model.data_preprocessor
+        data = pseudo_collate([data])
+        data = normalizer(data)["inputs"].squeeze(0)  # squeeze out the fake batch
+        device = data.device
+        data = data.cpu()
+        if data.ndim == 6:
             format_shape = "NCTHW"  # N is broken in 2: n_clips, n_crops(=1)
-        elif preprocessed_data.ndim == 5:
+        elif data.ndim == 5:
             format_shape = "NCHW"  # N is broken in 2: n_clips, T
         else:
             raise ValueError(
-                f"Expected 5D or 6D preprocessed input tensor, got {preprocessed_data.ndim}D tensor")
-        n_clips = preprocessed_data.shape[0]
+                f"Expected 5D or 6D preprocessed input tensor, got {data.ndim}D tensor")
+        n_clips = data.shape[0]
         features_all_clips = {}
         for i in range(n_clips):  # sacrifice speed to avoid increasing batch size
-            extractor_model = tx.Extractor(model, layers)
+            extractor_model = tx.Extractor(self.loaded_model, layers)
             try:
-                out, features = extractor_model(preprocessed_data[i].unsqueeze(0).to(device),
-                                                stage=stage)
+                out, features = extractor_model(data[i].unsqueeze(0).to(device), stage='head')
                 # this unsqueeze is needed because of a peculiarity that some squeezing is done
                 # before passing to the model (otherwise batch dim would be just the crops/frames)
             except RuntimeError:
-                # pad the input such as that preprocessed_data[i].shape[0] is divisible by 8
+                # pad the input such as that data[i].shape[0] is divisible by 8
                 # this is needed for models like TSM that handle "segments" internally from batchdim
                 div_by = 8
-                pad_size = (div_by - preprocessed_data[i].size(0) % div_by) % div_by
+                pad_size = (div_by - data[i].size(0) % div_by) % div_by
                 if pad_size > div_by / 2:
-                    padded_data = preprocessed_data[i][: -(preprocessed_data[i].size(0) % div_by)]
+                    padded_data = data[i][: -(data[i].size(0) % div_by)]
                 else:
-                    padded_data = F.pad(preprocessed_data[i], (0, 0, 0, 0, 0, 0, 0, pad_size))
-                out, features = extractor_model(padded_data.unsqueeze(0).to(device), stage=stage)
+                    padded_data = F.pad(data[i], (0, 0, 0, 0, 0, 0, 0, pad_size))
+                out, features = extractor_model(padded_data.unsqueeze(0).to(device), stage='head')
             del out
-            # in mma slowfast has separate keys for slow and fast, so it doesn't need special handling
-            features = generic_cleaner_tuples(features)
+            features = self.clean_extracted_features(features)
+            main_format = self.extractor_settings["main_format"]
+            format_exceptions = self.extractor_settings["format_exceptions"]
             for key in features:
-                # ----At this point, the function won't support multi-crop.------
-                # I want to have a *CONSISTENT* format of features for all models:
+                # Convert to a *CONSISTENT* format of features for all models:
                 # (1, CLIPS, TIMEPOINTS, C, H, W)
-                # (net2brain always needs to have a batch dim 1 in front)
                 value = features[key].detach().cpu()
                 if format_shape == "NCTHW":
                     value = value.squeeze(0)
@@ -229,17 +239,17 @@ class MMAction(NetSetBase):
                     C = value.shape[2]
                     value = value[1:, :, :].reshape(H, W, T, C).permute(2, 3, 0, 1)
                 elif key_format == 'THW+1,C':
-                    T = t_same
+                    T = self.extractor_settings["t_same"]
                     H = W = int(sqrt((value.shape[0] - 1) / T))
                     C = value.shape[1]
                     value = value[1:, :].reshape(T, H, W, C).permute(0, 3, 1, 2)
                 elif key_format == 'THW,C':
-                    T = t_same
+                    T = self.extractor_settings["t_same"]
                     H = W = int(sqrt(value.shape[0] / T))
                     C = value.shape[1]
                     value = value.reshape(T, H, W, C).permute(0, 3, 1, 2)
                 elif key_format == 'HWT+1,C':
-                    T = t_same
+                    T = self.extractor_settings["t_same"]
                     H = W = int(sqrt((value.shape[0] - 1) / T))
                     C = value.shape[1]
                     value = value[1:, :].reshape(H, W, T, C).permute(2, 3, 0, 1)
@@ -260,6 +270,11 @@ class MMAction(NetSetBase):
                     features_all_clips[key] = value
                 else:
                     features_all_clips[key] = torch.concat([features_all_clips[key], value], dim=1)
-                    if agg_clips:
+                    if agg_frames == 'across_clips':
                         features_all_clips[key] = features_all_clips[key].mean(1, keepdim=True)
+                    elif agg_frames == 'within_clips':
+                        features_all_clips[key] = features_all_clips[key].mean(2, keepdim=True)
+                    elif agg_frames == 'all':
+                        features_all_clips[key] = features_all_clips[key].mean(1, keepdim=True)
+                        features_all_clips[key] = features_all_clips[key].mean(2, keepdim=True)
         return features_all_clips

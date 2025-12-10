@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 import numpy as np
 from tqdm import tqdm
+from functools import partial
 from .architectures.pytorch_models import Standard
 from .architectures.timm_models import Timm
 from .architectures.taskonomy_models import Taskonomy
@@ -44,9 +45,7 @@ class FeatureExtractor:
                  pretrained=True,
                  preprocessor=None,
                  extraction_function=None,
-                 feature_cleaner=None,
-                 agg_frames=None,  # this should only be provided if the netset supports it
-                 pick_frames=None,):  # this too
+                 feature_cleaner=None):
         # Parameters
         self.model_name = model
         self.device = device
@@ -56,14 +55,10 @@ class FeatureExtractor:
         self.preprocessor = preprocessor
         self.extraction_function = extraction_function
         self.feature_cleaner = feature_cleaner
-        
-
-
 
         if netset is not None:
             self.netset_name = netset
-            self.netset = NetSetBase.initialize_netset(self.model_name, netset, device, agg_frames, pick_frames)
-
+            self.netset = NetSetBase.initialize_netset(self.model_name, netset, device)
 
             # Initiate netset-based functions
             self.model = self.netset.get_model(self.pretrained)
@@ -74,20 +69,17 @@ class FeatureExtractor:
                 raise ValueError("If no netset is given, the model_name parameter needs to be a ready model")
             else:
                 # Initiate as the Netset structure of choice in case user does not select preprocessing, extractor, etc.
-                self.netset = NetSetBase.initialize_netset(None, netset_fallback, device, agg_frames, pick_frames)
+                self.netset = NetSetBase.initialize_netset(None, netset_fallback, device)
                 self.model = model
                 self.model.eval()
                 self.netset.loaded_model = self.model
 
                 if None in (preprocessor, extraction_function, feature_cleaner):
                     warnings.warn("If you add your own model you can also select our own: \nPreprocessing Function (preprocessor) \nExtraction Function (extraction_function) \nFeature Cleaner (feature_cleaner) ")
-    
 
-
-
-
-    def extract(self, data_path, save_path=None, layers_to_extract="top_level", consolidate_per_layer=True,
-                dim_reduction=None, n_samples_estim=100, n_components=10000, max_dim_allowed=None):
+    def extract(self, data_path, save_path=None, layers_to_extract="top_level",
+                consolidate_per_layer=True, dim_reduction=None, n_samples_estim=100,
+                n_components=10000, max_dim_allowed=None, **kwargs):
         """
         Args:
             data_path: str
@@ -117,6 +109,15 @@ class FeatureExtractor:
             max_dim_allowed: int or None
                 Optional: The threshold over which the dimensionality reduction is applied. If None, it is always
                 applied.
+            **kwargs: dict
+                Optional keyword arguments for specific data types. For video data, an `agg_frames`
+                argument configures how extracted features are aggregated over frames. For video
+                models, `agg_frames` can be either 'all', 'within_clips', 'across_clips' or None,
+                and the default is 'across_clips'. For image models applied to video data,
+                `agg_frames` can be either 'all' or None, and the default is 'all'. Additionally
+                for image models, a `pick_frames` argument (int or None) configures the number of
+                frames (by uniform sampling) features are extracted for. If None (default),
+                features are extracted for all frames depending on the video's frame rate.
 
         Returns:
 
@@ -153,17 +154,31 @@ class FeatureExtractor:
             data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
         else:
             data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
-        
-        if self.data_type == "multimodal":
-            data_files = self._pair_modalities(data_files)
-
-        # Select preprocessor
-        if self.preprocessor == None:
-            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
 
         if self.data_type not in self.netset.supported_data_types:
             raise ValueError(f"Datatype {self.data_type} not supported by current model")
-        
+
+        if self.data_type == "multimodal":
+            data_files = self._pair_modalities(data_files)
+
+        if self.data_type == 'video':
+            if 'image' in self.netset.supported_data_types:
+                if 'pick_frames' in kwargs:
+                    data_loader = partial(data_loader, pick_frames=kwargs['pick_frames'])
+                if 'agg_frames' in kwargs:
+                    if kwargs['agg_frames'] not in ['all', None]:
+                        raise ValueError("`agg_frames` for image models is either 'all' or None")
+                    self.data_combiner = partial(self.data_combiner, agg_frames=kwargs['agg_frames'])
+            elif self.netset.supported_data_types == ['video']:
+                if 'agg_frames' in kwargs and self.extraction_function is None:
+                    if kwargs['agg_frames'] not in ['all', 'within_clips', 'across_clips', None]:
+                        raise ValueError("`agg_frames` for video models is either 'all', 'within_clips', 'across_clips' or None")
+                    self.netset.extraction_function = partial(self.netset.extraction_function, agg_frames=kwargs['agg_frames'])
+
+        # Select preprocessor
+        if self.preprocessor is None:
+            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
+
         progress_bar = tqdm(data_files, desc='Processing files')
         
         for data_file in progress_bar:

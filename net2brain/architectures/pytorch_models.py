@@ -6,13 +6,11 @@ import os
 
 class Standard(NetSetBase):
 
-    def __init__(self, model_name, device, agg_frames='average', pick_frames=None):
+    def __init__(self, model_name, device):
         self.supported_data_types = ['image', 'video']
         self.netset_name = "Standard"
         self.model_name = model_name
         self.device = device
-        self.agg_frames = agg_frames
-        self.pick_frames = pick_frames
 
         # Set config path:
         file_path = os.path.abspath(__file__)

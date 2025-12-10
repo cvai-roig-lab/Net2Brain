@@ -36,6 +36,7 @@ class PackPathway(torch.nn.Module):
 
 
 class Pyvideo(NetSetBase):
+    # TODO: Deprecate this class
 
     def __init__(self, model_name, device):
         self.supported_data_types = ['video']

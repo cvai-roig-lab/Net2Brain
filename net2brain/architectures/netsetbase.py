@@ -28,8 +28,6 @@ class NetSetBase:
     loaded_model = None  # The loaded model instance
     extractor_model = None  # The feature extractor model instance
     device = None  # Device for computation
-    agg_frames = 'average'  # stack or average frames for video data
-    pick_frames = None  # Number of frames to pick from video data, if None all frames are used
 
     audio_loader_kwargs = None  # can be set by the audio model
 
@@ -38,18 +36,10 @@ class NetSetBase:
         cls._registry[cls.__name__] = cls
 
     @classmethod
-    def initialize_netset(cls, model_name, netset_name, device, agg_frames=None, pick_frames=None):
+    def initialize_netset(cls, model_name, netset_name, device):
         # Return an instance of the netset class based on the netset_name from the registry
         if netset_name in cls._registry:
-            # hacky way to pass optional args, TODO: improve
-            if agg_frames is None and pick_frames is None:
-                return cls._registry[netset_name](model_name, device)
-            elif agg_frames is not None and pick_frames is not None:
-                return cls._registry[netset_name](model_name, device, agg_frames=agg_frames, pick_frames=pick_frames)
-            elif agg_frames is not None:
-                return cls._registry[netset_name](model_name, device, agg_frames=agg_frames)
-            elif pick_frames is not None:
-                return cls._registry[netset_name](model_name, device, pick_frames=pick_frames)
+            return cls._registry[netset_name](model_name, device)
         else:
             raise ValueError(f"Unknown netset: {netset_name}")
 
@@ -170,7 +160,7 @@ class NetSetBase:
     def combine_image_data(self, feature_list):
         return feature_list[0]
 
-    def combine_video_data(self, feature_list):
+    def combine_video_data(self, feature_list, agg_frames='all'):
         """
         Averages the features extracted from multiple frames of a video.
 
@@ -182,7 +172,8 @@ class NetSetBase:
             Dict[str, torch.Tensor]: A dictionary where the keys are the layer names, and the values are the averaged 
             feature tensors across all frames.
         """
-        if self.agg_frames == 'average':
+        # TODO: make a comment here to make clear that this is only ever used in image models
+        if agg_frames == 'all':
             # Initialize a dictionary to store the sum of features for each layer
             summed_features = {}
 
@@ -199,7 +190,7 @@ class NetSetBase:
             num_frames = len(feature_list)
             averaged_features = {layer: data / num_frames for layer, data in summed_features.items()}
             final_features = averaged_features
-        elif self.agg_frames == 'stack':
+        else:
             # Stack the features for each layer across all frames
             stacked_features = {}
             for features in feature_list:
@@ -213,9 +204,6 @@ class NetSetBase:
                 layer: torch.stack(data_list).unsqueeze(0).unsqueeze(0) for layer, data_list in stacked_features.items()
             }
             # unsqueeze to simulate batch dimension and clip dimension
-        else:
-            raise ValueError(f"Unsupported aggregation method: {self.agg_frames}. Supported methods are 'average' and 'stack'.")
-
         return final_features
 
     def combine_audio_data(self, feature_list):
@@ -268,7 +256,9 @@ class NetSetBase:
     def load_image_data(self, data_path):
         return [Image.open(data_path).convert('RGB')]
 
-    def load_video_data(self, data_path):
+    def load_video_data(self, data_path, pick_frames=None):
+        # TODO: make a comment here to make clear that this should always be overridden by video
+        #  model classes - this implementation is only for image models
         # Logic to load video data using cv2
         # This will return a list of frames. Each frame is a numpy array.
         data_path = r"{}".format(data_path)  # Using raw string
@@ -280,9 +270,9 @@ class NetSetBase:
                 break
             frames.append(frame)
         cap.release()
-        if self.pick_frames is not None:
-            # get self.pick_frames uniform indices
-            indices = np.linspace(0, len(frames) - 1, self.pick_frames, dtype=int)
+        if pick_frames is not None:
+            # get `pick_frames` number of uniform indices
+            indices = np.linspace(0, len(frames) - 1, pick_frames, dtype=int)
             frames = [frames[i] for i in indices]
         return frames
 
