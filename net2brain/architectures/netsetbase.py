@@ -162,7 +162,9 @@ class NetSetBase:
 
     def combine_video_data(self, feature_list, agg_frames='all'):
         """
-        Averages the features extracted from multiple frames of a video.
+        Averages the features extracted from multiple frames of a video. This is only relevant for
+        image models, as for video models it only performs a trivial averaging over one feature
+        tensor (features are already extracted from multiple frames internally).
 
         Args:
             feature_list (List[Dict[str, torch.Tensor]]): A list where each element is a dictionary. The keys of the
@@ -172,7 +174,6 @@ class NetSetBase:
             Dict[str, torch.Tensor]: A dictionary where the keys are the layer names, and the values are the averaged 
             feature tensors across all frames.
         """
-        # TODO: make a comment here to make clear that this is only ever used in image models
         if agg_frames == 'all':
             # Initialize a dictionary to store the sum of features for each layer
             summed_features = {}
@@ -257,10 +258,19 @@ class NetSetBase:
         return [Image.open(data_path).convert('RGB')]
 
     def load_video_data(self, data_path, pick_frames=None):
-        # TODO: make a comment here to make clear that this should always be overridden by video
-        #  model classes - this implementation is only for image models
-        # Logic to load video data using cv2
-        # This will return a list of frames. Each frame is a numpy array.
+        """
+        Logic to load video data frame by frame using cv2. This is only relevant for image
+        models, and should always be overridden by video model classes.
+
+        Args:
+            data_path: Union[str, Path]
+            pick_frames: Optional[int]
+                Number of frames to uniformly sample from the video. If None, all frames are returned.
+
+        Returns: List[np.ndarray]
+            A list of frames extracted from the video.
+
+        """
         data_path = r"{}".format(data_path)  # Using raw string
         cap = cv2.VideoCapture(data_path)
         frames = []
