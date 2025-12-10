@@ -18,8 +18,8 @@ register_all_modules()
 from mmaction.registry import MODELS as MMA_MODELS
 from mmengine import Config
 from mmengine.runner import load_checkpoint
-from mmaction.datasets.transforms.loading import DecordInit, SampleFrames, DenseSampleFrames, DecordDecode
-from mmaction.datasets.transforms.processing import Resize, CenterCrop, ThreeCrop
+from mmaction.datasets.transforms.loading import DecordInit, SampleFrames, DecordDecode
+from mmaction.datasets.transforms.processing import Resize, CenterCrop
 from mmaction.datasets.transforms.formatting import FormatShape, PackActionInputs
 from mmengine.dataset.base_dataset import Compose as MMECompose
 from mmengine.dataset.utils import pseudo_collate
@@ -75,6 +75,7 @@ class MMAction(NetSetBase):
         config_url = model_entry["download_links"]["url_to_config"]
         self.layers = model_entry["extractor"]["layers"]
         self.extractor_settings = model_entry["extractor"]
+        self.preprocessor_settings = model_entry["preprocessor"]
 
         cache_dir = Path(user_cache_dir("net2brain"))
         cache_dir.mkdir(parents=True, exist_ok=True)
@@ -112,10 +113,15 @@ class MMAction(NetSetBase):
     ):
 
         (clip_len,
-        frame_interval,
-        resize_size,
-        crop_size,
-        format_shape) = self.get_preprocessing_from_config()
+         frame_interval,
+         resize_size,
+         crop_size,
+         format_shape) = (self.preprocessor_settings["clip_len"],
+                          self.preprocessor_settings["frame_interval"],
+                          self.preprocessor_settings["resize_size"],
+                          self.preprocessor_settings["crop_size"],
+                          self.preprocessor_settings["format_shape"] if
+                          "format_shape" in self.preprocessor_settings else "NCTHW")
         video = {"filename": video_path, "start_index": 0, "modality": "RGB"}
         video = DecordInit()(video)
         frame_interval *= video["avg_fps"] / 30  # 30 fps is the expected frame rate
@@ -141,7 +147,7 @@ class MMAction(NetSetBase):
         video = transform(video)
         # we want to loop over clips in the extraction function, so we need to reshape the input
         if format_shape == "NCTHW":
-            # I'm only allowing center_crop, so batch_dim (=crops_dim) = 1
+            # we're only allowing center_crop, so batch_dim (=crops_dim) = 1
             video["inputs"] = video["inputs"].unsqueeze(1)
         elif format_shape == "NCHW":
             # batch_dim will be frames per clip now (still no multi-crop)
@@ -164,9 +170,6 @@ class MMAction(NetSetBase):
             else:
                 clean_dict[A_key] = subtuple.cpu()
         return clean_dict
-
-    def load_video_data(self, data_path):
-        return [data_path]
 
     def extract_mmaction(self, data, layers_to_extract, agg_frames='across_clips'):
         # note: this function does not support multiple spatial crops
