@@ -25,7 +25,7 @@ from mmengine.dataset.base_dataset import Compose as MMECompose
 from mmengine.dataset.utils import pseudo_collate
 
 from .netsetbase import NetSetBase
-from .shared_functions import download_to_path
+from .shared_functions import download_to_path, download_github_folder
 
 
 class MMAction(NetSetBase):
@@ -79,15 +79,26 @@ class MMAction(NetSetBase):
 
         cache_dir = Path(user_cache_dir("net2brain"))
         cache_dir.mkdir(parents=True, exist_ok=True)
-        checkpoint_path = cache_dir / "mma_checkpoints" / self.model_name / "model.pth"
-        config_path = cache_dir / "mma_configs" / self.model_name / "config.py"
 
+        checkpoint_path = cache_dir / "mma_checkpoints" / f"{self.model_name}.pth"
         if not checkpoint_path.exists():
             checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
             download_to_path(checkpoint_url, checkpoint_path)
-        if not config_path.exists():
-            config_path.parent.mkdir(parents=True, exist_ok=True)
-            download_to_path(config_url, config_path)
+
+        config_folder = cache_dir / "mma_configs"
+        if not config_folder.exists():
+            download_github_folder(
+                owner="open-mmlab",
+                repo="mmaction2",
+                repo_path="configs",
+                out_dir=config_folder
+            )
+            cfg_to_fix = config_folder / "recognition/tsn/custom_backbones/tsn_imagenet-pretrained-swin-transformer_32xb8-1x1x8-50e_kinetics400-rgb.py"
+            # fix issue in one config file - missing line 7
+            lines = cfg_to_fix.read_text().splitlines(keepends=True)
+            lines.insert(6, "        feature_shape='NHWC',\n")
+            cfg_to_fix.write_text(''.join(lines))
+        config_path = config_folder / config_url
 
         cfg = Config.fromfile(config_path)
         self.loaded_model = MMA_MODELS.build(cfg.model)
