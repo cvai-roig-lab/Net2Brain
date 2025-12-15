@@ -15,6 +15,7 @@ from .architectures.yolo_models import Yolo
 from .architectures.pyvideo_models import Pyvideo
 from .architectures.huggingface_llm import Huggingface
 from .architectures.audio_models import Audio
+from .architectures.mmaction_models import MMAction
 from datetime import datetime
 import torchextractor as tx
 import warnings

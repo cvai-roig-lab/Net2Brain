@@ -32,12 +32,11 @@ class MMAction(NetSetBase):
     """
     """
 
-    def __init__(self, model_name, device, agg_frames):
+    def __init__(self, model_name, device):
         self.supported_data_types = ['video']
         self.netset_name = "MMAction"
         self.model_name = model_name
         self.device = device
-        self.agg_frames = agg_frames
 
         # Set config path:
         file_path = os.path.abspath(__file__)
@@ -82,11 +81,14 @@ class MMAction(NetSetBase):
 
         checkpoint_path = cache_dir / "mma_checkpoints" / f"{self.model_name}.pth"
         if not checkpoint_path.exists():
+            print(f"Downloading checkpoint for {self.model_name} to cache ...")
+            # TODO: check where other net2brain checkpoints are stored
             checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
             download_to_path(checkpoint_url, checkpoint_path)
 
         config_folder = cache_dir / "mma_configs"
         if not config_folder.exists():
+            print(f"Config files for MMAction models not found in cache, downloading ...")
             download_github_folder(
                 owner="open-mmlab",
                 repo="mmaction2",
@@ -102,7 +104,7 @@ class MMAction(NetSetBase):
 
         cfg = Config.fromfile(config_path)
         self.loaded_model = MMA_MODELS.build(cfg.model)
-        load_checkpoint(self.loaded_model, checkpoint_path)
+        load_checkpoint(self.loaded_model, str(checkpoint_path))
 
         # Model to device
         self.loaded_model.to(self.device)
