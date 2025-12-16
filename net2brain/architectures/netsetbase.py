@@ -146,7 +146,7 @@ class NetSetBase:
         raise NotImplementedError
 
     def extraction_function(self, data, layers_to_extract=None):
-
+        # TODO: default None should not be used
         """
         # Which layers to extract
         self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)

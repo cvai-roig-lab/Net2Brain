@@ -184,7 +184,7 @@ class MMAction(NetSetBase):
                 clean_dict[A_key] = subtuple.cpu()
         return clean_dict
 
-    def extract_mmaction(self, data, layers_to_extract, agg_frames='across_clips'):
+    def extraction_function(self, data, layers_to_extract=None, agg_frames='across_clips'):
         # note: this function does not support multiple spatial crops
         if layers_to_extract == "top_level" and self.layers is not None:
             layers_to_extract = "json"
