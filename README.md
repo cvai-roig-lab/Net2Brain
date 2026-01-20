@@ -137,7 +137,9 @@ pip install -U git+https://github.com/cvai-roig-lab/Net2Brain
 
 2. Once the installation is complete, you can import Net2Brain in your Python environment and start utilizing its powerful features for neural research.
 
-
+3. (Optional). To use the video model netset MMAction, you need to install it separately by running 
+   the bash script provided in this repo, `install_mmaction.sh`. This is because the library 
+   mmaction2 requires non-standard installation procedures.
 
 
 # Model Taxonomy
