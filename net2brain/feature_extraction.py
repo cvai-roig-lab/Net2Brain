@@ -85,7 +85,7 @@ class FeatureExtractor:
 
     def extract(self, data_path, save_path=None, layers_to_extract="top_level",
                 consolidate_per_layer=True, dim_reduction=None, n_samples_estim=100,
-                n_components=10000, max_dim_allowed=None, **kwargs):
+                n_components=10000, srp_before_pca=False, max_dim_allowed=None, **kwargs):
         """
         Args:
             data_path: str
@@ -112,6 +112,10 @@ class FeatureExtractor:
             n_components: int or None
                 The number of components to reduce the features to. If None, the number of components is estimated.
                 For PCA, `n_components` must be smaller than `n_samples_estim`.
+            srp_before_pca: bool
+                Only applies if `dim_reduction` is `pca`. If True, a Sparse Random Projection is applied
+                before PCA to make it computationally lighter. Use when features are so
+                high-dimensional that PCA runs out of memory. Num of dims estimated by SRP.
             max_dim_allowed: int or None
                 Optional: The threshold over which the dimensionality reduction is applied. If None, it is always
                 applied.
@@ -139,6 +143,7 @@ class FeatureExtractor:
         self.dim_reduction = dim_reduction
         self.n_samples_estim = n_samples_estim
         self.n_components = n_components
+        self.srp_before_pca = srp_before_pca
         self.max_dim_allowed = max_dim_allowed
 
         # Iterate over all files in the given data_path
@@ -409,7 +414,8 @@ class FeatureExtractor:
             if not self.max_dim_allowed or len(sample_feats_at_layer.flatten()) > self.max_dim_allowed:
                 # Estimate the dimensionality reduction from a subset of the data
                 fitted_transform, _ = estimate_from_files(all_files, layer, feat_dim, open_npz,
-                                             self.dim_reduction, self.n_samples_estim, self.n_components)
+                                             self.dim_reduction, self.n_samples_estim,
+                                             self.n_components, self.srp_before_pca)
                 for file in tqdm(all_files):
                     feats = open_npz(file)
                     reduced_feats_at_layer = {}
