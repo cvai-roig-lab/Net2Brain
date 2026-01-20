@@ -13,10 +13,6 @@ import numpy as np
 from net2brain.utils.dim_reduction import estimate_from_files
 
 
-def wrapper_helper(instance, sample, item, clip_idx, time_idx):
-    return instance.helper(sample, item, clip_idx=clip_idx, time_idx=time_idx)
-
-
 def natural_keys(text: str) -> List[Union[int, str]]:
     """
     A function that sorts strings with numbers in a natural way.
@@ -285,9 +281,11 @@ class NPZSeparateEngine(FeatureEngine):
         # Check if dimensionality reduction is needed
         if self.dim_reduction and (not self.max_dim_allowed or len(sample.flatten()) > self.max_dim_allowed):
             # Estimate the dimensionality reduction from a subset of the data
+            pooling_partial = partial(apply_pooling_numpy, pooling=self.pooling) if self.pooling else None
             fitted_transform, self.n_components = estimate_from_files(
                 self._stimuli, item, feat_dim, open_npz, self.dim_reduction,
-                self.n_samples_estim, self.n_components, self.srp_before_pca, clip_idx, time_idx
+                self.n_samples_estim, self.n_components, self.srp_before_pca, pooling_partial,
+                clip_idx, time_idx
             )
             feats = np.empty((len(self._stimuli), self.n_components))
             for i, file in enumerate(self._stimuli):
@@ -299,7 +297,10 @@ class NPZSeparateEngine(FeatureEngine):
                     else:
                         feats[i, :] = fitted_transform.transform(open_npz(file)[item][:, clip_idx].reshape(1, -1)).squeeze()
                 else:
-                    feats[i, :] = fitted_transform.transform(open_npz(file)[item].reshape(1, -1)).squeeze()
+                    feat = open_npz(file)[item]
+                    if self.pooling is not None:
+                        feat = apply_pooling_numpy(feat, self.pooling)
+                    feats[i, :] = fitted_transform.transform(feat.reshape(1, -1)).squeeze()
                 stimuli.append(file.stem)
         # Otherwise load features without dimensionality reduction
         else:

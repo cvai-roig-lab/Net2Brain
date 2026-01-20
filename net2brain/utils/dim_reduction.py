@@ -7,7 +7,8 @@ from sklearn.pipeline import Pipeline
 
 def estimate_from_files(file_list: list, key: int, feat_dim: tuple, open_func: Callable,
                         dim_reduction: str, n_samples_estim: int, n_components: Optional[int],
-                        srp_before_pca: bool = False, clip_idx=None, time_idx=None):
+                        srp_before_pca: bool = False, pooling: Optional[Callable] = None,
+                        clip_idx=None, time_idx=None):
     """
     Estimate a dimensionality reduction from a subset of the data in `file_list`.
     Performed separately per `key` (corresponding to a layer).
@@ -23,6 +24,10 @@ def estimate_from_files(file_list: list, key: int, feat_dim: tuple, open_func: C
         n_components: Number of components to reduce to.
         srp_before_pca (bool): Whether to apply Sparse Random Projection (SRP) before PCA. Use when features are so
             high-dimensional that PCA runs out of memory. Num of dims estimated by SRP.
+        pooling (Callable or None): Pooling method for variable-length features. Required when
+            features have variable lengths (e.g., LLM features).
+        clip_idx: Optional index, used when estimating per video subclip.
+        time_idx: Optional index, used when estimating per video timepoint.
 
     Returns:
         Fitted transform and number of components.
@@ -37,7 +42,10 @@ def estimate_from_files(file_list: list, key: int, feat_dim: tuple, open_func: C
             else:
                 feats_for_estim[i, :] = open_func(file)[key][:, clip_idx].squeeze()
         else:
-            feats_for_estim[i, :] = open_func(file)[key].squeeze()
+            feat = open_func(file)[key]
+            if pooling is not None:
+                feat = pooling(feat)
+            feats_for_estim[i, :] = feat.squeeze()
     # Choose the dimensionality reduction method
     if dim_reduction == 'srp':
         fitted_transform = SparseRandomProjection(n_components=n_components) if n_components else (
