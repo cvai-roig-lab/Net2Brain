@@ -77,6 +77,7 @@ class RDMCreator:
                     standardize_on_dim: Optional[int] = None,
                     chunk_size: Optional[int] = None,
                     multi_timepoint_rdms: Optional[str] = None,
+                    pooling: Optional[str] = None,
                     dim_reduction: Optional[str] = None,
                     n_samples_estim: int = 100,
                     n_components: Optional[int] = 10000,
@@ -107,6 +108,10 @@ class RDMCreator:
                 If not None, the RDM is created in chunks of the given size. This can be used to reduce the memory
                 consumption.
             multi_timepoint_rdms: str or None, options are `clip` and `all_timepoints`
+            pooling: str or None
+                Pooling method for variable-length features. Options: 'mean', 'max', 'first', 'last'.
+                Required when features have more than 2 dimensions with a variable dimension (e.g.,
+                LLM features with sequence dimension).
             dim_reduction: str or None
                 Whether to apply dimensionality reduction to the features before creating the RDMs. Only supported
                 when the features are *not* stored in a consolidated format. For consolidated storing of features,
@@ -138,7 +143,8 @@ class RDMCreator:
                                    n_samples_estim=n_samples_estim,
                                    n_components=n_components,
                                    srp_before_pca=srp_before_pca,
-                                   max_dim_allowed=max_dim_allowed)
+                                   max_dim_allowed=max_dim_allowed,
+                                   pooling=pooling)
         with tqdm(total=len(iterator), desc='Creating RDMs', disable=not self.verbose) as bar:
             for layer, stimuli, feats in iterator:
                 feats = torch.from_numpy(feats).to(self.device)
@@ -164,6 +170,9 @@ class RDMCreator:
                                                 standardize_on_dim=standardize_on_dim, **kwargs)
 
                 meta = dict(distance=distance, multi_timepoint_rdms=multi_timepoint_rdms)
+
+                if pooling is not None:
+                    meta['pooling'] = pooling
 
                 rdm = LayerRDM(rdm=rdm_m, layer_name=layer, stimuli_name=stimuli, meta=meta)
                 rdm.save(save_path, file_format=save_format)

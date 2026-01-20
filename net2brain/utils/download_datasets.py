@@ -69,7 +69,7 @@ class BaseDataset:
 class DatasetBonnerPNAS2017(BaseDataset):
     dataset_name = "bonner_pnas2017"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiG4gkTpZGrE8gsq8Xo498/bonner_pnas2017.zip"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi6GiRVCbBZxLQASNV1qYz/bonner_pnas2017.zip"
     }
 
     def __init__(self, path=None):
@@ -103,7 +103,7 @@ class Dataset78images(BaseDataset):
 class Workhsop_Harry_Potter_Cognition(BaseDataset):
     dataset_name = "Workshop_Harry_Potter_Cognition"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiMNMYWhtDMvhfxEf9JNA6/Workshop_Harry_Potter_Cognition.zip"
+        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi15Hgyt64LPdiKMnNT3P4/Workshop_Harry_Potter_Cognition.zip"
     }
 
     def __init__(self, path=None):

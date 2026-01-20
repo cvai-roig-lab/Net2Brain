@@ -115,7 +115,8 @@ class NetSetBase:
             Union[torch.Tensor, List[torch.Tensor]]: The preprocessed image(s) as PyTorch tensor(s).
         """
         transforms = trn.Compose([
-            trn.Resize((224, 224)),
+            trn.Resize((256,256)),
+            trn.CenterCrop(224),
             trn.ToTensor(),
             trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])

@@ -207,7 +207,9 @@ class FeatureExtractor:
                 progress_bar.set_postfix(subfiles=f'{idx + 1}/{total_inner_items}')
 
                 # Preprocess data
+                #print("before", data.size)
                 preprocessed_data = self.preprocessor(data, self.model_name, self.device)
+                #print("after", preprocessed_data.shape)
 
                 # Extract features
                 if self.extraction_function == None:
@@ -269,7 +271,7 @@ class FeatureExtractor:
 
     def consolidate_per_layer(self):
         # List all files, ignoring ones ending with "_consolidated.npz"
-        all_files = [f for f in os.listdir(self.save_path) if not f.endswith("_consolidated.npz")]
+        all_files = [f for f in os.listdir(self.save_path) if not f.startswith("consolidated_")]
         if not all_files:
             print("No files to consolidate.")
             return

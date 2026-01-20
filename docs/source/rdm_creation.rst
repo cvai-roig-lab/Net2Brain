@@ -23,6 +23,7 @@ Updated functionality for `RDMCreator`:
 - **save_format** (Optional): The format in which to save the RDMs, either 'npz' or 'pt'.
 - **distance** (Optional): The distance metric to use. Defaults to correlation distance.
 - **chunk_size** (Optional): The number of images processed at a time to manage memory usage. Defaults to processing all images at once.
+- **pooling** (Optional): Pooling method for variable-length features. Options: ``'mean'`` (average across sequence), ``'max'`` (maximum values across sequence), ``'first'`` (use first token/position, e.g., [CLS] token), ``'last'`` (use final token/position). Required when processing transformer/LLM features with different sequence lengths. Defaults to ``None`` for fixed-length features.
 
 The RDM Creator outputs an RDM for each specified neural network layer, with dimensions *(#Images x #Images)*, providing a matrix of pairwise dissimilarity scores.
 
