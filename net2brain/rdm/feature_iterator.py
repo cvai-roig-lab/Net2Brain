@@ -268,10 +268,9 @@ class NPZSeparateEngine(FeatureEngine):
                             f"Found shapes: {shapes[0]} and {other_sample.shape}. "
                             f"Please specify a pooling method: 'mean', 'max', 'first', or 'last'."
                         )
-
-        # Apply pooling to sample to get the correct feature dimension
-        if self.pooling is not None:
-            sample = apply_pooling_numpy(sample, self.pooling)
+            # Apply pooling to sample to get the correct feature dimension
+            if self.pooling is not None:
+                sample = apply_pooling_numpy(sample, self.pooling)
 
         feat_dim = sample.squeeze().shape
         if feat_dim == ():
