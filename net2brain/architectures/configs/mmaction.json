@@ -267,42 +267,6 @@
       "url_to_checkpoint": "https://download.openmmlab.com/mmaction/v1.0/recognition/tsn/tsn_imagenet-pretrained-mobileone-s4_8xb32-1x1x8-100e_kinetics400-rgb/tsn_imagenet-pretrained-mobileone-s4_8xb32-1x1x8-100e_kinetics400-rgb_20230825-2da3c1f7.pth"
     }
   },
-  "TSN_swin_8": {
-    "metadata": {
-      "type": "image-k400",
-      "archtype": "Transformers",
-      "params": 87.15,
-      "flops": 386.7,
-      "accuracy": 79.22,
-      "time_as": "score_avg"
-    },
-    "extractor": {
-      "layers": null,
-      "skips": [
-        "backbone.patch_embed.proj",
-        "backbone.patch_embed.norm",
-        "backbone.norm",
-        "cls_head.consensus",
-        "cls_head.dropout"
-      ],
-      "main_format": "T,H,W,C",
-      "format_exceptions": {
-        "cls_head.avg_pool": "T,C,H,W",
-        "cls_head.fc_cls": "T,C"
-      }
-    },
-    "preprocessor": {
-      "clip_len": 16,
-      "frame_interval": 2,
-      "resize_size": 256,
-      "crop_size": 224,
-      "format_shape": "NCHW"
-    },
-    "download_links": {
-      "url_to_config": "recognition/tsn/custom_backbones/tsn_imagenet-pretrained-swin-transformer_32xb8-1x1x8-50e_kinetics400-rgb.py",
-      "url_to_checkpoint": "https://download.openmmlab.com/mmaction/v1.0/recognition/tsn/tsn_imagenet-pretrained-swin-transformer_32xb8-1x1x8-50e_kinetics400-rgb/tsn_imagenet-pretrained-swin-transformer_32xb8-1x1x8-50e_kinetics400-rgb_20230530-428f0064.pth"
-    }
-  },
   "timesformer_spaceOnly": {
     "metadata": {
       "type": "image-k400",
@@ -365,41 +329,7 @@
     },
     "download_links": {
       "url_to_config": "recognition/csn/ircsn_r152_32x2x1-180e_kinetics400-rgb.py",
-      "url_to_checkpoint": "https://download.openmmlab.com/mmaction/v1.0/recognition/csn/vmz/vmz_ircsn_from_scratch_r152_32x2x1_180e_kinetics400_rgb_20210617-5c933ae1.pth"
-    }
-  },
-  "i3d_r50": {
-    "metadata": {
-      "type": "video-k400",
-      "archtype": "CNNs",
-      "params": 28.0,
-      "flops": 43.5,
-      "accuracy": 73.47,
-      "time_as": "input_dim_local",
-      "pre": "preimage"
-    },
-    "extractor": {
-      "layers": null,
-      "skips": [
-        "backbone.maxpool",
-        "backbone.pool2",
-        "cls_head.avg_pool",
-        "cls_head.dropout"
-      ],
-      "main_format": "C,T,H,W",
-      "format_exceptions": {
-        "cls_head.fc_cls": "C"
-      }
-    },
-    "preprocessor": {
-      "clip_len": 32,
-      "frame_interval": 2,
-      "resize_size": 256,
-      "crop_size": 256
-    },
-    "download_links": {
-      "url_to_config": "recognition/i3d/i3d_imagenet-pretrained-r50_8xb8-32x2x1-100e_kinetics400-rgb.py",
-      "url_to_checkpoint": "https://download.openmmlab.com/mmaction/v1.0/recognition/i3d/i3d_imagenet-pretrained-r50_8xb8-32x2x1-100e_kinetics400-rgb/i3d_imagenet-pretrained-r50_8xb8-32x2x1-100e_kinetics400-rgb_20220812-e213c223.pth"
+      "url_to_checkpoint": "https://download.openmmlab.com/mmaction/recognition/csn/vmz/vmz_ircsn_from_scratch_r152_32x2x1_180e_kinetics400_rgb_20210617-5c933ae1.pth"
     }
   },
   "ircsn_bnfrozen_r152_ig65m": {
@@ -531,7 +461,7 @@
     },
     "download_links": {
       "url_to_config": "recognition/csn/ipcsn_ig65m-pretrained-r152-bnfrozen_32x2x1-58e_kinetics400-rgb.py",
-      "url_to_checkpoint": "https://download.openmmlab.com/mmaction/v1.0/recognition/csn/vmz/vmz_ipcsn_ig65m_pretrained_r152_32x2x1_58e_kinetics400_rgb_20210617-c3be9793.pth"
+      "url_to_checkpoint": "https://download.openmmlab.com/mmaction/recognition/csn/vmz/vmz_ipcsn_ig65m_pretrained_r152_32x2x1_58e_kinetics400_rgb_20210617-c3be9793.pth"
     }
   },
   "ipcsn_r152": {
@@ -564,7 +494,41 @@
     },
     "download_links": {
       "url_to_config": "recognition/csn/ipcsn_r152_32x2x1-180e_kinetics400-rgb.py",
-      "url_to_checkpoint": "https://download.openmmlab.com/mmaction/v1.0/recognition/csn/vmz/vmz_ipcsn_from_scratch_r152_32x2x1_180e_kinetics400_rgb_20210617-d565828d.pth"
+      "url_to_checkpoint": "https://download.openmmlab.com/mmaction/recognition/csn/vmz/vmz_ipcsn_from_scratch_r152_32x2x1_180e_kinetics400_rgb_20210617-d565828d.pth"
+    }
+  },
+  "i3d_r50": {
+    "metadata": {
+      "type": "video-k400",
+      "archtype": "CNNs",
+      "params": 28.0,
+      "flops": 43.5,
+      "accuracy": 73.47,
+      "time_as": "input_dim_local",
+      "pre": "preimage"
+    },
+    "extractor": {
+      "layers": null,
+      "skips": [
+        "backbone.maxpool",
+        "backbone.pool2",
+        "cls_head.avg_pool",
+        "cls_head.dropout"
+      ],
+      "main_format": "C,T,H,W",
+      "format_exceptions": {
+        "cls_head.fc_cls": "C"
+      }
+    },
+    "preprocessor": {
+      "clip_len": 32,
+      "frame_interval": 2,
+      "resize_size": 256,
+      "crop_size": 256
+    },
+    "download_links": {
+      "url_to_config": "recognition/i3d/i3d_imagenet-pretrained-r50_8xb8-32x2x1-100e_kinetics400-rgb.py",
+      "url_to_checkpoint": "https://download.openmmlab.com/mmaction/v1.0/recognition/i3d/i3d_imagenet-pretrained-r50_8xb8-32x2x1-100e_kinetics400-rgb/i3d_imagenet-pretrained-r50_8xb8-32x2x1-100e_kinetics400-rgb_20220812-e213c223.pth"
     }
   },
   "i3d_r50_dotprod": {

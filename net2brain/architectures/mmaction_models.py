@@ -12,9 +12,19 @@ import torch
 import torch.nn.functional as F
 import torchextractor as tx
 
-from mmaction.utils import register_all_modules
+from mmengine.registry import OPTIMIZERS
+_orig_register = OPTIMIZERS.register_module
 
+def _safe_register_module(*args, **kwargs):
+    # always overwrite instead of raising KeyError
+    kwargs["force"] = True
+    return _orig_register(*args, **kwargs)
+
+OPTIMIZERS.register_module = _safe_register_module
+
+from mmaction.utils import register_all_modules
 register_all_modules()
+
 from mmaction.registry import MODELS as MMA_MODELS
 from mmengine import Config
 from mmengine.runner import load_checkpoint
@@ -76,13 +86,12 @@ class MMAction(NetSetBase):
         self.extractor_settings = model_entry["extractor"]
         self.preprocessor_settings = model_entry["preprocessor"]
 
-        cache_dir = Path(user_cache_dir("net2brain"))
+        cache_dir = Path(user_cache_dir("mmaction_n2b"))
         cache_dir.mkdir(parents=True, exist_ok=True)
 
         checkpoint_path = cache_dir / "mma_checkpoints" / f"{self.model_name}.pth"
         if not checkpoint_path.exists():
             print(f"Downloading checkpoint for {self.model_name} to cache ...")
-            # TODO: check where other net2brain checkpoints are stored
             checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
             download_to_path(checkpoint_url, checkpoint_path)
 
@@ -95,11 +104,6 @@ class MMAction(NetSetBase):
                 repo_path="configs",
                 out_dir=config_folder
             )
-            cfg_to_fix = config_folder / "recognition/tsn/custom_backbones/tsn_imagenet-pretrained-swin-transformer_32xb8-1x1x8-50e_kinetics400-rgb.py"
-            # fix issue in one config file - missing line 7
-            lines = cfg_to_fix.read_text().splitlines(keepends=True)
-            lines.insert(6, "        feature_shape='NHWC',\n")
-            cfg_to_fix.write_text(''.join(lines))
         config_path = config_folder / config_url
 
         cfg = Config.fromfile(config_path)
