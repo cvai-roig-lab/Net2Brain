@@ -255,20 +255,19 @@ class NPZSeparateEngine(FeatureEngine):
             sample = sample[:, clip_idx]
         else:
             sample = sample
-
-        # Check if features have variable length and pooling is needed
-        if sample.ndim > 1 and self.pooling is None:
-            # Check a few files to see if they have different sequence lengths
-            shapes = [sample.shape]
-            for i, file in enumerate(self._stimuli[1:min(5, len(self._stimuli))]):  # Check up to 5 files
-                other_sample = open_npz(file)[item]
-                shapes.append(other_sample.shape)
-                if other_sample.shape != sample.shape:
-                    raise ValueError(
-                        f"Variable-length features detected for layer '{item}'. "
-                        f"Found shapes: {shapes[0]} and {other_sample.shape}. "
-                        f"Please specify a pooling method: 'mean', 'max', 'first', or 'last'."
-                    )
+            # Check if features have variable length and pooling is needed
+            if sample.ndim > 1 and self.pooling is None:
+                # Check a few files to see if they have different sequence lengths
+                shapes = [sample.shape]
+                for i, file in enumerate(self._stimuli[1:min(5, len(self._stimuli))]):  # Check up to 5 files
+                    other_sample = open_npz(file)[item]
+                    shapes.append(other_sample.shape)
+                    if other_sample.shape != sample.shape:
+                        raise ValueError(
+                            f"Variable-length features detected for layer '{item}'. "
+                            f"Found shapes: {shapes[0]} and {other_sample.shape}. "
+                            f"Please specify a pooling method: 'mean', 'max', 'first', or 'last'."
+                        )
 
         # Apply pooling to sample to get the correct feature dimension
         if self.pooling is not None:
