@@ -15,7 +15,6 @@ from .architectures.yolo_models import Yolo
 from .architectures.pyvideo_models import Pyvideo
 from .architectures.huggingface_llm import Huggingface
 from .architectures.audio_models import Audio
-from .architectures.mmaction_models import MMAction
 from datetime import datetime
 import torchextractor as tx
 import warnings
@@ -33,6 +32,12 @@ try:
     from .architectures.clip_models import Clip
 except ModuleNotFoundError:
     warnings.warn("Clip not installed")
+
+try:
+    from .architectures.mmaction_models import MMAction
+except ModuleNotFoundError:
+    warnings.warn("MMAction2 not installed. To use MMAction models, install with the "
+                  "`install_mmaction.sh` script in the Net2Brain GitHub repository.")
 
 
 
