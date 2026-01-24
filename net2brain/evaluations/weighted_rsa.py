@@ -15,7 +15,7 @@ class WRSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, model_name, squared=True, datatype="None", save_path="./", distance_metric="Euclidian"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, squared=True, datatype="None", save_path="./", distance_metric="Euclidean"):
         """Initiate RSA
 
         Args:
@@ -34,7 +34,7 @@ class WRSA():
         # Other parameters
         self.save_path = save_path
         self.datatype = datatype
-        self.distance_metric = distance_metric
+        self.distance_metric = distance_metric.lower()
         self.model_name = model_name
         self.squared = squared
 
