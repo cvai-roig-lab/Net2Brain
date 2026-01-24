@@ -15,7 +15,7 @@ class WRSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, model_name, squared=True, datatype="None", save_path="./", distance_metric="Euclidean"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, squared=True, datatype="None", save_path="./", distance_metric="Euclidean", ridge_weight=0):
         """Initiate RSA
 
         Args:
@@ -37,6 +37,7 @@ class WRSA():
         self.distance_metric = distance_metric.lower()
         self.model_name = model_name
         self.squared = squared
+        self.ridge_weight = ridge_weight
 
     def get_uppertriangular(self, rdm):
         """Get upper triangle of a RDM
@@ -151,7 +152,7 @@ class WRSA():
 
             """Optimize model with the brain RDMs"""
             theta_corr_regress = rsatoolbox.model.fit_regress(
-                model, brain_train_dataset, method='corr')  # returns 15 thetas because 15 participants
+                model, brain_train_dataset, method='corr', ridge_weight=self.ridge_weight)  # returns 15 thetas because 15 participants
 
             """Prediciton"""
             rdm_corr = model.predict_rdm(theta_corr_regress)
