@@ -316,7 +316,8 @@ class RSA():
         for counter, roi in enumerate(self.brain_rdms):
 
             self.find_datatype(op.join(self.brain_rdms_path, roi))
-
+            other_RSA.find_datatype(op.join(self.brain_rdms_path, roi))
+            
             # Calculate Noise Ceiing for this ROI
             noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric, self.squared)
             self.this_nc = noise_ceiling_calc.noise_ceiling()
