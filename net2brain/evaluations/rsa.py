@@ -318,7 +318,7 @@ class RSA():
             self.find_datatype(op.join(self.brain_rdms_path, roi))
 
             # Calculate Noise Ceiing for this ROI
-            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric)
+            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric, self.squared)
             self.this_nc = noise_ceiling_calc.noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
@@ -326,7 +326,7 @@ class RSA():
 
             # Calculate Noise Ceiing for this ROI
             other_RSA.this_nc = NoiseCeiling(roi, op.join(other_RSA.brain_rdms_path, roi),
-                                             self.distance_metric).noise_ceiling()
+                                             self.distance_metric, self.squared).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             other_layers_dict = other_RSA.evaluate_roi(roi)
