@@ -15,7 +15,7 @@ class WRSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, model_name, datatype="None", save_path="./", distance_metric="Euclidian"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, squared=True, datatype="None", save_path="./", distance_metric="Euclidian"):
         """Initiate RSA
 
         Args:
@@ -36,6 +36,7 @@ class WRSA():
         self.datatype = datatype
         self.distance_metric = distance_metric
         self.model_name = model_name
+        self.squared = squared
 
     def get_uppertriangular(self, rdm):
         """Get upper triangle of a RDM
@@ -198,7 +199,7 @@ class WRSA():
         for counter, roi in enumerate(self.brain_rdms):
 
             # Calculate Noise Ceiing for this ROI
-            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
+            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric, self.squared).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             layer_dict = self.create_weighted_model(roi)
