@@ -106,7 +106,8 @@ class WRSA():
 
         """Do the same with the current ROI"""
         roi_dict = load(op.join(self.brain_rdms_path, this_roi))
-        roi_RDM = roi_dict["arr_0"]
+        keys = list(roi_dict.keys())
+        roi_RDM = roi_dict[keys[0]]
 
         """Turn ROIs into arrays of upper triangle"""
         roi_upper = []
