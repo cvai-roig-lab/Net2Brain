@@ -11,6 +11,7 @@ from PIL import Image
 import re
 import warnings
 import requests
+import subprocess
 
 class DatasetError(Exception):
     pass
@@ -66,8 +67,10 @@ class BaseDataset:
                 
                 # Check if file already exists and has correct size
                 if os.path.exists(path):
-                    response = requests.head(url)
+                    response = requests.get(url, stream=True)
                     expected_size = int(response.headers.get('content-length', 0))
+                    response.close()
+                    
                     actual_size = os.path.getsize(path)
                     
                     if expected_size > 0 and actual_size == expected_size:
