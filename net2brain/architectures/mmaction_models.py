@@ -61,7 +61,7 @@ class MMAction(NetSetBase):
 
     def get_feature_cleaner(self, data_type):
         if data_type == 'video':
-            return self.clean_extracted_features
+            return MMAction.clean_extracted_features
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
 
