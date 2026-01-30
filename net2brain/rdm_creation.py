@@ -10,9 +10,6 @@ from .rdm.feature_iterator import FeatureIterator
 from .rdm.rdm import LayerRDM, RDMFileFormatType
 
 
-
-
-
 class RDMCreator:
     """
     This class creates RDMs from the features that have been extracted with the feature extraction
@@ -54,7 +51,8 @@ class RDMCreator:
 
         Args:
             x: torch.Tensor
-                The features to create the RDM from. The shape of the tensor must be (num_stimuli, feature_dim).
+                The features to create the RDM from. The shape of the tensor must be (num_stimuli, *), where * is the
+                shape of the feature vector that gets flattened.
             distance: str or callable
                 The distance metric to use. If a string is given, it must be a valid distance function name. If a
                 callable is passed, it must define a custom distance function.
@@ -78,10 +76,12 @@ class RDMCreator:
                     distance: Union[str, Callable] = 'pearson',
                     standardize_on_dim: Optional[int] = None,
                     chunk_size: Optional[int] = None,
+                    multi_timepoint_rdms: Optional[str] = None,
                     pooling: Optional[str] = None,
                     dim_reduction: Optional[str] = None,
                     n_samples_estim: int = 100,
                     n_components: Optional[int] = 10000,
+                    srp_before_pca: bool = False,
                     max_dim_allowed: Optional[int] = None,
                     **kwargs
                     ) -> Path:
@@ -107,9 +107,11 @@ class RDMCreator:
             chunk_size: int or None
                 If not None, the RDM is created in chunks of the given size. This can be used to reduce the memory
                 consumption.
+            multi_timepoint_rdms: str or None, options are `clip` and `all_timepoints`
             pooling: str or None
                 Pooling method for variable-length features. Options: 'mean', 'max', 'first', 'last'.
-                Required when features have more than 2 dimensions (e.g., LLM features with sequence dimension).
+                Required when features have more than 2 dimensions with a variable dimension (e.g.,
+                LLM features with sequence dimension).
             dim_reduction: str or None
                 Whether to apply dimensionality reduction to the features before creating the RDMs. Only supported
                 when the features are *not* stored in a consolidated format. For consolidated storing of features,
@@ -121,6 +123,8 @@ class RDMCreator:
             n_components: int or None
                 The number of components to reduce the features to. If None, the number of components is estimated.
                 For PCA, `n_components` must be smaller than `n_samples_estim`.
+            srp_before_pca (bool): Whether to apply Sparse Random Projection (SRP) before PCA. Use when features are so
+                high-dimensional that PCA runs out of memory. Num of dims estimated by SRP.
             max_dim_allowed: int or None
                 Optional: The threshold over which the dimensionality reduction is applied. If None, it is always
                 applied.
@@ -133,27 +137,45 @@ class RDMCreator:
             save_path = Path(save_path)
         save_path.mkdir(parents=True, exist_ok=True)
 
-        if dim_reduction:
-            iterator = FeatureIterator(feature_path,
-                                       pooling=pooling,
-                                       dim_reduction=dim_reduction,
-                                       n_samples_estim=n_samples_estim,
-                                       n_components=n_components,
-                                       max_dim_allowed=max_dim_allowed)
-        else:
-            iterator = FeatureIterator(feature_path, pooling=pooling)
-            
-            with tqdm(total=len(iterator), desc='Creating RDMs', disable=not self.verbose) as bar:
-                for layer, stimuli, feats in iterator:
-                    feats = torch.from_numpy(feats).to(self.device)
+        iterator = FeatureIterator(feature_path,
+                                   multi_timepoint_rdms=multi_timepoint_rdms,
+                                   dim_reduction=dim_reduction,
+                                   n_samples_estim=n_samples_estim,
+                                   n_components=n_components,
+                                   srp_before_pca=srp_before_pca,
+                                   max_dim_allowed=max_dim_allowed,
+                                   pooling=pooling)
+        with tqdm(total=len(iterator), desc='Creating RDMs', disable=not self.verbose) as bar:
+            for layer, stimuli, feats in iterator:
+                feats = torch.from_numpy(feats).to(self.device)
+                if multi_timepoint_rdms is not None:
+                    clips = feats.shape[0]
+                    rdm_c = []
+                    for clip_idx in range(clips):
+                        if multi_timepoint_rdms == 'clip':
+                            rdm_t = self._create_rdm(feats[clip_idx], distance=distance, chunk_size=chunk_size,
+                                                     standardize_on_dim=standardize_on_dim, **kwargs)
+                        else:
+                            timepoints = feats.shape[1]
+                            rdm_t = []
+                            for time_idx in range(timepoints):
+                                rdm_ct = self._create_rdm(feats[clip_idx, time_idx], distance=distance, chunk_size=chunk_size,
+                                                        standardize_on_dim=standardize_on_dim, **kwargs)
+                                rdm_t.append(rdm_ct)
+                            rdm_t = torch.stack(rdm_t, dim=0)
+                        rdm_c.append(rdm_t)
+                    rdm_m = torch.stack(rdm_c, dim=0)
+                else:
                     rdm_m = self._create_rdm(feats, distance=distance, chunk_size=chunk_size,
-                                            standardize_on_dim=standardize_on_dim, **kwargs)
-                    meta = dict(distance=distance)
-                    if pooling is not None:
-                        meta['pooling'] = pooling
+                                                standardize_on_dim=standardize_on_dim, **kwargs)
 
-                    rdm = LayerRDM(rdm=rdm_m, layer_name=layer, stimuli_name=stimuli, meta=meta)
-                    rdm.save(save_path, file_format=save_format)
+                meta = dict(distance=distance, multi_timepoint_rdms=multi_timepoint_rdms)
 
-                    bar.update()
+                if pooling is not None:
+                    meta['pooling'] = pooling
+
+                rdm = LayerRDM(rdm=rdm_m, layer_name=layer, stimuli_name=stimuli, meta=meta)
+                rdm.save(save_path, file_format=save_format)
+
+                bar.update()
         return save_path

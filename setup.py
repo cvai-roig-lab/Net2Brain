@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = 'net2brain',
-    version = '1.1.2',
-    author = 'Roig Lab',
+    name='net2brain',
+    version='1.2.6',
+    author='Roig Lab',
     packages=find_packages(),
     package_data={
         "": ["*.json"],
@@ -18,7 +18,7 @@ setup(
         'eva-decord',  # for video models on mac devices
         'sentencepiece',
         'flax',
-        'transformers',
+        'transformers==4.40.2',
         'cvxopt',
         'einops',
         'accelerate',
@@ -45,9 +45,10 @@ setup(
         'rsatoolbox == 0.0.3',
         'pytorchvideo @ git+https://github.com/facebookresearch/pytorchvideo.git@eb04d1b', # NOTE: Change when new release published
         'clip @ git+https://github.com/openai/CLIP.git',
-        'mit_semseg @ git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master'
+        'mit_semseg @ git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master',
+        'openmim'
     ],
-        extras_require={
+    extras_require={
         "test": [
             "pytest",
             "pytest-cov",

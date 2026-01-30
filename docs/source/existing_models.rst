@@ -23,8 +23,8 @@ Available Netsets
 3. **PyTorch Hub** (`Torchhub`)
    This netset includes models for a variety of visual tasks accessible through the torch.hub API, not encompassed by torchvision. For more, see the `PyTorch Hub documentation <https://pytorch.org/docs/stable/hub.html>`_.
 
-4. **PyTorch Video** (`Pyvideo`)
-   Offers models for video analysis, including action recognition and motion classification. Explore more on the `PyTorch Video documentation <https://pytorch.org/docs/stable/hub.html>`_.
+4. **MMAction** (`MMAction`)
+   Offers a wider range of video models, including more recent transformer-based architectures. Explore more on the `MMAction documentation <https://mmaction2.readthedocs.io/en/latest/get_started/overview.htmll>`_.
 
 5. **Unet** (`Unet`)
    Unet models are specialized for abnormality segmentation in brain MRI and are accessible through torch.hub. Learn more at the `Unet hub page <https://pytorch.org/hub/mateuszbuda_brain-segmentation-pytorch_unet/>`_.
@@ -32,22 +32,19 @@ Available Netsets
 6. **Taskonomy** (`Taskonomy`)
    Networks trained for distinct visual tasks, instrumental in discerning relationships between various tasks. Insights can be gained from the `Taskonomy GitHub page <https://github.com/StanfordVL/taskonomy>`_.
 
-7. **Slowfast** (`Pyvideo`)
-   These are top-tier video classification models from the Kinetics 400 dataset, available through torch.hub. Visit the `PyTorchVideo GitHub repository <https://github.com/facebookresearch/pytorchvideo>`_ for more.
-
-8. **CLIP** (`Clip`)
+7. **CLIP** (`Clip`)
    Multimodal neural networks combining vision and language, trained on diverse (image, text) pairs. Explore more at the `CLIP GitHub repository <https://github.com/openai/CLIP>`_.
 
-9. **CorNet** (`Cornet`)
+8. **CorNet** (`Cornet`)
    Networks that emulate the ventral visual pathway's structure, incorporating recurrent connections. Discover more at the `CORnet GitHub repository <https://github.com/dicarlolab/CORnet>`_.
 
-10. **Huggingface** (`Huggingface`)
+9.  **Huggingface** (`Huggingface`)
     Features a broad range of advanced language models that deal with text-input. Additional details can be found on the `Huggingface homepage <https://huggingface.co/>`_.
 
-11. **Yolo** (`Yolo`)
+10. **Yolo** (`Yolo`)
     Includes fast, accurate YOLOv5 models for real-time object detection in images and video streams. Further information is on the `YOLO GitHub repository <https://github.com/ultralytics/yolov5>`_.
 
-12. **Toolbox** (`Toolbox`)
+11. **Toolbox** (`Toolbox`)
     A set of networks that are implemented within Net2Brain itself, providing immediate access to specialized neural network functionalities.
 
 

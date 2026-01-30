@@ -1,6 +1,11 @@
 import warnings
 import json
 import importlib
+from pathlib import Path
+import shutil
+import requests
+import urllib.request
+
 
 def get_function_from_module(function_string):
     module_name, function_name = function_string.rsplit('.', 1)
@@ -23,9 +28,30 @@ def get_function_from_module(function_string):
     return getattr(module, function_name)
 
 
+def download_to_path(url: str, dest: Path) -> None:
+    tmp = dest.with_suffix(dest.suffix + ".tmp")
+    with urllib.request.urlopen(url) as r, open(tmp, "wb") as f:
+        shutil.copyfileobj(r, f)
+    tmp.replace(dest)  # atomic-ish move
 
 
+def download_github_folder(owner, repo, repo_path, out_dir):
+    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{repo_path}"
+    r = requests.get(url)
+    r.raise_for_status()
 
+    for item in r.json():
+        if item["type"] == "file":
+            out = Path(out_dir) / item["name"]
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(requests.get(item["download_url"]).content)
+        elif item["type"] == "dir":
+            download_github_folder(
+                owner,
+                repo,
+                item["path"],
+                Path(out_dir) / item["name"],
+            )
 
 
 def load_from_json(config_path, model_name):

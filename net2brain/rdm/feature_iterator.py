@@ -5,6 +5,8 @@ from enum import Enum
 from functools import lru_cache, cached_property
 from pathlib import Path
 from typing import Union, Tuple, List, Iterator, Dict, Type, Iterable, Callable, Optional
+from multiprocessing import Pool, get_context
+from functools import partial
 
 import numpy as np
 
@@ -29,23 +31,23 @@ def nsorted(iterable: Iterable, key: Optional[Callable] = None, reverse: bool = 
 def apply_pooling_numpy(features: np.ndarray, pooling: str) -> np.ndarray:
     """
     Apply pooling to numpy features that may have variable length.
-    
+
     Args:
         features: np.ndarray
             Features of shape (seq_len, feature_dim) or (feature_dim,)
         pooling: str
             Pooling method. Options: 'mean', 'max', 'first', 'last'
-    
+
     Returns:
         np.ndarray: Pooled features of shape (feature_dim,)
     """
     if features.ndim == 1:
         # Already pooled or fixed-length features
         return features
-    
+
     if features.ndim != 2:
         raise ValueError(f"Features must be 1D or 2D array, got {features.ndim}D")
-    
+
     if pooling == 'mean':
         return features.mean(axis=0)
     elif pooling == 'max':
@@ -128,15 +130,19 @@ class FeatureEngine(ABC):
     """
 
     def __init__(self, root: Path,
+                 multi_timepoint_rdms=None,
                  dim_reduction=None,
                  n_samples_estim=100,
                  n_components=10000,
+                 srp_before_pca=False,
                  max_dim_allowed=None,
                  pooling=None):
         self.root = Path(root)
+        self.multi_timepoint_rdms = multi_timepoint_rdms
         self.dim_reduction = dim_reduction
         self.n_samples_estim = n_samples_estim
         self.n_components = n_components
+        self.srp_before_pca = srp_before_pca
         self.max_dim_allowed = max_dim_allowed
         self.pooling = pooling
 
@@ -215,14 +221,14 @@ class NPZConsolidateEngine(FeatureEngine):
         stimuli, feats = zip(*nsorted(feat_npz.items(), key=lambda x: x[0]))
         pure_item = Path(str(item).split('consolidated_')[-1]) if 'consolidated' in str(item) else item
         layer = pure_item.stem
-        
+
         # Apply pooling if specified
         if self.pooling is not None:
             pooled_feats = []
             for feat in feats:
                 pooled_feats.append(apply_pooling_numpy(feat, self.pooling))
             feats = pooled_feats
-        
+
         return layer, stimuli, np.stack(feats)
 
 
@@ -241,73 +247,99 @@ class NPZSeparateEngine(FeatureEngine):
     def _stimuli(self) -> List[Path]:
         return nsorted(self.root.iterdir(), key=lambda x: x.stem)
 
-    def next(self, item) -> Tuple[str, List[str], np.ndarray]:
+    def helper(self, sample, item, clip_idx=None, time_idx=None) -> Tuple[List[str], np.ndarray]:
         stimuli = []
-        sample = open_npz(self._stimuli[0])[item]
-        
-        # Check if features have variable length and pooling is needed
-        if sample.ndim > 1 and self.pooling is None:
-            # Check a few files to see if they have different sequence lengths
-            shapes = [sample.shape]
-            for i, file in enumerate(self._stimuli[1:min(5, len(self._stimuli))]):  # Check up to 5 files
-                other_sample = open_npz(file)[item]
-                shapes.append(other_sample.shape)
-                if other_sample.shape != sample.shape:
-                    raise ValueError(
-                        f"Variable-length features detected for layer '{item}'. "
-                        f"Found shapes: {shapes[0]} and {other_sample.shape}. "
-                        f"Please specify a pooling method: 'mean', 'max', 'first', or 'last'."
-                    )
-        
-        
-        # Apply pooling to sample to get the correct feature dimension
-        if self.pooling is not None:
-            sample = apply_pooling_numpy(sample, self.pooling)
-        
+        if clip_idx is not None and time_idx is not None:
+            sample = sample[:, clip_idx, time_idx]
+        elif clip_idx is not None:
+            sample = sample[:, clip_idx]
+        else:
+            sample = sample
+            # Check if features have variable length and pooling is needed
+            if sample.ndim > 1 and self.pooling is None:
+                # Check a few files to see if they have different sequence lengths
+                shapes = [sample.shape]
+                for i, file in enumerate(self._stimuli[1:min(5, len(self._stimuli))]):  # Check up to 5 files
+                    other_sample = open_npz(file)[item]
+                    shapes.append(other_sample.shape)
+                    if other_sample.shape != sample.shape:
+                        raise ValueError(
+                            f"Variable-length features detected for layer '{item}'. "
+                            f"Found shapes: {shapes[0]} and {other_sample.shape}. "
+                            f"Please specify a pooling method: 'mean', 'max', 'first', or 'last'."
+                        )
+            # Apply pooling to sample to get the correct feature dimension
+            if self.pooling is not None:
+                sample = apply_pooling_numpy(sample, self.pooling)
+
         feat_dim = sample.squeeze().shape
         if feat_dim == ():
             feat_dim = (1,)
-        
+
         # Check if dimensionality reduction is needed
         if self.dim_reduction and (not self.max_dim_allowed or len(sample.flatten()) > self.max_dim_allowed):
-            # For dimensionality reduction, we need to prepare data differently
-            # First, load and pool all features
-            all_features = []
-            for file in self._stimuli:
+            # Estimate the dimensionality reduction from a subset of the data
+            pooling_partial = partial(apply_pooling_numpy, pooling=self.pooling) if self.pooling else None
+            fitted_transform, self.n_components = estimate_from_files(
+                self._stimuli, item, feat_dim, open_npz, self.dim_reduction,
+                self.n_samples_estim, self.n_components, self.srp_before_pca, pooling_partial,
+                clip_idx, time_idx
+            )
+            feats = np.empty((len(self._stimuli), self.n_components))
+            for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
-                    continue
-                feat = open_npz(file)[item]
-                if self.pooling is not None:
-                    feat = apply_pooling_numpy(feat, self.pooling)
-                all_features.append(feat.reshape(1, -1))
+                if clip_idx is not None:
+                    if time_idx is not None:
+                        feats[i, :] = fitted_transform.transform(open_npz(file)[item][:, clip_idx, time_idx].reshape(1, -1)).squeeze()
+                    else:
+                        feats[i, :] = fitted_transform.transform(open_npz(file)[item][:, clip_idx].reshape(1, -1)).squeeze()
+                else:
+                    feat = open_npz(file)[item]
+                    if self.pooling is not None:
+                        feat = apply_pooling_numpy(feat, self.pooling)
+                    feats[i, :] = fitted_transform.transform(feat.reshape(1, -1)).squeeze()
                 stimuli.append(file.stem)
-            
-            # Stack for dimensionality reduction estimation
-            stacked_features = np.vstack(all_features)
-            
-            # Estimate the dimensionality reduction from a subset of the data
-            fitted_transform, self.n_components = estimate_from_files(self._stimuli, item, feat_dim, open_npz,
-                                                     self.dim_reduction, self.n_samples_estim, self.n_components)
-            
-            feats = np.empty((len(self._stimuli), self.n_components))
-            for i, feat in enumerate(all_features):
-                feats[i, :] = fitted_transform.transform(feat).squeeze()
+        # Otherwise load features without dimensionality reduction
         else:
-            # Load features without dimensionality reduction
             feats = np.empty((len(self._stimuli), *feat_dim))
             for i, file in enumerate(self._stimuli):
                 if not file.suffix == ".npz":
                     warnings.warn(f"File {file} is not a valid feature file. Skipping...")
                     continue
-                feat = open_npz(file)[item]
-                
-                if self.pooling is not None:
-                    feat = apply_pooling_numpy(feat, self.pooling)
-                
-                feats[i, :] = feat.squeeze()
+                if clip_idx is not None:
+                    if time_idx is not None:
+                        feats[i, :] = open_npz(file)[item][:, clip_idx, time_idx].squeeze()
+                    else:
+                        feats[i, :] = open_npz(file)[item][:, clip_idx].squeeze()
+                else:
+                    feat = open_npz(file)[item]
+                    if self.pooling is not None:
+                        feat = apply_pooling_numpy(feat, self.pooling)
+                    feats[i, :] = feat.squeeze()
                 stimuli.append(file.stem)
-        
+
+        return stimuli, feats
+
+    def next(self, item) -> Tuple[str, List[str], np.ndarray]:
+        sample = open_npz(self._stimuli[0])[item]
+        if self.multi_timepoint_rdms is None:
+            stimuli, feats = self.helper(sample, item)
+        else:
+            clips = sample.shape[1]
+            feats_c = []
+            for clip_idx in range(clips):
+                if self.multi_timepoint_rdms == 'clip':
+                    stimuli, feats_t = self.helper(sample, item, clip_idx)
+                else:
+                    timepoints = sample.shape[2]
+                    feats_t = []
+                    for time_idx in range(timepoints):
+                        stimuli, feats_ct = self.helper(sample, item, clip_idx, time_idx)
+                        feats_t.append(feats_ct)
+                    feats_t = np.stack(feats_t, axis=0)
+                feats_c.append(feats_t)
+            feats = np.stack(feats_c, axis=0)
         return item, stimuli, feats
 
 
