@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='net2brain',
-    version='1.1.2',
+    version='1.2.6',
     author='Roig Lab',
     packages=find_packages(),
     package_data={
