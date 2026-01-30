@@ -316,9 +316,10 @@ class RSA():
         for counter, roi in enumerate(self.brain_rdms):
 
             self.find_datatype(op.join(self.brain_rdms_path, roi))
-
+            other_RSA.find_datatype(op.join(self.brain_rdms_path, roi))
+            
             # Calculate Noise Ceiing for this ROI
-            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric)
+            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric, self.squared)
             self.this_nc = noise_ceiling_calc.noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
@@ -326,7 +327,7 @@ class RSA():
 
             # Calculate Noise Ceiing for this ROI
             other_RSA.this_nc = NoiseCeiling(roi, op.join(other_RSA.brain_rdms_path, roi),
-                                             self.distance_metric).noise_ceiling()
+                                             self.distance_metric, self.squared).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             other_layers_dict = other_RSA.evaluate_roi(roi)
@@ -336,7 +337,7 @@ class RSA():
             model_ii = np.argmin([layer_dict[r_name] for layer_dict in model_layers_dict])
             other_ii = np.argmin([layer_dict[r_name] for layer_dict in other_layers_dict])
 
-            tstat, p = stats.ttest_ind(other_layers_dict[other_ii][r_array_name], model_layers_dict[model_ii][r_array_name])
+            tstat, p = stats.ttest_ind(other_layers_dict[other_ii][r_array_name][0], model_layers_dict[model_ii][r_array_name][0])
 
             scan_key = "(" + str(counter) + ") " + roi[:-4]
 

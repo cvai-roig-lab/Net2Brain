@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import re
 import warnings
-
+import requests
+import subprocess
+import shutil
 
 class DatasetError(Exception):
     pass
@@ -24,7 +26,6 @@ def load_dataset(dataset_name, path=None):
         DeprecationWarning,
         stacklevel=2
     )
-    # Here you can still call the old function if you maintain it for backward compatibility or remove it after a transition period.
 
 def list_available_datasets():
     available_datasets = [cls.__name__ for cls in BaseDataset.__subclasses__()]
@@ -38,30 +39,151 @@ class BaseDataset:
         self.path = path or os.getcwd()
         self.dataset_folder = os.path.join(self.path, self.dataset_name)
 
-    def download_and_extract_zip(self):
-        if self.dataset_name not in self.DATASET_URLS:
-            raise ValueError(f"Unknown dataset: {self.dataset_name}.")
-        
-        url = self.DATASET_URLS[self.dataset_name]
 
+    def download_and_extract_zip(self):
+        """
+        Download and extract dataset archives.
+        
+        For multi-part archives, create with these two commands:
+        1. zip -r -9 dataset.zip folder/ -x "*.DS_Store" "*__MACOSX*"
+        2. split -b 9000m dataset.zip dataset.part
+        """
+        urls = self.DATASET_URLS[self.dataset_name]
         if not os.path.exists(self.dataset_folder):
-            print(f"Downloading dataset '{self.dataset_name}' to {self.path}...")
-            zip_file_path = os.path.join(self.path, "temporary_gdrive.zip")
-            gdown.download(url, zip_file_path, quiet=False)
+            print(f"Downloading dataset '{self.dataset_name}'...")
+            if isinstance(urls, str):
+                urls = [urls]
             
-            with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
-                zip_file.extractall(self.path)
-            print(f"Files extracted to {self.path}")
+            local_files = []
+            for i, url in enumerate(urls):
+                # Determine filename based on number of parts
+                if len(urls) > 1:
+                    # Use split naming: partaa, partab, partac, ...
+                    suffix = chr(ord('a') + i // 26) + chr(ord('a') + i % 26)
+                    filename = f"{self.dataset_name}.part{suffix}"
+                else:
+                    filename = f"{self.dataset_name}.zip"
+                
+                path = os.path.join(self.path, filename)
+                
+                # Check if file already exists and has correct size
+                if os.path.exists(path):
+                    response = requests.get(url, stream=True)
+                    expected_size = int(response.headers.get('content-length', 0))
+                    response.close()
+                    
+                    actual_size = os.path.getsize(path)
+                    
+                    if expected_size > 0 and actual_size == expected_size:
+                        print(f"{filename} already downloaded, skipping")
+                        local_files.append(path)
+                        continue
+                    else:
+                        print(f"{filename} incomplete ({actual_size}/{expected_size} bytes), re-downloading")
+                        os.remove(path)
+                
+                # Download with progress bar
+                response = requests.get(url, stream=True)
+                total_size = int(response.headers.get('content-length', 0))
+                
+                with open(path, 'wb') as f, tqdm(
+                    desc=filename,
+                    total=total_size,
+                    unit='B',
+                    unit_scale=True,
+                    unit_divisor=1024,
+                ) as pbar:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                        pbar.update(len(chunk))
+                
+                local_files.append(path)
             
-            os.remove(zip_file_path)
-    
+            # Merge parts if multiple files
+            if len(urls) > 1:
+                print("Merging archive parts...")
+                merged_zip = os.path.join(self.path, f"{self.dataset_name}.zip")
+                
+                with open(merged_zip, 'wb') as outfile:
+                    for part in sorted(local_files):
+                        with open(part, 'rb') as infile:
+                            outfile.write(infile.read())
+                
+                zip_path = merged_zip
+            else:
+                zip_path = local_files[0]
+            
+            # Extract
+            print("Extracting archive...")
+            if not os.path.exists(self.dataset_folder):
+                os.makedirs(self.dataset_folder)
+            
+            result = subprocess.run(
+                ['unzip', '-o', zip_path, '-d', self.dataset_folder],
+                capture_output=True,
+                text=True
+            )
+            
+            # Check extraction results - look for any files/folders
+            extracted_files = os.listdir(self.dataset_folder)
+            
+            if not extracted_files:
+                raise RuntimeError(
+                    f"Extraction failed - no files extracted.\n"
+                    f"stderr: {result.stderr}"
+                )
+            
+            # Auto-unwrap if single folder extracted (ignoring junk files)
+            junk_patterns = {'__MACOSX', '.DS_Store', '.AppleDouble', '.LSOverride'}
+            real_files = [f for f in extracted_files if f not in junk_patterns]
+            
+            if len(real_files) == 1 and os.path.isdir(os.path.join(self.dataset_folder, real_files[0])):
+                inner_folder = os.path.join(self.dataset_folder, real_files[0])
+                for item in os.listdir(inner_folder):
+                    shutil.move(os.path.join(inner_folder, item), self.dataset_folder)
+                os.rmdir(inner_folder)
+                print(f"Unwrapped nested folder: {real_files[0]}")
+            
+            # Clean up junk folders
+            for junk in junk_patterns:
+                junk_path = os.path.join(self.dataset_folder, junk)
+                if os.path.exists(junk_path):
+                    if os.path.isdir(junk_path):
+                        shutil.rmtree(junk_path)
+                    else:
+                        os.remove(junk_path)
+            
+            if result.returncode != 0:
+                print(f"Warning: Extraction completed")
+            else:
+                print(f"Successfully extracted")
+            
+            # Cleanup downloaded files
+            for f in local_files:
+                if os.path.exists(f):
+                    os.remove(f)
+            if len(urls) > 1 and os.path.exists(merged_zip):
+                os.remove(merged_zip)
     
     def _load(self):
         raise NotImplementedError("This method should be implemented by subclass.")
     
     @classmethod
-    def load_dataset(cls, path=None):
-        instance = cls(path)
+    def load_dataset(cls, path=None, save_dir=None):
+        """
+        Load the dataset, downloading if necessary.
+        
+        Parameters
+        ----------
+        path : str, optional
+            Deprecated. Use save_dir instead. Path where dataset will be downloaded.
+        save_dir : str, optional
+            Directory where dataset folder will be created. Defaults to current directory.
+        """
+        if path is not None and save_dir is None:
+            # Backward compatibility
+            save_dir = path
+        instance = cls(path=save_dir)
         return instance._load()
 
 
@@ -69,7 +191,7 @@ class BaseDataset:
 class DatasetBonnerPNAS2017(BaseDataset):
     dataset_name = "bonner_pnas2017"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi6GiRVCbBZxLQASNV1qYz/bonner_pnas2017.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/y6TPinCm6aQT8dR/download"
     }
 
     def __init__(self, path=None):
@@ -82,12 +204,10 @@ class DatasetBonnerPNAS2017(BaseDataset):
         live_data = os.path.join(self.dataset_folder, "brain_data_live_study")
         return {"stimuli_path": stimuli_path, "roi_path": roi_path, "PPA_Study": live_data}
     
-    
-    
 class Dataset78images(BaseDataset):
     dataset_name = "78images"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiLSqoiEArM6Mi8qZDpyxr/78images.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/QZWwA8fxikHeLJ4/download"
     }
 
     def __init__(self, path=None):
@@ -103,7 +223,7 @@ class Dataset78images(BaseDataset):
 class Workhsop_Harry_Potter_Cognition(BaseDataset):
     dataset_name = "Workshop_Harry_Potter_Cognition"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi15Hgyt64LPdiKMnNT3P4/Workshop_Harry_Potter_Cognition.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/jKBNj4A9b2wjmdS/download"
     }
 
     def __init__(self, path=None):
@@ -120,7 +240,7 @@ class Workhsop_Harry_Potter_Cognition(BaseDataset):
 class Dataset92images(BaseDataset):
     dataset_name = "92images"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiVMG4j85ZS2j8tG9cGfAj/92images.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/QTENpN3Cozk5x9Q/download"
     }
 
     def __init__(self, path=None):
@@ -137,7 +257,7 @@ class Dataset92images(BaseDataset):
 class DatasetBoldMoments(BaseDataset):
     dataset_name = "BoldMoments"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiMgXvrfGeFjNgm5wyTTSJ/BoldMoments.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/DriMWMm2SBLDsTt/download"
     }
 
     def __init__(self, path=None):
@@ -158,7 +278,7 @@ class DatasetBoldMoments(BaseDataset):
 class WorkshopCuttingGardens(BaseDataset):
     dataset_name = "cutting_gardens23"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiHrLWdMVTVJGWBmrGcYP1/cutting_gardens23.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/iR5SLNxdk7ATtbx/download"
     }
 
     def __init__(self, path=None):
@@ -176,7 +296,7 @@ class WorkshopCuttingGardens(BaseDataset):
 class Tutorial_LE_Results(BaseDataset):
     dataset_name = "Tutorial_LE_Results"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiRqQSBqmEDVtjJZ7TPGmM/Tutorial_LE_Results.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/EPDJePtWfjk2x65/download"
     }
 
     def __init__(self, path=None):
@@ -201,7 +321,7 @@ class Tutorial_LE_Results(BaseDataset):
 class DatasetNSD_872(BaseDataset):
     dataset_name = "NSD Dataset"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiSExLpb1b84jTi4QYXH2n/NSD%20Dataset.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/Rt4B9a2yJ5XNXAG/download"
     }
 
 
@@ -677,8 +797,11 @@ class DatasetNSD_872(BaseDataset):
 class DatasetAlgonauts_NSD(DatasetNSD_872):
     dataset_name = "Algonauts_NSD"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiR2qmmGe3cUPrYp2N9oet/Algonauts_NSD.zip"
-    }
+        dataset_name: ["https://www.dropbox.com/scl/fi/k9v156pqilnbw6rl79uph/Algonauts_NSD.partaa?rlkey=1sjrw83exg19b9duqt5y67epn&st=1k931yse&dl=1",
+                        "https://www.dropbox.com/scl/fi/r06tmr09weloq2726q0nm/Algonauts_NSD.partab?rlkey=49h6rmkwejyuoo0va32ct0kmx&st=apt1n0je&dl=1",
+                        "https://www.dropbox.com/scl/fi/8u1tu681k334umc99x72p/Algonauts_NSD.partac?rlkey=1otn71sl3dw49g1ib0lj2tho1&st=kbf0xdcp&dl=1",
+                        "https://www.dropbox.com/scl/fi/z2xadsoc32aycn7nopes9/Algonauts_NSD.partad?rlkey=ot0z9x6uegd6a9smwhhy0ntzq&st=xfg8fi1w&dl=1",
+                        "https://www.dropbox.com/scl/fi/unhc1xcj4krm3roqr3slp/Algonauts_NSD.partae?rlkey=8wro5posgs2zfarv4bf44cope&st=8q0uw8e5&dl=1"]}
 
     def __init__(self, path=None):
         super().__init__(path)
@@ -711,7 +834,7 @@ class DatasetAlgonauts_NSD(DatasetNSD_872):
 class DatasetNSD_25(DatasetNSD_872):
     dataset_name = "NSD_25_images"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fi6sDQMUTHQeuj91a47s2c/NSD_25_images.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/ie2t3JNbryz43Td/download"
     }
 
     def __init__(self, path=None):
@@ -733,7 +856,7 @@ class DatasetNSD_25(DatasetNSD_872):
 class DatasetThings_fMRI(BaseDataset):
     dataset_name = "Things_test"
     DATASET_URLS = {
-        dataset_name: "https://hessenbox-a10.rz.uni-frankfurt.de/dl/fiBk8D3GYTMefWCgvAt7mV/Things_test.zip"
+        dataset_name: "https://next.hessenbox.de/index.php/s/q52P27QGscAWde3/download"
     }
 
 

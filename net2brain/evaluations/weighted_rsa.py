@@ -15,7 +15,7 @@ class WRSA():
     """Evaluation with RSA
     """
 
-    def __init__(self, model_rdms_path, brain_rdms_path, model_name, datatype="None", save_path="./", distance_metric="Euclidian"):
+    def __init__(self, model_rdms_path, brain_rdms_path, model_name, squared=True, datatype="None", save_path="./", distance_metric="Euclidean", ridge_weight=0):
         """Initiate RSA
 
         Args:
@@ -34,8 +34,10 @@ class WRSA():
         # Other parameters
         self.save_path = save_path
         self.datatype = datatype
-        self.distance_metric = distance_metric
+        self.distance_metric = distance_metric.lower()
         self.model_name = model_name
+        self.squared = squared
+        self.ridge_weight = ridge_weight
 
     def get_uppertriangular(self, rdm):
         """Get upper triangle of a RDM
@@ -105,7 +107,8 @@ class WRSA():
 
         """Do the same with the current ROI"""
         roi_dict = load(op.join(self.brain_rdms_path, this_roi))
-        roi_RDM = roi_dict["arr_0"]
+        keys = list(roi_dict.keys())
+        roi_RDM = roi_dict[keys[0]]
 
         """Turn ROIs into arrays of upper triangle"""
         roi_upper = []
@@ -149,7 +152,7 @@ class WRSA():
 
             """Optimize model with the brain RDMs"""
             theta_corr_regress = rsatoolbox.model.fit_regress(
-                model, brain_train_dataset, method='corr')  # returns 15 thetas because 15 participants
+                model, brain_train_dataset, method='corr', ridge_weight=self.ridge_weight)  # returns 15 thetas because 15 participants
 
             """Prediciton"""
             rdm_corr = model.predict_rdm(theta_corr_regress)
@@ -198,7 +201,7 @@ class WRSA():
         for counter, roi in enumerate(self.brain_rdms):
 
             # Calculate Noise Ceiing for this ROI
-            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi)).noise_ceiling()
+            self.this_nc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric, self.squared).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             layer_dict = self.create_weighted_model(roi)
