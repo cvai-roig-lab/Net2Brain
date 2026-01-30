@@ -17,7 +17,15 @@ One of the primary objectives of Net2Brain is to facilitate the collaboration be
 
 To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks), or our latest [paper release](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full).
 
-# Updates 08/23
+
+# Updates 
+
+# Updates 01/26
+1. **New netset** `MMAction`, with support for 50 video models
+2. Support for time-resolved RDM creation for model features with multiple timepoints
+3. New option to perform SRP before PCA & Pooling operation for uneven features done when estimating dimensionality reduction transform
+
+# Updates 08/25
 
 1. Added pooling support for variable-length features for **RDMs and Encoding** and introduced new `pooling` parameter
 2. Updated Notebooks accordingly 
