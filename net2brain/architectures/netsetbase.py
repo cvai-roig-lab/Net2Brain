@@ -37,11 +37,21 @@ class NetSetBase:
 
     @classmethod
     def initialize_netset(cls, model_name, netset_name, device):
-        # Return an instance of the netset class based on the netset_name from the registry
         if netset_name in cls._registry:
             return cls._registry[netset_name](model_name, device)
         else:
-            raise ValueError(f"Unknown netset: {netset_name}")
+            # Check if this is a known netset that failed to import
+            if netset_name == 'MMAction':
+                raise ImportError(
+                    "MMAction2 is not installed. To use MMAction models, install with the "
+                    "`install_mmaction.sh` script in the Net2Brain GitHub repository."
+                )
+            elif netset_name == 'Clip':
+                raise ImportError(
+                    "CLIP is not installed. Please install it to use CLIP models."
+                )
+            else:
+                raise ValueError(f"Unknown netset: {netset_name}")
 
     @classmethod
     def supports_data_type(cls, data_type):
