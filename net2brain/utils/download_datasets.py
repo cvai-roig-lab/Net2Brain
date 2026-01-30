@@ -12,6 +12,7 @@ import re
 import warnings
 import requests
 import subprocess
+import shutil
 
 class DatasetError(Exception):
     pass
@@ -132,10 +133,30 @@ class BaseDataset:
                     f"stderr: {result.stderr}"
                 )
             
+            # Auto-unwrap if single folder extracted (ignoring junk files)
+            junk_patterns = {'__MACOSX', '.DS_Store', '.AppleDouble', '.LSOverride'}
+            real_files = [f for f in extracted_files if f not in junk_patterns]
+            
+            if len(real_files) == 1 and os.path.isdir(os.path.join(self.dataset_folder, real_files[0])):
+                inner_folder = os.path.join(self.dataset_folder, real_files[0])
+                for item in os.listdir(inner_folder):
+                    shutil.move(os.path.join(inner_folder, item), self.dataset_folder)
+                os.rmdir(inner_folder)
+                print(f"Unwrapped nested folder: {real_files[0]}")
+            
+            # Clean up junk folders
+            for junk in junk_patterns:
+                junk_path = os.path.join(self.dataset_folder, junk)
+                if os.path.exists(junk_path):
+                    if os.path.isdir(junk_path):
+                        shutil.rmtree(junk_path)
+                    else:
+                        os.remove(junk_path)
+            
             if result.returncode != 0:
-                print(f"Warning: Extraction completed with {len(extracted_files)} items")
+                print(f"Warning: Extraction completed")
             else:
-                print(f"Successfully extracted {len(extracted_files)} items")
+                print(f"Successfully extracted")
             
             # Cleanup downloaded files
             for f in local_files:
