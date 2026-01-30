@@ -12,7 +12,6 @@ from .architectures.torchhub_models import Pytorch
 from .architectures.cornet_models import Cornet
 from .architectures.unet_models import Unet
 from .architectures.yolo_models import Yolo
-from .architectures.pyvideo_models import Pyvideo
 from .architectures.huggingface_llm import Huggingface
 from .architectures.audio_models import Audio
 from datetime import datetime
@@ -31,14 +30,23 @@ from .utils.dim_reduction import estimate_from_files
 try:
     from .architectures.clip_models import Clip
 except ModuleNotFoundError:
-    warnings.warn("Clip not installed")
+    pass  
 
 try:
     from .architectures.mmaction_models import MMAction
 except ModuleNotFoundError:
-    warnings.warn("MMAction2 not installed. To use MMAction models, install with the "
-                  "`install_mmaction.sh` script in the Net2Brain GitHub repository.")
+    pass  
 
+
+# Deprecated netset mappings
+DEPRECATED_NETSETS = {
+    'pyvideo': {
+        'replacement': 'MMAction',
+        'message': ("The 'pyvideo' netset is deprecated and will be removed in a future version. "
+                   "Please use 'MMAction' instead, which includes all pyvideo models and many additional "
+                   "video classification models.")
+    }
+}
 
 
 # FeatureExtractor class
@@ -63,6 +71,17 @@ class FeatureExtractor:
         self.feature_cleaner = feature_cleaner
 
         if netset is not None:
+            # Check for deprecated netsets
+            if netset in DEPRECATED_NETSETS:
+                deprecated_info = DEPRECATED_NETSETS[netset]
+                warnings.warn(
+                    f"{deprecated_info['message']} "
+                    f"Automatically using '{deprecated_info['replacement']}' instead.",
+                    DeprecationWarning,
+                    stacklevel=2
+                )
+                netset = deprecated_info['replacement']
+            
             self.netset_name = netset
             self.netset = NetSetBase.initialize_netset(self.model_name, netset, device)
 
@@ -551,5 +570,3 @@ def get_netset_model_dict():
 
 # Have this variable for the taxonomy function
 all_networks = get_netset_model_dict()
-
-
