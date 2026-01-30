@@ -63,8 +63,14 @@ class NetSetBase:
             valid_layers = [layer for layer in layers_to_extract if layer in available_layers and layer != '']
             invalid_layers = set(layers_to_extract) - set(valid_layers)
             if invalid_layers:
-                warnings.warn(f"Some layers are not present in the model and will not be extracted: {invalid_layers}. "
-                              "Please call the 'layers_to_extract()' function from the FeatureExtractor to see all available layers.")
+                # Create a formatted list of available layers for better readability
+                available_layers_str = '\n  '.join(sorted(available_layers))
+                error_msg = (
+                    f"The following layers are not present in the model: {invalid_layers}\n\n"
+                    f"Available layers in {self.model_name}:\n  {available_layers_str}\n\n"
+                    f"You can also call extractor.get_all_layers() to see all available layers."
+                )
+                raise ValueError(error_msg)
         elif isinstance(layers_to_extract, str):
             if layers_to_extract == 'top_level':
                 # this is a general solution to only extract the top level layers and remove nesting
