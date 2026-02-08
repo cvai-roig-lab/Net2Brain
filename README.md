@@ -22,8 +22,9 @@ To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.
 
 # Updates 01/26
 1. **New netset** `MMAction`, with support for 50 video models
-2. Support for time-resolved RDM creation for model features with multiple timepoints
-3. New option to perform SRP before PCA & Pooling operation for uneven features done when estimating dimensionality reduction transform
+2. Deprecation of the `pyvideo` netset, as its previously supported models are now fully covered by MMAction
+3. Support for time-resolved RDM creation for model features with multiple timepoints
+4. New option to perform SRP before PCA & Pooling operation for uneven features done when estimating dimensionality reduction transform
 
 # Updates 08/25
 
