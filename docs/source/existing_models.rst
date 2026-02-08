@@ -24,7 +24,7 @@ Available Netsets
    This netset includes models for a variety of visual tasks accessible through the torch.hub API, not encompassed by torchvision. For more, see the `PyTorch Hub documentation <https://pytorch.org/docs/stable/hub.html>`_.
 
 4. **MMAction** (`MMAction`)
-   Offers a wider range of video models, including more recent transformer-based architectures. Explore more on the `MMAction documentation <https://mmaction2.readthedocs.io/en/latest/get_started/overview.htmll>`_.
+   Offers a wide range of video models, including more recent transformer-based architectures. Explore more on the `MMAction documentation <https://mmaction2.readthedocs.io/en/latest/get_started/overview.htmll>`_.
 
 5. **Unet** (`Unet`)
    Unet models are specialized for abnormality segmentation in brain MRI and are accessible through torch.hub. Learn more at the `Unet hub page <https://pytorch.org/hub/mateuszbuda_brain-segmentation-pytorch_unet/>`_.
