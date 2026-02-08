@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install .[test]  # Install package with test dependencies
+          pip install --no-build-isolation .[test]  # Install package with test dependencies
           pip install pytest pytest-cov  # Explicitly install test dependencies
       
       - name: Run unit tests
