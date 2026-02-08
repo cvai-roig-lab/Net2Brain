@@ -35,10 +35,11 @@ jobs:
       
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install --no-build-isolation .[test]  # Install package with test dependencies
-          pip install pytest pytest-cov  # Explicitly install test dependencies
-      
+          python -m pip install --upgrade pip
+          pip install "setuptools<70" wheel
+          pip install git+https://github.com/openai/CLIP.git
+          pip install .[test]
+
       - name: Run unit tests
         env:
           TORCH_HOME: ${{ runner.os == 'Windows' && '~\.cache\torch' || '~/.cache/torch' }}
