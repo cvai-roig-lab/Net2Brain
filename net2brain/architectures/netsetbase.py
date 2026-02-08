@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import warnings
 from pathlib import Path
+import numpy as np
 
 CACHE_DIR = Path.home() / ".cache" / "net2brain"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -36,11 +37,21 @@ class NetSetBase:
 
     @classmethod
     def initialize_netset(cls, model_name, netset_name, device):
-        # Return an instance of the netset class based on the netset_name from the registry
         if netset_name in cls._registry:
             return cls._registry[netset_name](model_name, device)
         else:
-            raise ValueError(f"Unknown netset: {netset_name}")
+            # Check if this is a known netset that failed to import
+            if netset_name == 'MMAction':
+                raise ImportError(
+                    "MMAction2 is not installed. To use MMAction models, install with the "
+                    "`install_mmaction.sh` script in the Net2Brain GitHub repository."
+                )
+            elif netset_name == 'Clip':
+                raise ImportError(
+                    "CLIP is not installed. Please install it to use CLIP models."
+                )
+            else:
+                raise ValueError(f"Unknown netset: {netset_name}")
 
     @classmethod
     def supports_data_type(cls, data_type):
@@ -52,8 +63,14 @@ class NetSetBase:
             valid_layers = [layer for layer in layers_to_extract if layer in available_layers and layer != '']
             invalid_layers = set(layers_to_extract) - set(valid_layers)
             if invalid_layers:
-                warnings.warn(f"Some layers are not present in the model and will not be extracted: {invalid_layers}. "
-                              "Please call the 'layers_to_extract()' function from the FeatureExtractor to see all available layers.")
+                # Create a formatted list of available layers for better readability
+                available_layers_str = '\n  '.join(sorted(available_layers))
+                error_msg = (
+                    f"The following layers are not present in the model: {invalid_layers}\n\n"
+                    f"Available layers in {self.model_name}:\n  {available_layers_str}\n\n"
+                    f"You can also call extractor.get_all_layers() to see all available layers."
+                )
+                raise ValueError(error_msg)
         elif isinstance(layers_to_extract, str):
             if layers_to_extract == 'top_level':
                 # this is a general solution to only extract the top level layers and remove nesting
@@ -146,7 +163,7 @@ class NetSetBase:
         raise NotImplementedError
 
     def extraction_function(self, data, layers_to_extract=None):
-
+        # TODO: default None should not be used
         """
         # Which layers to extract
         self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
@@ -160,9 +177,11 @@ class NetSetBase:
     def combine_image_data(self, feature_list):
         return feature_list[0]
 
-    def combine_video_data(self, feature_list):
+    def combine_video_data(self, feature_list, agg_frames='all'):
         """
-        Averages the features extracted from multiple frames of a video.
+        Averages the features extracted from multiple frames of a video. This is only relevant for
+        image models, as for video models it only performs a trivial averaging over one feature
+        tensor (features are already extracted from multiple frames internally).
 
         Args:
             feature_list (List[Dict[str, torch.Tensor]]): A list where each element is a dictionary. The keys of the
@@ -172,23 +191,38 @@ class NetSetBase:
             Dict[str, torch.Tensor]: A dictionary where the keys are the layer names, and the values are the averaged 
             feature tensors across all frames.
         """
-        # Initialize a dictionary to store the sum of features for each layer
-        summed_features = {}
+        if agg_frames == 'all':
+            # Initialize a dictionary to store the sum of features for each layer
+            summed_features = {}
 
-        for features in feature_list:
-            for layer, data in features.items():
-                if layer not in summed_features:
-                    # If the layer is not in the dictionary, add it
-                    summed_features[layer] = data.clone()
-                else:
-                    # If the layer is already in the dictionary, accumulate the features
-                    summed_features[layer] += data
+            for features in feature_list:
+                for layer, data in features.items():
+                    if layer not in summed_features:
+                        # If the layer is not in the dictionary, add it
+                        summed_features[layer] = data.clone()
+                    else:
+                        # If the layer is already in the dictionary, accumulate the features
+                        summed_features[layer] += data
 
-        # Calculate the average for each layer
-        num_frames = len(feature_list)
-        averaged_features = {layer: data / num_frames for layer, data in summed_features.items()}
-
-        return averaged_features
+            # Calculate the average for each layer
+            num_frames = len(feature_list)
+            averaged_features = {layer: data / num_frames for layer, data in summed_features.items()}
+            final_features = averaged_features
+        else:
+            # Stack the features for each layer across all frames
+            stacked_features = {}
+            for features in feature_list:
+                for layer, data in features.items():
+                    if layer not in stacked_features:
+                        stacked_features[layer] = [data.squeeze(0)]
+                    else:
+                        stacked_features[layer].append(data.squeeze(0))
+            # Convert lists to tensors
+            final_features = {
+                layer: torch.stack(data_list).unsqueeze(0).unsqueeze(0) for layer, data_list in stacked_features.items()
+            }
+            # unsqueeze to simulate batch dimension and clip dimension
+        return final_features
 
     def combine_audio_data(self, feature_list):
         return feature_list[0]
@@ -240,9 +274,20 @@ class NetSetBase:
     def load_image_data(self, data_path):
         return [Image.open(data_path).convert('RGB')]
 
-    def load_video_data(self, data_path):
-        # Logic to load video data using cv2
-        # This will return a list of frames. Each frame is a numpy array.
+    def load_video_data(self, data_path, pick_frames=None):
+        """
+        Logic to load video data frame by frame using cv2. This is only relevant for image
+        models, and should always be overridden by video model classes.
+
+        Args:
+            data_path: Union[str, Path]
+            pick_frames: Optional[int]
+                Number of frames to uniformly sample from the video. If None, all frames are returned.
+
+        Returns: List[np.ndarray]
+            A list of frames extracted from the video.
+
+        """
         data_path = r"{}".format(data_path)  # Using raw string
         cap = cv2.VideoCapture(data_path)
         frames = []
@@ -252,6 +297,10 @@ class NetSetBase:
                 break
             frames.append(frame)
         cap.release()
+        if pick_frames is not None:
+            # get `pick_frames` number of uniform indices
+            indices = np.linspace(0, len(frames) - 1, pick_frames, dtype=int)
+            frames = [frames[i] for i in indices]
         return frames
 
     def load_audio_data(self, data_path):

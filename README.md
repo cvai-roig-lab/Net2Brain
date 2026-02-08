@@ -17,7 +17,16 @@ One of the primary objectives of Net2Brain is to facilitate the collaboration be
 
 To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks), or our latest [paper release](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full).
 
-# Updates 08/23
+
+# Updates 
+
+# Updates 01/26
+1. **New netset** `MMAction`, with support for 50 video models
+2. Deprecation of the `pyvideo` netset, as its previously supported models are now fully covered by MMAction
+3. Support for time-resolved RDM creation for model features with multiple timepoints
+4. New option to perform SRP before PCA & Pooling operation for uneven features done when estimating dimensionality reduction transform
+
+# Updates 08/25
 
 1. Added pooling support for variable-length features for **RDMs and Encoding** and introduced new `pooling` parameter
 2. Updated Notebooks accordingly 
@@ -137,7 +146,9 @@ pip install -U git+https://github.com/cvai-roig-lab/Net2Brain
 
 2. Once the installation is complete, you can import Net2Brain in your Python environment and start utilizing its powerful features for neural research.
 
-
+3. (Optional). To use the video model netset MMAction, you need to install it separately by running 
+   the bash script provided in this repo, `install_mmaction.sh`. This is because the library 
+   mmaction2 requires non-standard installation procedures.
 
 
 # Model Taxonomy
