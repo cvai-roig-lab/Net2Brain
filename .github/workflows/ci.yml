@@ -37,8 +37,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install "setuptools<70" wheel
-          pip install git+https://github.com/openai/CLIP.git
-          pip install .[test]
+          pip install --no-build-isolation git+https://github.com/openai/CLIP.git
+          pip install --no-build-isolation .[test]
+
 
       - name: Run unit tests
         env:
