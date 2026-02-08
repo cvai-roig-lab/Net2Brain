@@ -2,7 +2,6 @@ include net2brain/architectures/taxonomy.csv
 include net2brain/architectures/configs/clip.json
 include net2brain/architectures/configs/cornet.json
 include net2brain/architectures/configs/pytorch.json
-include net2brain/architectures/configs/pyvideo.json
 include net2brain/architectures/configs/taskonomy.json
 include net2brain/architectures/configs/timm.json
 include net2brain/architectures/configs/toolbox.json

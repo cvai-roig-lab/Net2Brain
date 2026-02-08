@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 import numpy as np
 from tqdm import tqdm
+from functools import partial
 from .architectures.pytorch_models import Standard
 from .architectures.timm_models import Timm
 from .architectures.taskonomy_models import Taskonomy
@@ -11,7 +12,6 @@ from .architectures.torchhub_models import Pytorch
 from .architectures.cornet_models import Cornet
 from .architectures.unet_models import Unet
 from .architectures.yolo_models import Yolo
-from .architectures.pyvideo_models import Pyvideo
 from .architectures.huggingface_llm import Huggingface
 from .architectures.audio_models import Audio
 from datetime import datetime
@@ -30,8 +30,23 @@ from .utils.dim_reduction import estimate_from_files
 try:
     from .architectures.clip_models import Clip
 except ModuleNotFoundError:
-    warnings.warn("Clip not installed")
+    pass  
 
+try:
+    from .architectures.mmaction_models import MMAction
+except ModuleNotFoundError:
+    pass  
+
+
+# Deprecated netset mappings
+DEPRECATED_NETSETS = {
+    'pyvideo': {
+        'replacement': 'MMAction',
+        'message': ("The 'pyvideo' netset is deprecated and will be removed in a future version. "
+                   "Please use 'MMAction' instead, which includes all pyvideo models and many additional "
+                   "video classification models.")
+    }
+}
 
 
 # FeatureExtractor class
@@ -54,14 +69,21 @@ class FeatureExtractor:
         self.preprocessor = preprocessor
         self.extraction_function = extraction_function
         self.feature_cleaner = feature_cleaner
-        
-
-
 
         if netset is not None:
+            # Check for deprecated netsets
+            if netset in DEPRECATED_NETSETS:
+                deprecated_info = DEPRECATED_NETSETS[netset]
+                warnings.warn(
+                    f"{deprecated_info['message']} "
+                    f"Automatically using '{deprecated_info['replacement']}' instead.",
+                    DeprecationWarning,
+                    stacklevel=2
+                )
+                netset = deprecated_info['replacement']
+            
             self.netset_name = netset
             self.netset = NetSetBase.initialize_netset(self.model_name, netset, device)
-
 
             # Initiate netset-based functions
             self.model = self.netset.get_model(self.pretrained)
@@ -72,22 +94,17 @@ class FeatureExtractor:
                 raise ValueError("If no netset is given, the model_name parameter needs to be a ready model")
             else:
                 # Initiate as the Netset structure of choice in case user does not select preprocessing, extractor, etc.
-                self.netset = NetSetBase.initialize_netset(
-                    model_name=None, netset_name=netset_fallback, device=self.device
-                )
+                self.netset = NetSetBase.initialize_netset(None, netset_fallback, device)
                 self.model = model
                 self.model.eval()
                 self.netset.loaded_model = self.model
 
                 if None in (preprocessor, extraction_function, feature_cleaner):
                     warnings.warn("If you add your own model you can also select our own: \nPreprocessing Function (preprocessor) \nExtraction Function (extraction_function) \nFeature Cleaner (feature_cleaner) ")
-    
 
-
-
-
-    def extract(self, data_path, save_path=None, layers_to_extract="top_level", consolidate_per_layer=True,
-                dim_reduction=None, n_samples_estim=100, n_components=10000, max_dim_allowed=None):
+    def extract(self, data_path, save_path=None, layers_to_extract="top_level",
+                consolidate_per_layer=True, dim_reduction=None, n_samples_estim=100,
+                n_components=10000, srp_before_pca=False, max_dim_allowed=None, **kwargs):
         """
         Args:
             data_path: str
@@ -114,9 +131,22 @@ class FeatureExtractor:
             n_components: int or None
                 The number of components to reduce the features to. If None, the number of components is estimated.
                 For PCA, `n_components` must be smaller than `n_samples_estim`.
+            srp_before_pca: bool
+                Only applies if `dim_reduction` is `pca`. If True, a Sparse Random Projection is applied
+                before PCA to make it computationally lighter. Use when features are so
+                high-dimensional that PCA runs out of memory. Num of dims estimated by SRP.
             max_dim_allowed: int or None
                 Optional: The threshold over which the dimensionality reduction is applied. If None, it is always
                 applied.
+            **kwargs: dict
+                Optional keyword arguments for specific data types. For video data, an `agg_frames`
+                argument configures how extracted features are aggregated over frames. For video
+                models, `agg_frames` can be either 'all', 'within_clips', 'across_clips' or None,
+                and the default is 'across_clips'. For image models applied to video data,
+                `agg_frames` can be either 'all' or None, and the default is 'all'. Additionally
+                for image models, a `pick_frames` argument (int or None) configures the number of
+                frames (by uniform sampling) features are extracted for. If None (default),
+                features are extracted for all frames depending on the video's frame rate.
 
         Returns:
 
@@ -132,6 +162,7 @@ class FeatureExtractor:
         self.dim_reduction = dim_reduction
         self.n_samples_estim = n_samples_estim
         self.n_components = n_components
+        self.srp_before_pca = srp_before_pca
         self.max_dim_allowed = max_dim_allowed
 
         # Iterate over all files in the given data_path
@@ -153,17 +184,31 @@ class FeatureExtractor:
             data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
         else:
             data_loader, self.data_type, self.data_combiner = DataWrapper._get_dataloader(data_path)
-        
-        if self.data_type == "multimodal":
-            data_files = self._pair_modalities(data_files)
-
-        # Select preprocessor
-        if self.preprocessor == None:
-            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
 
         if self.data_type not in self.netset.supported_data_types:
             raise ValueError(f"Datatype {self.data_type} not supported by current model")
-        
+
+        if self.data_type == "multimodal":
+            data_files = self._pair_modalities(data_files)
+
+        if self.data_type == 'video':
+            if 'image' in self.netset.supported_data_types:
+                if 'pick_frames' in kwargs:
+                    data_loader = partial(data_loader, pick_frames=kwargs['pick_frames'])
+                if 'agg_frames' in kwargs:
+                    if kwargs['agg_frames'] not in ['all', None]:
+                        raise ValueError("`agg_frames` for image models is either 'all' or None")
+                    self.data_combiner = partial(self.data_combiner, agg_frames=kwargs['agg_frames'])
+            elif self.netset.supported_data_types == ['video']:
+                if 'agg_frames' in kwargs and self.extraction_function is None:
+                    if kwargs['agg_frames'] not in ['all', 'within_clips', 'across_clips', None]:
+                        raise ValueError("`agg_frames` for video models is either 'all', 'within_clips', 'across_clips' or None")
+                    self.netset.extraction_function = partial(self.netset.extraction_function, agg_frames=kwargs['agg_frames'])
+
+        # Select preprocessor
+        if self.preprocessor is None:
+            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
+
         progress_bar = tqdm(data_files, desc='Processing files')
         
         for data_file in progress_bar:
@@ -388,7 +433,8 @@ class FeatureExtractor:
             if not self.max_dim_allowed or len(sample_feats_at_layer.flatten()) > self.max_dim_allowed:
                 # Estimate the dimensionality reduction from a subset of the data
                 fitted_transform, _ = estimate_from_files(all_files, layer, feat_dim, open_npz,
-                                             self.dim_reduction, self.n_samples_estim, self.n_components)
+                                             self.dim_reduction, self.n_samples_estim,
+                                             self.n_components, self.srp_before_pca)
                 for file in tqdm(all_files):
                     feats = open_npz(file)
                     reduced_feats_at_layer = {}
@@ -524,5 +570,3 @@ def get_netset_model_dict():
 
 # Have this variable for the taxonomy function
 all_networks = get_netset_model_dict()
-
-

@@ -107,7 +107,23 @@ class LayerRDM(RDM):
 
         """
         # always save as condensed to save space
-        rdm = to_condensed(self.rdm) if not self.is_condensed else self.rdm
+        if 'multi_timepoint_rdms' in self.meta.keys() and self.meta['multi_timepoint_rdms'] is not None:
+            clips = self.rdm.shape[0]
+            rdm_c = []
+            for clip_idx in range(clips):
+                if self.meta['multi_timepoint_rdms'] == 'clip':
+                    rdm_t = self.rdm[clip_idx]
+                    rdm_c.append(to_condensed(rdm_t) if not is_condensed_1d(rdm_t) else rdm_t)
+                else:
+                    timepoints = self.rdm.shape[1]
+                    rdm_t = []
+                    for time_idx in range(timepoints):
+                        rdm_ct = self.rdm[clip_idx, time_idx]
+                        rdm_t.append(to_condensed(rdm_ct) if not is_condensed_1d(rdm_ct) else rdm_ct)
+                    rdm_c.append(torch.stack(rdm_t, dim=0))
+            rdm = torch.stack(rdm_c, dim=0)
+        else:
+            rdm = to_condensed(self.rdm) if not self.is_condensed else self.rdm
         # convert to cpu if necessary
         rdm = rdm.cpu()
         # create data dict including meta data
