@@ -1,38 +1,46 @@
 # Contributing to Net2Brain
 
-Thank you for your interest in contributing to Net2Brain.  
-To keep the project stable and maintainable, please follow the workflow described below.
+Thank you for your interest in contributing! To keep the codebase clean and reviewable, please follow the guidelines below.
 
----
 
-## Branching Strategy (Required)
+## Workflow
 
-All contributions must follow this process:
+### 1. Fork and branch from `development`
 
-1. Create a feature branch from `dev`.
-2. Make your changes only in that feature branch.
-3. Open a Pull Request (PR) targeting `dev`.
-4. Assign **ToastyDom** as reviewer.
-
-**Do not:**
-
-- Push directly to `main`
-- Push directly to `dev`
-
-### Why?
-
-- `main` is the stable release branch.
-- `dev` is the integration branch.
-- Feature branches keep changes isolated and reviewable.
-- This prevents unintended side effects and keeps the toolbox stable for all users.
-
----
-
-## Creating a Feature Branch
-
-Example:
+Always branch off from the `development` branch — **not** `main`. This keeps the main branch stable and ensures your changes are integrated through proper review.
 
 ```bash
-git checkout dev
-git pull
-git checkout -b feature/short-description
+git checkout development
+git pull origin development
+git checkout -b feature/your-feature-name
+```
+
+Use a descriptive branch name that reflects what you're working on, e.g. `feature/add-my-model` or `fix/rdm-bug`.
+
+### 2. Make your changes
+
+Keep your changes focused. One feature or fix per PR makes reviewing much easier.
+
+### 3. Write a clear PR description
+
+When opening your pull request, **please explain**:
+
+- **What** you changed (a concise summary of the code changes)
+- **Why** you changed it (the motivation or problem you're solving)
+- Any relevant context, links to issues, or caveats reviewers should know about
+- Example code for quick triggering of the added functionality
+
+
+### 4. Open a PR into `development`
+
+Open your pull request against the `development` branch — not `main`.
+
+### 5. Assign a reviewer
+
+Always assign **@ToastyDom** as a reviewer.
+
+---
+
+## Questions?
+
+Feel free to open an issue if you're unsure about anything before diving in.
