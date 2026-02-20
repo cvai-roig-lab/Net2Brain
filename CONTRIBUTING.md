@@ -39,7 +39,6 @@ Open your pull request against the `development` branch — not `main`.
 
 Always assign **@ToastyDom** as a reviewer.
 
----
 
 ## Questions?
 
