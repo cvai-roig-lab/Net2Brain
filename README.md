@@ -20,6 +20,10 @@ To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.
 
 # Updates 
 
+# Updates 02/26
+1. Improved Algonauts 2023 NSD datasets (`Algonauts23_Net2Brain` and `Algonauts23_shared_Net2Brain`): proper metadata files linking fMRI rows to image filenames, NSD IDs, COCO IDs and captions, explicit per-subject ROI availability, and recomputed RDMs for the shared split.
+
+
 # Updates 01/26
 1. **New netset** `MMAction`, with support for 50 video models
 2. Deprecation of the `pyvideo` netset, as its previously supported models are now fully covered by MMAction
