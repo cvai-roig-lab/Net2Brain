@@ -28,8 +28,13 @@ def load_dataset(dataset_name, path=None):
     )
 
 def list_available_datasets():
-    available_datasets = [cls.__name__ for cls in BaseDataset.__subclasses__()]
-    return available_datasets
+    def get_all_subclasses(cls):
+        subclasses = cls.__subclasses__()
+        for subclass in subclasses:
+            subclasses.extend(get_all_subclasses(subclass))
+        return subclasses
+    
+    return [cls.__name__ for cls in get_all_subclasses(BaseDataset)]
 
 
 class BaseDataset:
@@ -196,6 +201,7 @@ class DatasetBonnerPNAS2017(BaseDataset):
 
     def __init__(self, path=None):
         super().__init__(path)
+        self.source_path = self.dataset_folder
 
     def _load(self):
         self.download_and_extract_zip()
@@ -212,6 +218,7 @@ class Dataset78images(BaseDataset):
 
     def __init__(self, path=None):
         super().__init__(path)
+        self.source_path = self.dataset_folder
 
     def _load(self):
         self.download_and_extract_zip()
@@ -228,6 +235,7 @@ class Workhsop_Harry_Potter_Cognition(BaseDataset):
 
     def __init__(self, path=None):
         super().__init__(path)
+        self.source_path = self.dataset_folder
 
     def _load(self):
         self.download_and_extract_zip()
@@ -245,6 +253,7 @@ class Dataset92images(BaseDataset):
 
     def __init__(self, path=None):
         super().__init__(path)
+        self.source_path = self.dataset_folder
 
     def _load(self):
         self.download_and_extract_zip()
@@ -262,6 +271,7 @@ class DatasetBoldMoments(BaseDataset):
 
     def __init__(self, path=None):
         super().__init__(path)
+        self.source_path = self.dataset_folder
 
     def _load(self):
         self.download_and_extract_zip()
@@ -283,6 +293,7 @@ class WorkshopCuttingGardens(BaseDataset):
 
     def __init__(self, path=None):
         super().__init__(path)
+        self.source_path = self.dataset_folder
 
     def _load(self):
         self.download_and_extract_zip()
@@ -301,6 +312,7 @@ class Tutorial_LE_Results(BaseDataset):
 
     def __init__(self, path=None):
         super().__init__(path)
+        self.source_path = self.dataset_folder
 
     def _load(self):
         self.download_and_extract_zip()
@@ -318,30 +330,36 @@ class Tutorial_LE_Results(BaseDataset):
 
 
 
-class DatasetNSD_872(BaseDataset):
-    dataset_name = "NSD Dataset"
+class DatasetAlgonauts_NSD_Shared(BaseDataset):
+    dataset_name = "Algonauts23_shared_Net2Brain"
     DATASET_URLS = {
-        dataset_name: "https://next.hessenbox.de/index.php/s/Rt4B9a2yJ5XNXAG/download"
+        dataset_name: "https://www.dropbox.com/scl/fi/kscwsiiq1b5gajm49qbz4/Algonauts23_shared_Net2Brain.zip?rlkey=t95xbguxx31phvam7o0fv0y9n&st=b4rtzg8e&dl=1"
     }
+
 
 
     def __init__(self, path=None):
         super().__init__(path)
-        self.source_path = "NSD Dataset"
+        self.source_path = self.dataset_folder
         
     def _load(self):
         self.download_and_extract_zip()
-        # Dictionary to store folder names and their paths
-        folder_paths = {}
-        
-        # Iterate over items in the dataset folder
-        for item in os.listdir(self.dataset_folder):
-            item_path = os.path.join(self.dataset_folder, item)
-            # Check if the item is a directory
-            if os.path.isdir(item_path):
-                folder_paths[item] = item_path
-                
-        return folder_paths
+        root = self.dataset_folder
+        paths = {
+            "root":        root,
+            "images":      os.path.join(root, "images"),
+            "metadata":    os.path.join(root, "metadata_shared.csv"),
+            "coco_csv":    os.path.join(root, "coco.csv"),
+            "coco_images": os.path.join(root, "coco_images"),
+            "coco_masks":  os.path.join(root, "coco_masks"),
+        }
+        for s in range(1, 9):
+            subj = f"subj0{s}"
+            paths[subj]           = os.path.join(root, subj)
+            paths[f"{subj}_fmri"] = os.path.join(root, subj, "fmri")
+            paths[f"{subj}_rois"] = os.path.join(root, subj, "rois")
+            paths[f"{subj}_rdms"] = os.path.join(root, subj, "rdms")
+        return paths
     
 
     
@@ -362,13 +380,13 @@ class DatasetNSD_872(BaseDataset):
         nsd_id_str = str(nsd_id).lstrip('0')
 
         # Convert the nsd_id in the DataFrame to string and strip leading zeros for matching
-        df['nsdId'] = df['nsdId'].astype(str).apply(lambda x: x.lstrip('0'))
+        df['nsd_id'] = df['nsd_id'].astype(str).apply(lambda x: x.lstrip('0'))
 
         # Find the COCO ID corresponding to the given NSD ID
-        if nsd_id_str not in df['nsdId'].values:
+        if nsd_id_str not in df['nsd_id'].values:
             raise DatasetError(f"NSD ID {nsd_id} not found in the dataset.")
         
-        return int(df[df['nsdId'] == nsd_id_str]['cocoId'].values[0])  # Assuming cocoId is numeric
+        return int(df[df['nsd_id'] == nsd_id_str]['coco_id'].values[0])  # Assuming coco_id is numeric
 
 
     def COCOtoNSD(self, coco_id, coco_path=""):
@@ -381,13 +399,12 @@ class DatasetNSD_872(BaseDataset):
             raise DatasetError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
 
         # Load the dataset
-        df = pd.read_csv(coco_path, dtype={'cocoId': str})  # Ensure cocoId is read as string
+        df = pd.read_csv(coco_path, dtype={'coco_id': str})
         
-        # Find the NSD ID corresponding to the given COCO ID
-        if coco_id not in df['cocoId'].values:
+        if coco_id not in df['coco_id'].values:
             raise DatasetError(f"COCO ID {coco_id} not found in the dataset.")
         
-        return df[df['cocoId'] == coco_id]['nsdId'].values[0]  # nsdId is returned as it is in the csv, potentially with leading zeros
+        return df[df['coco_id'] == coco_id]['nsd_id'].values[0]
     
 
 
@@ -399,33 +416,27 @@ class DatasetNSD_872(BaseDataset):
         coco_csv_path = os.path.join(NSD_path, "coco.csv")
         
         # Load the NSD to COCO mapping
-        df = pd.read_csv(coco_csv_path, dtype={'nsdId': str, 'cocoId': str, 'cocoSplit': str})  # Treat IDs as strings
+        df = pd.read_csv(coco_csv_path, dtype={'nsd_id': str, 'coco_id': str, 'coco_split': str})
 
-        # Ensure target folder exists
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
         
-        # Preload COCO API instances for both splits
         train_annotations_path = os.path.join(NSD_path, "instances_train2017.json")
         val_annotations_path = os.path.join(NSD_path, "instances_val2017.json")
 
         coco_train = COCO(train_annotations_path) if os.path.exists(train_annotations_path) else None
         coco_val = COCO(val_annotations_path) if os.path.exists(val_annotations_path) else None
 
-        # Iterate through NSD image files and collect NSD IDs
         for filename in tqdm(os.listdir(nsd_image_folder)):
             if filename.endswith(('.png', '.jpg', '.jpeg')):
-                # Extract NSD ID from the filename
                 nsd_id_match = re.search(r'nsd-(\d+)', filename)
                 nsd_id = nsd_id_match.group(1).lstrip('0') if nsd_id_match else filename.split('.')[0].lstrip('0')
                 
-                # Check if nsd_id exists in the DataFrame and get the corresponding coco_id and split
-                if nsd_id in df['nsdId'].values:
-                    row = df[df['nsdId'] == nsd_id].iloc[0]
-                    coco_id = int(row['cocoId'])  # coco_id should be an integer for COCO API
-                    coco_split = row['cocoSplit']
+                if nsd_id in df['nsd_id'].values:
+                    row = df[df['nsd_id'] == nsd_id].iloc[0]
+                    coco_id = int(row['coco_id'])
+                    coco_split = row['coco_split']
 
-                    # Select the correct COCO instance based on the split
                     coco = coco_train if coco_split == 'train2017' else coco_val
 
                     # Fetch image info and URL
@@ -451,30 +462,25 @@ class DatasetNSD_872(BaseDataset):
         coco_csv_path = os.path.join(NSD_path, "coco.csv")
         
         # Load the NSD to COCO mapping
-        df = pd.read_csv(coco_csv_path, dtype={'nsdId': str, 'cocoId': str, 'cocoSplit': str})  # Treat IDs as strings
+        df = pd.read_csv(coco_csv_path, dtype={'nsd_id': str, 'coco_id': str, 'coco_split': str})
 
-        # Ensure target folder exists
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
 
-        # Preload COCO API instances for both splits
         train_annotations_path = os.path.join(NSD_path, "instances_train2017.json")
         val_annotations_path = os.path.join(NSD_path, "instances_val2017.json")
         coco_train = COCO(train_annotations_path) if os.path.exists(train_annotations_path) else None
         coco_val = COCO(val_annotations_path) if os.path.exists(val_annotations_path) else None
 
-        # Iterate through NSD image files and collect NSD IDs, handling both naming conventions
         for filename in tqdm(os.listdir(nsd_image_folder)):
             if filename.endswith(('.png', '.jpg', '.jpeg')):
-                # Extract NSD ID from the filename
                 nsd_id_match = re.search(r'nsd-(\d+)', filename)
                 nsd_id = nsd_id_match.group(1).lstrip('0') if nsd_id_match else filename.split('.')[0].lstrip('0')
 
-                # Convert NSD ID to COCO ID and fetch the split information
-                if nsd_id in df['nsdId'].values:
-                    row = df[df['nsdId'] == nsd_id].iloc[0]
-                    coco_id = int(row['cocoId'])
-                    coco_split = row['cocoSplit']
+                if nsd_id in df['nsd_id'].values:
+                    row = df[df['nsd_id'] == nsd_id].iloc[0]
+                    coco_id = int(row['coco_id'])
+                    coco_split = row['coco_split']
 
                     coco = coco_train if coco_split == 'train2017' else coco_val
 
@@ -518,30 +524,26 @@ class DatasetNSD_872(BaseDataset):
             raise DatasetError(f"Required files within '{NSD_path}' were not found. Please download the dataset using 'DatasetNSD.load_dataset()' and ensure the correct path is specified with 'NSD_path = path'.")
         
         # Load the NSD to COCO mapping
-        df = pd.read_csv(coco_csv_path, dtype={'nsdId': str, 'cocoId': str, 'cocoSplit': str})  # Ensure IDs and splits are read as strings
-        
-        # Ensure target folder exists
+        df = pd.read_csv(coco_csv_path, dtype={'nsd_id': str, 'coco_id': str, 'coco_split': str})
+
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
         
-        # Initialize COCO API for captions for both train and val splits
         coco_captions_train = COCO(train_captions_path)
         coco_captions_val = COCO(val_captions_path)
 
-        # Fetch and save the first available COCO caption corresponding to COCO IDs
         for filename in tqdm(os.listdir(nsd_image_folder)):
             if filename.endswith(('.png', '.jpg', '.jpeg')):
-                # Extract NSD ID from the filename
                 nsd_id_match = re.search(r'nsd-(\d+)', filename)
                 if nsd_id_match:
-                    nsd_id = nsd_id_match.group(1).lstrip('0')  # Remove leading zeros
+                    nsd_id = nsd_id_match.group(1).lstrip('0')
                 else:
-                    nsd_id = filename.split('.')[0].lstrip('0')  # Remove leading zeros
+                    nsd_id = filename.split('.')[0].lstrip('0')
                 
-                if nsd_id in df['nsdId'].values:
-                    row = df[df['nsdId'] == nsd_id].iloc[0]
-                    coco_id = row['cocoId']
-                    coco_split = row['cocoSplit']
+                if nsd_id in df['nsd_id'].values:
+                    row = df[df['nsd_id'] == nsd_id].iloc[0]
+                    coco_id = row['coco_id']
+                    coco_split = row['coco_split']
 
                     coco_captions = coco_captions_train if coco_split == 'train2017' else coco_captions_val
 
@@ -585,8 +587,8 @@ class DatasetNSD_872(BaseDataset):
                 coco_id = int(filename.split('.')[0])  # Extracting COCO ID from filename
 
                 # Find the corresponding row in the DataFrame
-                if coco_id in df['cocoId'].values:
-                    row = df[df['cocoId'] == coco_id].iloc[0]
+                if coco_id in df['coco_id'].values:
+                    row = df[df['coco_id'] == coco_id].iloc[0]
                     crop_str = row['cropBox']
                     crop_values = eval(crop_str)  # Convert string to tuple
 
@@ -670,6 +672,7 @@ class DatasetNSD_872(BaseDataset):
         colored_mask = Image.fromarray(colored_mask_array)
 
         # Create an overlay of the image with the colored mask
+        colored_mask = colored_mask.resize(original_image.size, Image.NEAREST)
         overlay = Image.blend(original_image.convert("RGBA"), colored_mask.convert("RGBA"), alpha=0.5)
 
         # Find unique classes in the mask (excluding background)
@@ -715,23 +718,19 @@ class DatasetNSD_872(BaseDataset):
             raise FileNotFoundError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
 
         # Load the NSD to COCO mapping
-        df = pd.read_csv(coco_path, dtype={'nsdId': str, 'cocoId': str})  # Ensure IDs are read as strings
+        df = pd.read_csv(coco_path, dtype={'nsd_id': str, 'coco_id': str})
 
-        # Iterate through the files in the folder
         for filename in tqdm(os.listdir(folder)):
             basename, extension = os.path.splitext(filename)
 
-            # Extract NSD ID from the filename
             nsd_id_match = re.search(r'nsd-(\d+)', basename)
             if nsd_id_match:
                 nsd_id = nsd_id_match.group(1)
             else:
                 nsd_id = basename
 
-            # Check if the nsd_id is in the nsdId column
-            if nsd_id in df['nsdId'].values:
-                # Find the corresponding COCO ID
-                coco_id = df[df['nsdId'] == nsd_id]['cocoId'].values[0]
+            if nsd_id in df['nsd_id'].values:
+                coco_id = df[df['nsd_id'] == nsd_id]['coco_id'].values[0]
 
                 # Rename the file
                 new_filename = f"{coco_id}{extension}"
@@ -747,16 +746,13 @@ class DatasetNSD_872(BaseDataset):
             raise DatasetError(f"The file at '{coco_path}' could not be found. Please ensure the file exists or specify the correct location using the 'coco_path' parameter. This file can be downloaded using 'DatasetNSD.load_dataset()'.")
 
         # Load the COCO to NSD mapping
-        df = pd.read_csv(coco_path, dtype={'nsdId': str, 'cocoId': str})  # Ensure IDs are read as strings
+        df = pd.read_csv(coco_path, dtype={'nsd_id': str, 'coco_id': str})
         
-        # Iterate through the files in the folder
         for filename in tqdm(os.listdir(folder)):
             basename, extension = os.path.splitext(filename)
             
-            # Check if the basename is in the cocoId column
-            if basename in df['cocoId'].values:
-                # Find the corresponding NSD ID
-                nsd_id = df[df['cocoId'] == basename]['nsdId'].values[0]
+            if basename in df['coco_id'].values:
+                nsd_id = df[df['coco_id'] == basename]['nsd_id'].values[0]
                 
                 # Format NSD ID with leading zeros for 10 thousands
                 nsd_id_formatted = nsd_id.zfill(5)
@@ -794,64 +790,35 @@ class DatasetNSD_872(BaseDataset):
         
     
 
-class DatasetAlgonauts_NSD(DatasetNSD_872):
-    dataset_name = "Algonauts_NSD"
+class DatasetAlgonauts_NSD(DatasetAlgonauts_NSD_Shared):
+    dataset_name = "Algonauts23_Net2Brain"
     DATASET_URLS = {
-        dataset_name: ["https://www.dropbox.com/scl/fi/k9v156pqilnbw6rl79uph/Algonauts_NSD.partaa?rlkey=1sjrw83exg19b9duqt5y67epn&st=1k931yse&dl=1",
-                        "https://www.dropbox.com/scl/fi/r06tmr09weloq2726q0nm/Algonauts_NSD.partab?rlkey=49h6rmkwejyuoo0va32ct0kmx&st=apt1n0je&dl=1",
-                        "https://www.dropbox.com/scl/fi/8u1tu681k334umc99x72p/Algonauts_NSD.partac?rlkey=1otn71sl3dw49g1ib0lj2tho1&st=kbf0xdcp&dl=1",
-                        "https://www.dropbox.com/scl/fi/z2xadsoc32aycn7nopes9/Algonauts_NSD.partad?rlkey=ot0z9x6uegd6a9smwhhy0ntzq&st=xfg8fi1w&dl=1",
-                        "https://www.dropbox.com/scl/fi/unhc1xcj4krm3roqr3slp/Algonauts_NSD.partae?rlkey=8wro5posgs2zfarv4bf44cope&st=8q0uw8e5&dl=1"]}
-
-    def __init__(self, path=None):
-        super().__init__(path)
-        self.source_path = "Algonauts_NSD"
-
-    def _load(self):
-        self.download_and_extract_zip()
-        # Dictionary to store folder names and their paths
-        folder_paths = {}
-
-        # Iterate over items in the dataset folder
-        for item in os.listdir(self.dataset_folder):
-            item_path = os.path.join(self.dataset_folder, item)
-            # Check if the item is a directory
-            if os.path.isdir(item_path):
-                folder_paths[item] = item_path
-
-                # Specifically add the path to the training_images subfolder for each subject
-                training_images_path = os.path.join(item_path, "training_split", "training_images")
-                if os.path.exists(training_images_path):
-                    folder_paths[f"{item}_images"] = training_images_path
-                    
-                brain_data_path =  os.path.join(item_path, "training_split", "training_rois")
-                if os.path.exists(training_images_path):
-                    folder_paths[f"{item}_rois"] = brain_data_path
-
-        return folder_paths
-
-
-class DatasetNSD_25(DatasetNSD_872):
-    dataset_name = "NSD_25_images"
-    DATASET_URLS = {
-        dataset_name: "https://next.hessenbox.de/index.php/s/ie2t3JNbryz43Td/download"
+        dataset_name: "https://www.dropbox.com/scl/fi/pe72bcq15aobzpjcbl7tq/Algonauts23_Net2Brain.zip?rlkey=6apwm62va8xb8z3en8u0j1r0h&st=2qco3jt7&dl=1"
     }
-
+        
     def __init__(self, path=None):
         super().__init__(path)
-        self.source_path = "NSD_25_images"
+        self.source_path = self.dataset_folder
 
     def _load(self):
         self.download_and_extract_zip()
-        # Dictionary to store folder names and their paths
-      
-        stimuli_path = os.path.join(self.dataset_folder, "NSD_25_images")
-        captions_path = os.path.join(self.dataset_folder, "NSD_25_captions")
-        roi_path = os.path.join(self.dataset_folder, "NSD_25_fmri")
-        viz_path = os.path.join(self.dataset_folder, "NSD_25_roi_masks")
+        root = self.dataset_folder
+        paths = {
+            "root":     root,
+            "metadata": os.path.join(root, "metadata.csv"),
+            "coco_csv": os.path.join(root, "coco.csv"),
+        }
+        for s in range(1, 9):
+            subj = f"subj0{s}"
+            subj_dir = os.path.join(root, subj)
+            paths[subj]                  = subj_dir
+            paths[f"{subj}_images"]      = os.path.join(subj_dir, "training_split", "training_images")
+            paths[f"{subj}_test_images"] = os.path.join(subj_dir, "test_split", "test_images")
+            paths[f"{subj}_fmri"]        = os.path.join(subj_dir, "training_split", "training_fmri")
+            paths[f"{subj}_rois"]        = os.path.join(subj_dir, "training_split", "training_rois")
+        return paths
 
-        return {"stimuli_path": stimuli_path, "roi_path": roi_path, "viz_path": viz_path, "captions_path": captions_path}
-        
+
  
 class DatasetThings_fMRI(BaseDataset):
     dataset_name = "Things_test"
@@ -877,4 +844,3 @@ class DatasetThings_fMRI(BaseDataset):
                 folder_paths[item] = item_path
                 
         return folder_paths
-    
