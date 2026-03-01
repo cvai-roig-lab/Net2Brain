@@ -213,7 +213,7 @@ class Tutorial_LE_Results(BaseDataset):
 class DatasetAlgonauts_NSD_Shared(BaseDataset):
     dataset_name = "Algonauts23_shared_Net2Brain"
     DATASET_URLS = {
-        dataset_name: "https://www.dropbox.com/scl/fi/y3jbpl8pixeewjjj7svbz/Algonauts23_shared_subset_Net2Brain.zip?rlkey=f2tmrxj2wapp87wb1eux5u6cc&st=gfb0pi82&dl=1"
+        dataset_name: "https://www.dropbox.com/scl/fi/kscwsiiq1b5gajm49qbz4/Algonauts23_shared_Net2Brain.zip?rlkey=t95xbguxx31phvam7o0fv0y9n&st=b4rtzg8e&dl=1"
     }
 
 
@@ -673,7 +673,7 @@ class DatasetAlgonauts_NSD_Shared(BaseDataset):
 class DatasetAlgonauts_NSD(DatasetAlgonauts_NSD_Shared):
     dataset_name = "Algonauts23_Net2Brain"
     DATASET_URLS = {
-        dataset_name: "https://www.dropbox.com/scl/fi/lzxtzp1sb7ivh0esy2d2y/Algonauts23_Net2Brain.zip?rlkey=dpqstfzr0gr03cfwcc0ea1t5v&st=d2d8ba4l&dl=1"
+        dataset_name: "https://www.dropbox.com/scl/fi/pe72bcq15aobzpjcbl7tq/Algonauts23_Net2Brain.zip?rlkey=6apwm62va8xb8z3en8u0j1r0h&st=2qco3jt7&dl=1"
     }
         
     def __init__(self, path=None):
