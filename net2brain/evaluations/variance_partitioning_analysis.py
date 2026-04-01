@@ -616,6 +616,10 @@ class VPA():
         for i in range(3):
             for j in range(i+1, 4):
                 y_values[f'y{i+1}{j+1}'] = np.zeros((num_subjects, eeg_time))
+        for i in range(2):
+            for j in range(i+1, 3):
+                for k in range(j+1, 4):
+                    y_values[f'y{i+1}{j+1}{k+1}'] = np.zeros((num_subjects, eeg_time))
         y_values['y1234'] = np.zeros((num_subjects, eeg_time))
 
         R_un = np.zeros(eeg_time)
@@ -642,7 +646,11 @@ class VPA():
         # Define naming convention for the dataframe
         data_to_append = []
         for key, value in R_values.items():
-            desc = ' and '.join(key[1:]) + ' Influence' if len(key) > 2 else self.variable_names[int(key[1])-1] + ' Influence'
+            if len(key) <= 2:
+                desc = self.variable_names[int(key[1])-1] + ' Influence'
+            else:
+                desc = 'Combined ' + ' and '.join([self.variable_names[int(c)-1] for c in key[1:]]) + ' Influence'
+
             data_to_append.append({
                 'Variable': key,
                 'Description': desc,
@@ -651,7 +659,10 @@ class VPA():
                 'Color': None
             })
         for key, value in y_values.items():
-            desc = 'Shared Variance of ' + ' and '.join(key[1:]) if len(key) > 4 else 'Unique Variance ' + self.variable_names[int(key[1])-1]
+            if len(key) <= 2:
+                desc = 'Unique ' + self.variable_names[int(key[1])-1]
+            else:
+                desc = 'Shared Variance ' + ' and '.join([self.variable_names[int(c)-1] for c in key[1:]])
             data_to_append.append({
                 'Variable': key,
                 'Description': desc,
