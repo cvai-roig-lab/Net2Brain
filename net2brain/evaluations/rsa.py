@@ -360,17 +360,16 @@ class RSA():
 
             r_name, _, r_array_name = self.get_rnames()
 
-            model_ii = np.argmin([layer_dict[r_name] for layer_dict in model_layers_dict])
-            other_ii = np.argmin([layer_dict[r_name] for layer_dict in other_layers_dict])
+            model_ii = np.argmax([layer_dict[r_name] for layer_dict in model_layers_dict])
+            other_ii = np.argmax([layer_dict[r_name] for layer_dict in other_layers_dict])
 
             tstat, p = stats.ttest_ind(other_layers_dict[other_ii][r_array_name][0], model_layers_dict[model_ii][r_array_name][0])
 
             scan_key = "(" + str(counter) + ") " + roi[:-4]
 
             comp_dic[scan_key] = (tstat, p)
-            if p < 0.5:
+            if p < 0.05:
                 sig_pair = sorted(((scan_key, self.model_name), (scan_key, other_RSA.model_name)),
                                   key=lambda element: (element[1]))
                 sig_pairs.append(sig_pair)
         return comp_dic, sig_pairs
-

@@ -684,8 +684,7 @@ def _linear_encoding(feat_path,
                 r = np.mean(r_lst) if not veRSA else r_lst
 
                 # Store correlation results
-                if return_correlations:
-                    corr_dict[fold_ii][layer_id][roi_name] = r_lst
+                corr_dict[fold_ii][layer_id][roi_name] = r_lst
 
                 all_rois_dict[fold_ii][layer_id][roi_name] = r
 
@@ -712,16 +711,18 @@ def _linear_encoding(feat_path,
                 # Compute the Standard Error of the Mean (SEM)
                 sem_value = sem(r_values_across_folds)
 
-            # If there is only one fold, use the r_lst from the fold directly for testing
+            # If there is only one fold, use the correlations from the fold directly for testing
             else:
                 # Get R Value
                 R = all_rois_dict[0][layer_id][roi_name]
 
                 if not veRSA:
+                    # Retrieve the per-voxel correlations for this specific layer/ROI
+                    r_lst_this = corr_dict[0][layer_id][roi_name]
                     # Perform t-test on the r_lst values since they are also correlation values
-                    _, significance = ttest_1samp(r_lst, 0)
+                    _, significance = ttest_1samp(r_lst_this, 0)
                     # Compute the Standard Error of the Mean (SEM)
-                    sem_value = sem(r_lst)
+                    sem_value = sem(r_lst_this)
                 else:
                     significance = None
                     sem_value = None
@@ -799,7 +800,7 @@ def train_Ridgeregression_per_ROI(trn_x, tst_x, trn_y, tst_y, veRSA=False, save_
 
         if save_model:
             with open(save_path, "wb") as f:
-                pickle.dump(reg, f)
+                pickle.dump(best_model, f)
     else:
         with open(save_path, "rb") as f:
             reg = pickle.load(f)
@@ -935,8 +936,8 @@ def _ridge_encoding(feat_path,
                 r = np.mean(r_lst) if not veRSA else r_lst
 
                 # Store correlation results
-                if return_correlations:
-                    corr_dict[fold_ii][layer_id][roi_name] = r_lst
+                # if return_correlations:
+                corr_dict[fold_ii][layer_id][roi_name] = r_lst
 
                 all_rois_dict[fold_ii][layer_id][roi_name] = r
 
@@ -963,16 +964,18 @@ def _ridge_encoding(feat_path,
                 # Compute the Standard Error of the Mean (SEM)
                 sem_value = sem(r_values_across_folds)
 
-            # If there is only one fold, use the r_lst from the fold directly for testing
+            # If there is only one fold, use the correlations from the fold directly for testing
             else:
                 # Get R Value
                 R = all_rois_dict[0][layer_id][roi_name]
 
                 if not veRSA:
+                    # Retrieve the per-voxel correlations for this specific layer/ROI
+                    r_lst_this = corr_dict[0][layer_id][roi_name]
                     # Perform t-test on the r_lst values since they are also correlation values
-                    _, significance = ttest_1samp(r_lst, 0)
+                    _, significance = ttest_1samp(r_lst_this, 0)
                     # Compute the Standard Error of the Mean (SEM)
-                    sem_value = sem(r_lst)
+                    sem_value = sem(r_lst_this)
                 else:
                     significance = None
                     sem_value = None

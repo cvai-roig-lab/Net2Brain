@@ -283,12 +283,12 @@ class Searchlight():
         # TODO: Add actual NoiseCeiling!
         noise_ceiling = {'lnc': 0, 'unc': 0}
 
-        for counter, layer in self.model_rdms:
+        for counter, layer in enumerate(self.model_rdms):
             self.current_layer = layer
             self.layer_counter = counter
 
-            this_model_rdm = [np.load(op.join(self.model_rdms_path, layer))['arr_0']]
-            this_model_rdm = self.check_squareform(this_model_rdm) # Check if rdm is squareform #TODO Remove soon after reimplementing RSA
+            this_model_rdm = np.load(op.join(self.model_rdms_path, layer))['arr_0']
+            this_model_rdm = [self.check_squareform(this_model_rdm)]
             self.evaluate_searchlight(noise_ceiling, this_model_rdm)
 
         return self.final_dict
