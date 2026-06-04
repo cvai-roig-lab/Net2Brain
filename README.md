@@ -18,7 +18,7 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 **Bridging Neural and AI Research**:
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
-To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks), or our latest [paper release](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full). Net2Brain is part of the DFG Research Unit [ARENA](https://neuroai-arena.github.io/)
+To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks), or our latest [paper release](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full). Net2Brain is part of the DFG Research Unit [ARENA](https://neuroai-arena.github.io/).
 
 # Updates 
 
