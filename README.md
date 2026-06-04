@@ -2,7 +2,10 @@
 
 # Net2Brain 🧠
 
-<img src="docs/source/Net2Brain_Logo.png" alt="Net2Brain Logo" width="50%"/>
+<p align="center">
+  <img src="docs/source/Net2Brain_Logo.png" alt="Net2Brain Logo" width="48%"/>
+  <img src="docs/img/ARENA_text.jpg" alt="ARENA" width="48%"/>
+</p>
 
 
 Welcome to [__Net2Brain__](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full), a powerful toolbox designed to facilitate the comparison of human brain activity patterns with the activations of Deep Neural Networks (DNNs). With over 600 pre-trained DNNs available, Net2Brain empowers neuroscientists to explore and analyze the relationships between artificial and biological neural representations.
@@ -15,8 +18,7 @@ Net2Brain offers an all-in-one solution by providing access to over 600 pretrain
 **Bridging Neural and AI Research**:
 One of the primary objectives of Net2Brain is to facilitate the collaboration between neural and AI research. By providing a user-friendly toolbox, we aim to bridge the gap and empower non-computer scientists to leverage the benefits of deep neural networks in their neuroscientific investigations.
 
-To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks), or our latest [paper release](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full).
-
+To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.readthedocs.io/en/latest/index.html) or our [tutorial notebooks](notebooks), or our latest [paper release](https://www.frontiersin.org/journals/neuroinformatics/articles/10.3389/fninf.2025.1515873/full). Net2Brain is part of the DFG Research Unit [ARENA](https://neuroai-arena.github.io/)
 
 # Updates 
 
