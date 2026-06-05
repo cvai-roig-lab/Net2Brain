@@ -1,15 +1,20 @@
 Welcome to Net2Brain's Documentation!
 =====================================
 
-.. image:: Net2Brain_Logo.png
-   :align: center
-   :alt: Net2Brain Logo
+.. |logo| image:: Net2Brain_Logo.png
    :scale: 50%
+   :alt: Net2Brain Logo
+
+.. |arena| image:: ../img/ARENA_text.jpg
+   :scale: 50%
+   :alt: ARENA
+
+|logo| |arena|
 
 Welcome to **Net2Brain**, the comprehensive toolbox designed to illuminate the intricate parallels between the complex workings of the human brain and the sophisticated activations of Deep Neural Networks (DNNs). 
 Offering access to over 600 pre-trained models, Net2Brain empowers researchers to delve into the comparative study of 
 biological and artificial neural networks. This powerful resource, created by the collaborative efforts of 
-`CVAI <http://www.cvai.cs.uni-frankfurt.de/>`_ and `Radoslaw Cichy's lab <https://www.ewi-psy.fu-berlin.de/psychologie/arbeitsbereiche/neural_dyn_of_vis_cog/team/rm_cichy/index.html>`_ , is tailored to advance our understanding of cognitive processes through the lens of AI.
+`CVAI <http://www.cvai.cs.uni-frankfurt.de/>`_ and `Radoslaw Cichy's lab <https://www.ewi-psy.fu-berlin.de/psychologie/arbeitsbereiche/neural_dyn_of_vis_cog/team/rm_cichy/index.html>`_ , while being part of the DFG Research Unit [ARENA](https://neuroai-arena.github.io/), is tailored to advance our understanding of cognitive processes through the lens of AI.
 
 Net2Brain stands out with its user-friendly design, supporting a broad spectrum of visual tasks 
 and data formats. It provides intuitive methods for analyzing neural representations, facilitating the 
