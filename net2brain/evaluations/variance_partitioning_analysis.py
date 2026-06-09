@@ -86,8 +86,8 @@ class VPA():
         """
         lt_rdm1 = rdm1
         lt_rdm2 = rdm2
-        slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(lt_rdm1, lt_rdm2)
-        return r_value ** 2
+        rho, _ = scipy.stats.spearmanr(lt_rdm1, lt_rdm2)
+        return rho ** 2
 
     def get_uppernoiseceiling(self, rdm):
         """Calculate upper noise ceiling
@@ -230,6 +230,91 @@ class VPA():
 
 
 
+    def _as_array(self, loaded):
+        """Return a plain numpy array from whatever ``load`` produced.
+
+        Args:
+            loaded: Either a numpy array (e.g. from a .npy) or a dict-like
+                object (e.g. an .npz/.mat) holding the RDM under 'rdm'/'arr_0'.
+
+        Returns:
+            numpy array: The extracted RDM.
+        """
+        if isinstance(loaded, np.ndarray):
+            return loaded
+        if 'rdm' in loaded:
+            return np.asarray(loaded['rdm'])
+        if 'arr_0' in loaded:
+            return np.asarray(loaded['arr_0'])
+        raise ValueError("The RDM file does not contain 'rdm' or 'arr_0' keys.")
+
+    def _load_dependent(self, dependent_variable):
+        """Load the dependent variable into shape (subjects, time, pairs).
+
+        A single path is treated as one pre-stacked array. A list of paths is
+        treated as one RDM per subject and stacked. Square per-subject RDMs are
+        reduced to their upper triangle; condensed vectors and (time, pairs)
+        matrices are kept as-is. Data without a time axis is given a singleton
+        time axis so the time-resolved machinery can run on it unchanged.
+
+        Args:
+            dependent_variable (str or list): Path or list of paths to the RDMs.
+
+        Returns:
+            tuple: (dep_var, is_timeresolved), where dep_var has shape
+                (subjects, time, pairs) and is_timeresolved is False when a
+                singleton time axis had to be inserted.
+        """
+        if isinstance(dependent_variable, str):
+            dep_var = self._as_array(load(dependent_variable))
+        else:
+            subject_rdms = []
+            for path in dependent_variable:
+                rdm = self._as_array(load(path))
+                if rdm.ndim == 2 and rdm.shape[0] == rdm.shape[1]:
+                    rdm = self.get_uppertriangular(rdm)
+                subject_rdms.append(rdm)
+            dep_var = np.array(subject_rdms)
+
+        if dep_var.ndim not in (2, 3):
+            raise ValueError(
+                f"Dependent variable resolved to shape {dep_var.shape}; expected "
+                "2D (subjects, pairs) or 3D (subjects, time, pairs)."
+            )
+
+        if dep_var.shape[-1] < 2:
+            raise ValueError(
+                f"Dependent variable has only {dep_var.shape[-1]} condition pair(s); "
+                "VPA needs at least 2 (i.e. 3 or more conditions)."
+            )
+
+        is_timeresolved = dep_var.ndim == 3
+        if not is_timeresolved:
+            dep_var = dep_var[:, np.newaxis, :]
+
+        return dep_var, is_timeresolved
+
+    def _load_independent(self, independent_variable):
+        """Load an independent variable into shape (n_models, pairs).
+
+        Accepts either a single path or a list of paths. Each RDM is reduced to
+        its upper-triangular vector, so a bare string is handled the same as a
+        one-element list instead of falling through to the EEG code path in
+        ``load_rdms``.
+
+        Args:
+            independent_variable (str or list): Path or list of paths to RDMs.
+
+        Returns:
+            numpy array: Stacked upper-triangular RDM vectors.
+        """
+        paths = [independent_variable] if isinstance(independent_variable, str) else list(independent_variable)
+        vectors = []
+        for path in paths:
+            rdm = self.check_squareform(self._as_array(load(path)))
+            vectors.append(self.get_uppertriangular(rdm))
+        return np.array(vectors)
+
     def calculate_p_values(self, models_data):
         """
         Calculate p-values for each time-step in models_data using one-sample t-test among participants.
@@ -268,8 +353,8 @@ class VPA():
         """
 
         # Open RDMs
-        ind_var_1 = self.load_rdms(self.independent_1)
-        ind_var_2 = self.load_rdms(self.independent_2)
+        ind_var_1 = self._load_independent(self.independent_1)
+        ind_var_2 = self._load_independent(self.independent_2)
 
         # Average if wanted
         if self.average_models:
@@ -310,9 +395,9 @@ class VPA():
         """
 
         # Open RDMs
-        ind_var_1 = self.load_rdms(self.independent_1)
-        ind_var_2 = self.load_rdms(self.independent_2)
-        ind_var_3 = self.load_rdms(self.independent_3)
+        ind_var_1 = self._load_independent(self.independent_1)
+        ind_var_2 = self._load_independent(self.independent_2)
+        ind_var_3 = self._load_independent(self.independent_3)
 
         # Average if wanted
         if self.average_models:
@@ -364,10 +449,10 @@ class VPA():
         """
         
         # Open RDMs
-        ind_var_1 = self.load_rdms(self.independent_1)
-        ind_var_2 = self.load_rdms(self.independent_2)
-        ind_var_3 = self.load_rdms(self.independent_3)
-        ind_var_4 = self.load_rdms(self.independent_4)
+        ind_var_1 = self._load_independent(self.independent_1)
+        ind_var_2 = self._load_independent(self.independent_2)
+        ind_var_3 = self._load_independent(self.independent_3)
+        ind_var_4 = self._load_independent(self.independent_4)
 
         # Average if wanted
         if self.average_models:
@@ -483,6 +568,12 @@ class VPA():
         values = [R1_values, R2_values, R12_values, y12_values, y1_values, y2_values]
         significances = [sig_R1, sig_R2, sig_R12, sig_y12, sig_y1, sig_y2]
 
+        # Surface the noise ceiling as its own rows instead of discarding it
+        variables += ['UNC', 'LNC']
+        descriptions += ['Upper Noise Ceiling', 'Lower Noise Ceiling']
+        values += [R_un, R_ln]
+        significances += [np.full(eeg_time, np.nan), np.full(eeg_time, np.nan)]
+
         data_to_append = []
 
         for var, desc, val, sig in zip(variables, descriptions, values, significances):
@@ -541,7 +632,7 @@ class VPA():
             for i in range(num_subjects):
                 this_dep_var = np.squeeze(dep_var[i,time,:])
                 results = self.VPA_3(this_dep_var)
-                R1_values[i, time], R2_values[i, time], R3_values[i, time], R12_values[i, time], R13_values[i, time], R23_values[i, time], R123_values[i, time], y123_values[i, time], y12_values[i, time], y13_values[i, time], y23_values[i, time], y1_values[i, time], y2_values[i, time], y3_values[i, time] = results
+                R1_values[i, time], R2_values[i, time], R3_values[i, time], R12_values[i, time], R13_values[i, time], R23_values[i, time], R123_values[i, time], y123_values[i, time], y12_values[i, time], y13_values[i, time], y23_values[i, time], y1_values[i, time], y2_values[i, time], y3_values[i, time] = (results['R1'], results['R2'], results['R3'], results['R12'], results['R13'], results['R23'], results['R123'], results['y123'], results['y12'], results['y13'], results['y23'], results['y1'], results['y2'], results['y3'])
 
         # Calculate significance for all values
         sig_R1 = self.calculate_p_values(R1_values)
@@ -574,6 +665,12 @@ class VPA():
         ]
         values = [R1_values, R2_values, R3_values, R12_values, R13_values, R23_values, R123_values, y123_values, y12_values, y13_values, y23_values, y1_values, y2_values, y3_values]
         significances = [sig_R1, sig_R2, sig_R3, sig_R12, sig_R13, sig_R23, sig_R123, sig_y123, sig_y12, sig_y13, sig_y23, sig_y1, sig_y2, sig_y3]
+
+        # Surface the noise ceiling as its own rows instead of discarding it
+        variables += ['UNC', 'LNC']
+        descriptions += ['Upper Noise Ceiling', 'Lower Noise Ceiling']
+        values += [R_un, R_ln]
+        significances += [np.full(eeg_time, np.nan), np.full(eeg_time, np.nan)]
 
         data_to_append = []
 
@@ -671,6 +768,10 @@ class VPA():
                 'Color': None
             })
 
+        # Surface the noise ceiling as its own rows instead of discarding it
+        data_to_append.append({'Variable': 'UNC', 'Description': 'Upper Noise Ceiling', 'Values': R_un, 'Significance': np.full(eeg_time, np.nan), 'Color': None})
+        data_to_append.append({'Variable': 'LNC', 'Description': 'Lower Noise Ceiling', 'Values': R_ln, 'Significance': np.full(eeg_time, np.nan), 'Color': None})
+
         all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
 
         return all_variances_df
@@ -691,7 +792,7 @@ class VPA():
         self.average_models=average_models
 
         # Load dependent variable
-        dep_var = self.load_rdms(self.dependent_variable)[0]
+        dep_var, is_timeresolved = self._load_dependent(self.dependent_variable)
 
         # Get Subjects and time from the dimensions (16, 100, 1225)
         num_subjects = dep_var.shape[0]
@@ -699,5 +800,12 @@ class VPA():
 
         # Calculate VPA
         all_variances_df = self.VPA_function(dep_var, num_subjects, eeg_time)
+
+        # Drop the singleton time axis from the results when the data has no time dimension
+        if not is_timeresolved:
+            for column in ('Values', 'Significance'):
+                all_variances_df[column] = [
+                    np.squeeze(np.asarray(value), axis=-1) for value in all_variances_df[column]
+                ]
 
         return all_variances_df

@@ -322,9 +322,97 @@ class Plotting:
         return dataframe
 
 
+    def plotting_components(self, threshold=0.05, title="Variance Partitioning"):
+        """Bar plot of VPA components for results without a time axis (e.g. fMRI).
+
+        Each component is shown as its mean across subjects with SEM error bars
+        and a significance marker where the corrected p-value is below
+        ``threshold``. Bars are coloured by component type (unique, shared, or
+        combined/influence) so the partitioning is easy to read at a glance.
+
+        Args:
+            threshold (float): Significance level for the star markers.
+            title (str): Figure title.
+        """
+        category_colors = {
+            'Unique': '#4C72B0',
+            'Shared': '#DD8452',
+            'Combined / influence': '#8C8C8C',
+        }
+
+        def component_category(variable):
+            variable = str(variable)
+            if variable.startswith('R'):
+                return 'Combined / influence'
+            return 'Unique' if len(variable) <= 2 else 'Shared'
+
+        for dataframe in self.dataframes:
+            names, means, sems, sigs, colors, categories = [], [], [], [], [], []
+            ceilings = {}
+            for _, row in dataframe.iterrows():
+                if row["Variable"] in ('UNC', 'LNC'):
+                    ceilings[row["Variable"]] = float(np.mean(np.atleast_1d(np.asarray(row["Values"], dtype=float))))
+                    continue
+                values = np.atleast_1d(np.asarray(row["Values"], dtype=float))
+                n_subjects = len(values)
+                category = component_category(row["Variable"])
+                names.append(row["Description"])
+                means.append(values.mean())
+                sems.append(values.std(ddof=1) / np.sqrt(n_subjects) if n_subjects > 1 else 0.0)
+                sigs.append(float(np.asarray(row["Significance"])))
+                colors.append(category_colors[category])
+                categories.append(category)
+
+            x = np.arange(len(names))
+            fig, ax = plt.subplots(figsize=(max(7, 1.4 * len(names)), 6))
+
+            ax.bar(x, means, yerr=sems, capsize=4, color=colors, edgecolor='white',
+                   linewidth=0.8, alpha=0.9, error_kw=dict(ecolor='0.3', lw=1.2))
+
+            value_range = (max(means) - min(means)) or 1.0
+            for xi, mean, sem, p in zip(x, means, sems, sigs):
+                if p < threshold:
+                    if mean >= 0:
+                        ax.text(xi, mean + sem + 0.03 * value_range, '*', ha='center',
+                                va='bottom', fontsize=16, color='black')
+                    else:
+                        ax.text(xi, mean - sem - 0.03 * value_range, '*', ha='center',
+                                va='top', fontsize=16, color='black')
+
+            ax.axhline(0, color='0.2', linewidth=1)
+            ax.set_xticks(x)
+            ax.set_xticklabels([self.add_line_break(name) for name in names], rotation=30, ha='right')
+            ax.set_ylabel("Variance explained (R\u00b2)", fontsize=12)
+            ax.set_title(title, fontsize=15, pad=12)
+
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.grid(axis='y', alpha=0.3)
+            ax.set_axisbelow(True)
+
+            # Legend: component categories plus noise-ceiling reference lines
+            handles = [plt.Rectangle((0, 0), 1, 1, color=category_colors[c]) for c in category_colors if c in categories]
+            labels = [c for c in category_colors if c in categories]
+            for key, label, ls in [('UNC', 'Upper noise ceiling', '--'), ('LNC', 'Lower noise ceiling', ':')]:
+                if key in ceilings and not np.isnan(ceilings[key]):
+                    line = ax.axhline(ceilings[key], color='0.45', linestyle=ls, linewidth=1.2)
+                    handles.append(line)
+                    labels.append(label)
+            if len(labels) > 1:
+                ax.legend(handles, labels, frameon=False, loc='best')
+
+            plt.tight_layout()
+            plt.show()
+
+
     def plotting_over_time(self, add_std=False):
         """Plotting line plots over time for each dataframe."""
         for dataframe in self.dataframes:
+            if np.asarray(dataframe.iloc[0]["Values"]).ndim < 2:
+                raise ValueError(
+                    "This dataframe has no time axis (its 'Values' are 1D), so it "
+                    "cannot be plotted over time. Use 'plotting_components' instead."
+                )
             self.add_std_deviation(dataframe)
 
             # Average 2D arrays over the first axis
@@ -349,6 +437,12 @@ class Plotting:
                 std = row["Std"]
                 color = palette[index]
 
+                # Draw the noise ceiling as grey reference lines, not coloured components
+                if row["Variable"] in ('UNC', 'LNC'):
+                    ls = '--' if row["Variable"] == 'UNC' else ':'
+                    plt.plot(time_points, values, label=name, color='0.45', linestyle=ls, linewidth=1.5)
+                    continue
+
                 # Plot values with optional standard deviation shading
                 plt.plot(time_points, values, label=name, color=color, linewidth=2)
                 if add_std and std is not None:
@@ -370,5 +464,15 @@ class Plotting:
             plt.title("Time Series Analysis Results")
 
             # Add legend and show plot
-            plt.legend()
+            ax, fig = plt.gca(), plt.gcf()
+            handles, labels = ax.get_legend_handles_labels()
+            order = sorted(range(len(labels)), key=lambda k: labels[k])
+            handles, labels = [handles[k] for k in order], [labels[k] for k in order]
+            if len(labels) > 3:
+                # Long legends overrun the plot, so place them below in ordered columns
+                fig.legend(handles, labels, loc='upper center', ncol=min(3, len(labels)),
+                           bbox_to_anchor=(0.5, 0), bbox_transform=fig.transFigure, fontsize=9)
+                plt.tight_layout(rect=[0, 0, 1, 1])
+            else:
+                ax.legend(handles, labels)
             plt.show()
