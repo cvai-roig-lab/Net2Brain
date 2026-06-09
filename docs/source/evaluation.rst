@@ -166,7 +166,7 @@ Prerequisites for the linear encoding function include:
 
 
 Variance Partitioning Analysis (VPA)
-----------------
+------------------------------------
 
 .. note::
 
@@ -174,18 +174,20 @@ Variance Partitioning Analysis (VPA)
 
 
 
-**Net2Brain** enhances model and cerebral data assessment through Variance Partitioning Analysis. 
-This technique supports the evaluation of **up to four independent variables** in relation to a 
-**singular dependent variable**, typically the neural data.
+**Net2Brain** enhances model and cerebral data assessment through Variance Partitioning Analysis.
+This technique supports the evaluation of **up to four independent variables** in relation to a
+**singular dependent variable**, typically the neural data. It works both for time-resolved data
+(e.g. EEG/MEG) and for data without a time axis (e.g. fMRI).
 
 The requirements for VPA are:
 
-- **dependent_variable**: The RDM-formatted path to the brain data.
-- **independent_variable**: An array of arrays, each containing RDM paths belonging to a specific group.
+- **dependent_variable**: The brain data. For time-resolved data (e.g. EEG) this is a single path to a pre-stacked array shaped *[subjects, time, pairs]*. For data without a time axis (e.g. fMRI) it can be either a single *[subjects, pairs]* array or a list of per-subject RDM paths; in that case the results are returned per subject, with no time dimension.
+- **independent_variable**: A list with one entry per independent variable. Each entry is itself a list of RDM paths belonging to that group, which are averaged together when ``average_models=True``. A bare path string is also accepted for a single-model group.
 - **variable_names**: The labels for the independent variables, integral for visualization.
 
 Returns:
-- **dataframe**: Contains all unique and shared variances. Dataframe can be filtered to only contain relevant information
+
+- **dataframe**: Contains all unique and shared variances, plus the upper and lower noise ceiling as ``UNC`` and ``LNC`` rows. The dataframe can be filtered to only contain relevant information.
 
 
 
@@ -207,21 +209,32 @@ Returns:
 
 Plotting VPA
 ^^^^^^^^^^^^^^
-The plotting utilities of **Net2Brain** offer the capability to visualize time-course data. 
-The `plotting_over_time` function includes an optional standard deviation overlay to enrich the
-graphical representation.
+The plotting utilities of **Net2Brain** cover both kinds of VPA results, and both overlay the
+upper and lower noise ceiling.
+
+For time-resolved data, ``plotting_over_time`` draws each component as a line over time and
+supports an optional standard-deviation band.
 
 - **add_std**: Enable to display the standard deviation on the graph. Defaults to False.
-
 
 .. code-block:: python
 
     from net2brain.evaluations.plotting import Plotting
 
-    # Plotting with significance
+    # Time-resolved results (e.g. EEG)
     plotter = Plotting(dataframe)
-
     plotter.plotting_over_time(add_std=True)
+
+For data without a time axis, ``plotting_components`` draws each component as a bar (mean across
+subjects with SEM error bars) and marks significance.
+
+- **threshold**: Significance level for the markers. Defaults to 0.05.
+
+.. code-block:: python
+
+    # Non-time-resolved results (e.g. fMRI)
+    plotter = Plotting(dataframe)
+    plotter.plotting_components()
 
 
 
