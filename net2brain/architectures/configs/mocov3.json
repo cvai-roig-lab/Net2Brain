@@ -1,5 +1,5 @@
 {
-    "vit_base": {
+    "vit_base_300ep": {
         "model": ".implemented_models.mocov3_models.vit_base_300ep",
         "nodes": [
             "blocks.0",
@@ -16,7 +16,7 @@
             "blocks.11"
         ]
     },
-    "vit_small": {
+    "vit_small_300ep": {
         "model": ".implemented_models.mocov3_models.vit_small_300ep",
         "nodes": [
             "blocks.0",

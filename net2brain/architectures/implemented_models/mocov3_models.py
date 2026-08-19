@@ -11,9 +11,8 @@
 # Modifications made by Net2Brain:
 # - adapt to Timm version 0.4.12
 
-import os
 import math
-import requests
+import warnings
 import torch
 import torch.nn as nn
 import torchvision.models as torchvision_models
@@ -24,13 +23,22 @@ from timm.models.vision_transformer import VisionTransformer, _cfg
 from timm.models.layers.helpers import to_2tuple
 from timm.models.layers import PatchEmbed
 
+from ..netsetbase import CACHE_DIR
+from ..shared_functions import download_to_path
+
 
 ###### COPIED FROM MOCOV3 OFFICIAL REPO###
 __all__ = [
-    'vit_small', 
+    'vit_small',
     'vit_base',
     'vit_conv_small',
     'vit_conv_base',
+    # Net2Brain entry points referenced by configs/mocov3.json
+    'vit_small_300ep',
+    'vit_base_300ep',
+    'resnet50_100ep',
+    'resnet50_300ep',
+    'resnet50_1000ep',
 ]
 
 
@@ -155,19 +163,25 @@ def vit_conv_base(**kwargs):
     return model
 
 def load_state_dict(file_url, linear_keyword):
-    if not os.path.exists(r"checkpoints"):
-        os.makedirs(r"checkpoints")
-    # Check if the file exists in the current directory
-    checkpoint_name = os.path.split(file_url)[-1]
-    checkpoint_path = "checkpoints/"+checkpoint_name
-    if not os.path.exists(checkpoint_path):
-        # Download the file using requests
-        r = requests.get(file_url)
-        print("~ Downloading weights")
-        with open(checkpoint_path, "wb") as f:
-            f.write(r.content)
+    # Cache the checkpoint alongside the other Net2Brain downloads
+    checkpoint_dir = CACHE_DIR / "mocov3_checkpoints"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_path = checkpoint_dir / file_url.rsplit("/", 1)[-1]
 
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    if not checkpoint_path.exists():
+        print(f"~ Downloading weights to {checkpoint_path}")
+        download_to_path(file_url, checkpoint_path)
+
+    try:
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    except Exception:
+        # A cached file that cannot be read is unusable, e.g. left over from an
+        # interrupted download. Discard it and fetch the checkpoint once more.
+        warnings.warn(f"Cached checkpoint {checkpoint_path} is unreadable, re-downloading.")
+        checkpoint_path.unlink(missing_ok=True)
+        download_to_path(file_url, checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+
     state_dict = checkpoint['state_dict']
     for k in list(state_dict.keys()):
         # retain only base_encoder up to before the embedding layer
@@ -178,62 +192,73 @@ def load_state_dict(file_url, linear_keyword):
         del state_dict[k]
     return state_dict
 
+
+def load_pretrained_weights(model, file_url, linear_keyword):
+    """Load MoCo v3 weights into `model` and verify that they actually arrived.
+
+    Only the (unused) linear classification head is expected to stay randomly
+    initialized. Anything else missing means the checkpoint layout changed and the
+    features would silently be extracted from an untrained network.
+    """
+    state_dict = load_state_dict(file_url, linear_keyword)
+    msg = model.load_state_dict(state_dict, strict=False)
+
+    expected_missing = {'%s.weight' % linear_keyword, '%s.bias' % linear_keyword}
+    unexpected_missing = set(msg.missing_keys) - expected_missing
+    if unexpected_missing or msg.unexpected_keys:
+        raise RuntimeError(
+            f"MoCo v3 checkpoint {file_url} does not match the model definition. "
+            f"Missing keys: {sorted(unexpected_missing)}. "
+            f"Unexpected keys: {sorted(msg.unexpected_keys)}."
+        )
+    return model
+
 def vit_base_300ep(pretrained: bool=True, **kwargs):
-    
+
     model = vit_base()
     file_url = "https://dl.fbaipublicfiles.com/moco-v3/vit-b-300ep/vit-b-300ep.pth.tar"
-    linear_keyword = "head"
     if pretrained:
-        state_dict = load_state_dict(file_url, linear_keyword)
-        msg=model.load_state_dict(state_dict, strict=False)
+        load_pretrained_weights(model, file_url, linear_keyword="head")
 
     model.eval()
     return model
 
 def vit_small_300ep(pretrained: bool=True, **kwargs):
-    
+
     model = vit_small()
     file_url = "https://dl.fbaipublicfiles.com/moco-v3/vit-s-300ep/vit-s-300ep.pth.tar"
-    linear_keyword = "head"
     if pretrained:
-        state_dict = load_state_dict(file_url, linear_keyword)
-        msg=model.load_state_dict(state_dict, strict=False)
+        load_pretrained_weights(model, file_url, linear_keyword="head")
 
     model.eval()
     return model
 
 def resnet50_100ep(pretrained: bool=True, **kwargs):
-    
+
     model = torchvision_models.__dict__['resnet50']()
     file_url = "https://dl.fbaipublicfiles.com/moco-v3/r-50-100ep/r-50-100ep.pth.tar"
-    linear_keyword = "fc"
     if pretrained:
-        state_dict = load_state_dict(file_url, linear_keyword)
-        msg=model.load_state_dict(state_dict, strict=False)
+        load_pretrained_weights(model, file_url, linear_keyword="fc")
 
     model.eval()
     return model
 
 def resnet50_300ep(pretrained: bool=True, **kwargs):
-    
+
     model = torchvision_models.__dict__['resnet50']()
     file_url = "https://dl.fbaipublicfiles.com/moco-v3/r-50-300ep/r-50-300ep.pth.tar"
-    linear_keyword = "fc"
     if pretrained:
-        state_dict = load_state_dict(file_url, linear_keyword)
-        msg=model.load_state_dict(state_dict, strict=False)
+        load_pretrained_weights(model, file_url, linear_keyword="fc")
 
-    model.eval()    
+    model.eval()
     return model
 
 def resnet50_1000ep(pretrained: bool=True, **kwargs):
-    
+
     model = torchvision_models.__dict__['resnet50']()
     file_url = "https://dl.fbaipublicfiles.com/moco-v3/r-50-1000ep/r-50-1000ep.pth.tar"
-    linear_keyword = "fc"
     if pretrained:
-        state_dict = load_state_dict(file_url, linear_keyword)
-        msg=model.load_state_dict(state_dict, strict=False)
+        load_pretrained_weights(model, file_url, linear_keyword="fc")
 
     model.eval()
     return model
