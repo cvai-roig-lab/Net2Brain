@@ -16,6 +16,8 @@ from net2brain.feature_extraction import FeatureExtractor
         ("Taskonomy", "colorization"),
         ("Clip", "RN50"),
         ("Cornet", "cornet_z"),
+        ("MoCoV3", "vit_small_300ep"),
+        ("MoCoV3", "resnet50_100ep"),
     ],
 )
 def test_extractor_outputs(root_path, tmp_path, netset, model):
