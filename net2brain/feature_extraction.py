@@ -14,6 +14,7 @@ from .architectures.unet_models import Unet
 from .architectures.yolo_models import Yolo
 from .architectures.huggingface_llm import Huggingface
 from .architectures.audio_models import Audio
+from .architectures.mocov3_models import MoCoV3
 from datetime import datetime
 import torchextractor as tx
 import warnings

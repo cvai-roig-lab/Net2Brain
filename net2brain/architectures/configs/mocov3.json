@@ -1,0 +1,63 @@
+{
+    "vit_base_300ep": {
+        "model": ".implemented_models.mocov3_models.vit_base_300ep",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "vit_small_300ep": {
+        "model": ".implemented_models.mocov3_models.vit_small_300ep",
+        "nodes": [
+            "blocks.0",
+            "blocks.1",
+            "blocks.2",
+            "blocks.3",
+            "blocks.4",
+            "blocks.5",
+            "blocks.6",
+            "blocks.7",
+            "blocks.8",
+            "blocks.9",
+            "blocks.10",
+            "blocks.11"
+        ]
+    },
+    "resnet50_100ep": {
+        "model": ".implemented_models.mocov3_models.resnet50_100ep",
+        "nodes": [
+            "layer1",
+            "layer2",
+            "layer3",
+            "layer4"
+        ]
+    },
+    "resnet50_300ep": {
+        "model": ".implemented_models.mocov3_models.resnet50_300ep",
+        "nodes": [
+            "layer1",
+            "layer2",
+            "layer3",
+            "layer4"
+        ]
+    },
+    "resnet50_1000ep": {
+        "model": ".implemented_models.mocov3_models.resnet50_1000ep",
+        "nodes": [
+            "layer1",
+            "layer2",
+            "layer3",
+            "layer4"
+        ]
+    }
+}

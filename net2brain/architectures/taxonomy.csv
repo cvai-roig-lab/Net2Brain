@@ -693,3 +693,8 @@ Data,MMAction,uniformer_v2_B_16_CLIP_k710_k400,,,,,,,,,x,,,,,x,,,,,,,,,,,,,,,,x,
 Data,MMAction,videomae_B,,,,,,,,,x,,,,,x,,,,,,,,,,,,,,,,x,,,x,,,,,,,,
 Data,MMAction,videomae_v2_S,,,,,,,,,x,,,,,x,,,,,,,,,,,,,,,,x,,,x,,,,,,,,
 Data,MMAction,videomae_v2_B,,,,,,,,,x,,,,,x,,,,,,,,,,,,,,,,x,,,x,,,,,,,,
+Data,MoCoV3,vit_base_300ep,x,,,,,,,,,,,,,,,x,,,x,,,,,,,,,,,,,,,,,,,,,,x
+Data,MoCoV3,vit_small_300ep,x,,,,,,,,,,,,,,,x,,,x,,,,,,,,,,,,,,,,,,,,,,x
+Data,MoCoV3,resnet50_100ep,x,,,,,,,,,,,x,,,,,,,x,,,,,,,,,,,,,,,,,,,,,,x
+Data,MoCoV3,resnet50_300ep,x,,,,,,,,,,,x,,,,,,,x,,,,,,,,,,,,,,,,,,,,,,x
+Data,MoCoV3,resnet50_1000ep,x,,,,,,,,,,,x,,,,,,,x,,,,,,,,,,,,,,,,,,,,,,x
