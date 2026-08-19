@@ -7,7 +7,7 @@ import os
 class MoCoV3(NetSetBase):
 
     def __init__(self, model_name, device):
-        self.supported_data_types = ['image']
+        self.supported_data_types = ['image', 'video']
         self.netset_name = "MoCoV3"
         self.model_name = model_name
         self.device = device
@@ -21,12 +21,17 @@ class MoCoV3(NetSetBase):
     def get_preprocessing_function(self, data_type):
         if data_type == 'image':
             return self.image_preprocessing
+        elif data_type == 'video':
+            warnings.warn("Models only support image-data. Will average video frames")
+            return self.video_preprocessing
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
-        
+
 
     def get_feature_cleaner(self, data_type):
         if data_type == 'image':
+            return MoCoV3.clean_extracted_features
+        elif data_type == 'video':
             return MoCoV3.clean_extracted_features
         else:
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
