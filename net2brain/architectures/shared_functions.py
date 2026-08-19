@@ -2,9 +2,9 @@ import warnings
 import json
 import importlib
 from pathlib import Path
-import shutil
 import requests
 import urllib.request
+from tqdm import tqdm
 
 
 def get_function_from_module(function_string):
@@ -30,9 +30,19 @@ def get_function_from_module(function_string):
 
 def download_to_path(url: str, dest: Path) -> None:
     tmp = dest.with_suffix(dest.suffix + ".tmp")
-    with urllib.request.urlopen(url) as r, open(tmp, "wb") as f:
-        shutil.copyfileobj(r, f)
-    tmp.replace(dest)  # atomic-ish move
+    try:
+        with urllib.request.urlopen(url) as r, open(tmp, "wb") as f:
+            total = int(r.headers.get("Content-Length") or 0)
+            with tqdm(total=total or None, unit="B", unit_scale=True, unit_divisor=1024,
+                      desc=dest.name) as progress:
+                for chunk in iter(lambda: r.read(1024 * 1024), b""):
+                    f.write(chunk)
+                    progress.update(len(chunk))
+        tmp.replace(dest)  # atomic-ish move
+    finally:
+        # Never leave a partial download behind: it would be mistaken for a
+        # complete checkpoint on the next run and fail to load forever.
+        tmp.unlink(missing_ok=True)
 
 
 def download_github_folder(owner, repo, repo_path, out_dir):

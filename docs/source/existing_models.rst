@@ -14,13 +14,13 @@ Available Netsets
 
 **Net2Brain** facilitates the exploration and utilization of a vast range of Deep Neural Networks (DNNs) through its diverse netsets, which are libraries of different pre-trained models:
 
-1. **Standard torchvision** (`Pytorch`)
+1. **Standard torchvision** (`Standard`)
    A compendium of torchvision models catering to a spectrum of tasks from image classification to video classification. Detailed information can be found on the `torchvision models page <https://pytorch.org/vision/stable/models.html>`_.
 
 2. **Timm** (`Timm`)
    A library containing a rich array of advanced computer vision models developed by Ross Wightman. More details are available on the `Timm GitHub repository <https://github.com/rwightman/pytorch-image-models#models>`_.
 
-3. **PyTorch Hub** (`Torchhub`)
+3. **PyTorch Hub** (`Pytorch`)
    This netset includes models for a variety of visual tasks accessible through the torch.hub API, not encompassed by torchvision. For more, see the `PyTorch Hub documentation <https://pytorch.org/docs/stable/hub.html>`_.
 
 4. **MMAction** (`MMAction`)
@@ -46,6 +46,12 @@ Available Netsets
 
 11. **Toolbox** (`Toolbox`)
     A set of networks that are implemented within Net2Brain itself, providing immediate access to specialized neural network functionalities.
+
+12. **Audio** (`Audio`)
+    Networks that take audio as input, such as the PANNs family of audio tagging models. Learn more at the `PANNs GitHub repository <https://github.com/qiuqiangkong/audioset_tagging_cnn>`_.
+
+13. **MoCo v3** (`MoCoV3`)
+    Self-supervised ResNet50 and Vision Transformer encoders trained on ImageNet with momentum contrastive learning, useful as a contrast to supervised training of the same architectures. Details are on the `MoCo v3 GitHub repository <https://github.com/facebookresearch/moco-v3>`_.
 
 
 Adding Your Own Models

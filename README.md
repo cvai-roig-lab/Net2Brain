@@ -22,6 +22,10 @@ To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.
 
 # Updates 
 
+# Updates 08/26
+1. **New netset** `MoCoV3`, with self-supervised ResNet50 (100/300/1000 epochs) and ViT-S/ViT-B (300 epochs) encoders trained on ImageNet
+
+
 # Updates 02/26
 1. Improved Algonauts 2023 NSD datasets (`Algonauts23_Net2Brain` and `Algonauts23_shared_Net2Brain`): proper metadata files linking fMRI rows to image filenames, NSD IDs, COCO IDs and captions, explicit per-subject ROI availability, and recomputed RDMs for the shared split.
 
@@ -349,6 +353,7 @@ This toolbox is inspired by the Algonauts Project and contains collections of ar
 - **CORnet-Z and CORnet-RT:** Kubilius, J., Schrimpf, M., Nayebi, A., Bear, D., Yamins, D.L.K., DiCarlo, J.J. (2018) CORnet: Modeling the Neural Mechanisms of Core Object Recognition. biorxiv. doi:10.1101/408385
 - **CORnet-S:** Kubilius, J., Schrimpf, M., Kar, K., Rajalingham, R., Hong, H., Majaj, N., ... & Dicarlo, J. (2019). Brain-like object recognition with high-performing shallow recurrent ANNs. In Advances in Neural Information Processing Systems (pp. 12785-12796).
 - **MoCo:** Kaiming He and Haoqi Fan and Yuxin Wu and Saining Xie and Ross Girshick, Momentum Contrast for Unsupervised Visual Representation Learning (2019), arXiv preprint arXiv:1911.05722
+- **MoCo v3:** Xinlei Chen and Saining Xie and Kaiming He, An Empirical Study of Training Self-Supervised Vision Transformers (2021), Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV), arXiv:2104.02057
 - **SwAv:** Caron, Mathilde and Misra, Ishan and Mairal, Julien and Goyal, Priya and Bojanowski, Piotr and Joulin, Armand ,Unsupervised Learning of Visual Features by Contrasting Cluster Assignments (2020), Proceedings of Advances in Neural Information Processing Systems (NeurIPS)
 - **Taskonomy:** Zamir, Amir R and Sax, Alexander and and Shen, William B and Guibas, Leonidas and Malik, Jitendra and Savarese, Silvio, Taskonomy: Disentangling Task Transfer Learning (2018), 2018 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)
 - **Image Models:** Ross Wightman, PyTorch Image Models(2019), 10.5281/zenodo.4414861, https://github.com/rwightman/pytorch-image-models
