@@ -8,14 +8,40 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from scipy.stats import zscore, ttest_1samp, sem
-from cvxopt import matrix, solvers
+from scipy.optimize import minimize
 from sklearn.decomposition import PCA, IncrementalPCA
 from .stacked_ridge_tools import cross_val_ridge, R2, ridge, R2r
 from .stacked_variance_partitioning import forward_variance_partitioning, backward_variance_partitioning
 from .eval_helper import get_npy_files
 
-# Set option to not show progress in CVXOPT solver
-solvers.options["show_progress"] = False
+
+def solve_stacking_weights(P):
+    """Solve for the stacking weights of a single voxel.
+
+    Minimizes 0.5 * w^T P w subject to w >= 0 and sum(w) = 1.
+
+    Args:
+        P (numpy.ndarray): Error covariance matrix with shape (n_features, n_features).
+
+    Returns:
+        numpy.ndarray: Stacking weights with shape (n_features,).
+    """
+    n_features = P.shape[0]
+    # Rescale P so the solver tolerances do not depend on the scale of the data
+    # (the minimizer is invariant to positive scaling)
+    scale = np.trace(P) / n_features
+    if scale > 0:
+        P = P / scale
+    result = minimize(
+        lambda w: 0.5 * w @ P @ w,
+        np.full(n_features, 1.0 / n_features),
+        jac=lambda w: P @ w,
+        bounds=[(0.0, None)] * n_features,
+        constraints={"type": "eq", "fun": lambda w: w.sum() - 1.0, "jac": lambda w: np.ones_like(w)},
+        method="SLSQP",
+        options={"ftol": 1e-12, "maxiter": 200},
+    )
+    return result.x
 
 
 def get_cv_indices(n_samples, n_folds):
@@ -223,20 +249,12 @@ def stacking_fmri(
         for j in range(n_features):
             P[:, i, j] = np.mean(err[i] * err[j], 0)
 
-    # solve the quadratic programming problem to obtain the weights for stacking
-    q = matrix(np.zeros((n_features)))
-    G = matrix(-np.eye(n_features, n_features))
-    h = matrix(np.zeros(n_features))
-    A = matrix(np.ones((1, n_features)))
-    b = matrix(np.ones(1))
-
     S = np.zeros((n_voxels, n_features))
     stacked_pred_train = np.zeros_like(train_data)
 
     for i in range(0, n_voxels):
-        PP = matrix(P[i])
-        # solve for stacking weights for every voxel
-        S[i, :] = np.array(solvers.qp(PP, q, G, h, A, b)["x"]).reshape(n_features)
+        # solve the quadratic programming problem to obtain the stacking weights for every voxel
+        S[i, :] = solve_stacking_weights(P[i])
 
         # combine the predictions from the individual feature spaces for voxel i
         z_test = np.array(
@@ -362,23 +380,13 @@ def stacking_CV_fmri(data, features, method="cross_val_ridge", n_folds=5, score_
             for j in range(n_features):
                 P[:, i, j] = np.mean(err[i] * err[j], axis=0)
 
-        # Set optimization parameters for computing stacking weights
-        q = matrix(np.zeros((n_features)))
-        G = matrix(-np.eye(n_features, n_features))
-        h = matrix(np.zeros(n_features))
-        A = matrix(np.ones((1, n_features)))
-        b = matrix(np.ones(1))
-
         S = np.zeros((n_voxels, n_features))
         stacked_pred_train = np.zeros_like(train_data)
 
         # Compute stacking weights and combined predictions for each voxel
         for i in range(n_voxels):
-            PP = matrix(P[i])
             # solve for stacking weights for every voxel
-            S[i, :] = np.array(solvers.qp(PP, q, G, h, A, b)["x"]).reshape(
-                n_features,
-            )
+            S[i, :] = solve_stacking_weights(P[i])
             # combine the predictions from the individual feature spaces for voxel i
             z = np.array(
                 [preds_test[feature_j, test_ind, i] for feature_j in range(n_features)]
