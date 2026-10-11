@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='net2brain',
-    version='1.3.3',
+    version='1.3.4',
     author='Roig Lab',
     packages=find_packages(),
     package_data={
@@ -19,7 +19,6 @@ setup(
         'sentencepiece',
         'flax',
         'transformers==4.40.2',
-        'cvxopt',
         'einops',
         'accelerate',
         'matplotlib',
