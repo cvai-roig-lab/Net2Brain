@@ -1,6 +1,7 @@
 from torchvision import transforms as trn
 import torchextractor as tx
 from PIL import Image
+import copy
 import os
 import re
 import cv2
@@ -13,6 +14,32 @@ import numpy as np
 
 CACHE_DIR = Path.home() / ".cache" / "net2brain"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def copy_module_output(output):
+    """Copy all tensors in a module output, keeping tuples, lists and dicts intact."""
+    if torch.is_tensor(output):
+        return output.detach().clone()
+    if isinstance(output, tuple) and hasattr(output, "_fields"):  # namedtuple
+        return type(output)(*[copy_module_output(item) for item in output])
+    if isinstance(output, (list, tuple)):
+        return type(output)([copy_module_output(item) for item in output])
+    if isinstance(output, dict):
+        copied = copy.copy(output)
+        for key, value in output.items():
+            copied[key] = copy_module_output(value)
+        return copied
+    return output
+
+
+def _capture_output_copy(module, input, output, module_name, feature_maps):
+    # Store a copy, so later in-place ops (e.g. ReLU(inplace=True)) cannot change it
+    feature_maps[module_name] = copy_module_output(output)
+
+
+def create_extractor(model, layers):
+    """torchextractor Extractor that stores a copy of each layer's output."""
+    return tx.Extractor(model, layers, capture_fn=_capture_output_copy)
 
 
 # Base class for all NetSets

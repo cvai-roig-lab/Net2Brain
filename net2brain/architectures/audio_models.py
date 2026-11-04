@@ -1,8 +1,7 @@
 import os
 
-import torchextractor as tx
 
-from .netsetbase import NetSetBase
+from .netsetbase import NetSetBase, create_extractor
 from .shared_functions import load_from_json
 
 
@@ -79,7 +78,7 @@ class Audio(NetSetBase):
         self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+        self.extractor_model = create_extractor(self.loaded_model, self.layers)
 
         if self.tokenizer is not None:
             data = self.tokenizer(data, sampling_rate=self.loader_kwargs['sample_rate'], return_tensors="pt")

@@ -10,7 +10,6 @@ with warnings.catch_warnings():
 
 import torch
 import torch.nn.functional as F
-import torchextractor as tx
 
 from mmengine.registry import OPTIMIZERS
 _orig_register = OPTIMIZERS.register_module
@@ -34,7 +33,7 @@ from mmaction.datasets.transforms.formatting import FormatShape, PackActionInput
 from mmengine.dataset.base_dataset import Compose as MMECompose
 from mmengine.dataset.utils import pseudo_collate
 
-from .netsetbase import NetSetBase
+from .netsetbase import NetSetBase, create_extractor
 from .shared_functions import download_to_path, download_github_folder
 
 
@@ -213,7 +212,7 @@ class MMAction(NetSetBase):
         n_clips = data.shape[0]
         features_all_clips = {}
         for i in range(n_clips):  # sacrifice speed to avoid increasing batch size
-            extractor_model = tx.Extractor(self.loaded_model, layers)
+            extractor_model = create_extractor(self.loaded_model, layers)
             try:
                 out, features = extractor_model(data[i].unsqueeze(0).to(device), stage='head')
                 # this unsqueeze is needed because of a peculiarity that some squeezing is done
