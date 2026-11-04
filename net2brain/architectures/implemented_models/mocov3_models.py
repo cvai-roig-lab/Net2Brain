@@ -175,8 +175,7 @@ def load_state_dict(file_url, linear_keyword):
     try:
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     except Exception:
-        # A cached file that cannot be read is unusable, e.g. left over from an
-        # interrupted download. Discard it and fetch the checkpoint once more.
+        # A cached file that cannot be read is unusable. Discard it and fetch the checkpoint once more.
         warnings.warn(f"Cached checkpoint {checkpoint_path} is unreadable, re-downloading.")
         checkpoint_path.unlink(missing_ok=True)
         download_to_path(file_url, checkpoint_path)

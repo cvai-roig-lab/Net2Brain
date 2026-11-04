@@ -2,7 +2,7 @@ from pathlib import Path
 import pytest
 from torchvision import models
 from torchvision import transforms as trn
-import torchextractor as tx
+from net2brain.architectures.netsetbase import create_extractor
 from net2brain.feature_extraction import FeatureExtractor
 
 
@@ -114,7 +114,7 @@ def test_with_own_functions(root_path, tmp_path):
         print("I am using my own extractor")
 
         # Create a extractor instance
-        extractor_model = tx.Extractor(model, layers_to_extract)
+        extractor_model = create_extractor(model, layers_to_extract)
 
         # Extract actual features
         _, features = extractor_model(preprocessed_data)

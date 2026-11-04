@@ -1,7 +1,6 @@
 import warnings
-from .netsetbase import NetSetBase
+from .netsetbase import NetSetBase, create_extractor
 from .shared_functions import load_from_json
-import torchextractor as tx
 import os
 from transformers import AutoTokenizer, BartModel, AlignTextModel, AlbertModel, GPT2Tokenizer, GPT2Model
 import transformers
@@ -98,7 +97,7 @@ class Huggingface(NetSetBase):
         inputs = self.tokenizer(data, return_tensors="pt")
 
         # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+        self.extractor_model = create_extractor(self.loaded_model, self.layers)
 
         # Extract actual features
         _, features = self.extractor_model(**inputs)
