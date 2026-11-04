@@ -1,9 +1,8 @@
 import os
 
-import torchextractor as tx
 
-from .netsetbase import NetSetBase
-from .shared_functions import load_from_json
+from .netsetbase import NetSetBase, create_extractor
+from .shared_functions import load_from_json, load_hf_model
 
 
 class Audio(NetSetBase):
@@ -28,10 +27,9 @@ class Audio(NetSetBase):
         # Set the layers and model function from the attributes
         self.layers = model_attributes["nodes"]
 
-        self.loaded_model = model_attributes["model_function"](self.model_name)
-
         if 'tokenizer' in model_attributes:
             # use the feature extractor
+            self.loaded_model = load_hf_model(model_attributes["model_function"], self.model_name, pretrained)
             self.tokenizer = model_attributes["tokenizer"](self.model_name)
 
             self.loader_kwargs = {
@@ -40,10 +38,12 @@ class Audio(NetSetBase):
             }
         else:
             # feature extraction is handled by the model
+            self.loaded_model = model_attributes["model_function"](self.model_name, pretrained=pretrained)
             self.loader_kwargs = {
                 'sample_rate': getattr(self.loaded_model, 'sample_rate', None),
                 'mono': getattr(self.loaded_model, 'mono', True),
             }
+        self.audio_loader_kwargs = {'sr': self.loader_kwargs['sample_rate'], 'mono': self.loader_kwargs['mono']}
 
         # Model to device
         self.loaded_model.to(self.device)
@@ -63,6 +63,8 @@ class Audio(NetSetBase):
     def clean_extracted_features(self, features):
         cleaned_features = {}
         for layer, tensor in features.items():
+            if isinstance(tensor, dict):  # e.g. a Hugging Face ModelOutput
+                tensor = next(iter(tensor.values()))
             if isinstance(tensor, (tuple, list,)):
                 tensor = tensor[0]
 
@@ -76,16 +78,17 @@ class Audio(NetSetBase):
         return self.audio_preprocessing
 
     def extraction_function(self, data, layers_to_extract=None):
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+        layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+        extractor = create_extractor(self.loaded_model, layers)
 
         if self.tokenizer is not None:
-            data = self.tokenizer(data, sampling_rate=self.loader_kwargs['sample_rate'], return_tensors="pt")
-            _, features = self.extractor_model(**data)
+            data = self.tokenizer(data.squeeze(0).cpu().numpy(), sampling_rate=self.loader_kwargs['sample_rate'],
+                                  return_tensors="pt").to(self.device)
+            _, features = extractor(**data)
         else:
             # Extract actual features
-            _, features = self.extractor_model(data)
+            _, features = extractor(data)
 
         return features

@@ -1,7 +1,8 @@
 import warnings
-from .netsetbase import NetSetBase
+from PIL import Image
+from torchvision import transforms as trn
+from .netsetbase import NetSetBase, create_extractor
 from .shared_functions import load_from_json
-import torchextractor as tx
 import os
 
 class Yolo(NetSetBase):
@@ -27,6 +28,18 @@ class Yolo(NetSetBase):
             raise ValueError(f"Unsupported data type for {self.netset_name}: {data_type}")
         
 
+    def image_preprocessing(self, image, model_name, device):
+        if not model_name.endswith("6"):
+            return super().image_preprocessing(image, model_name, device)
+        # P6 models need input sizes divisible by 64: 256 crop with the same crop ratio as 256 -> 224
+        transforms = trn.Compose([trn.Resize((292, 292)), trn.CenterCrop(256), trn.ToTensor(),
+                                  trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+        img_tensor = transforms(image).unsqueeze(0)
+        return img_tensor.cuda() if device == 'cuda' else img_tensor
+
+    def video_preprocessing(self, frame, model_name, device):
+        return self.image_preprocessing(Image.fromarray(frame), model_name, device)
+
     def get_feature_cleaner(self, data_type):
         if data_type == 'image':
             return Yolo.clean_extracted_features
@@ -46,6 +59,10 @@ class Yolo(NetSetBase):
         self.loaded_model = model_attributes["model_function"]('ultralytics/yolov5', 
                                                                self.model_name, 
                                                                pretrained=pretrained)
+        first = next((name for name, _ in self.loaded_model.named_modules() if name.endswith("model.0")), None)
+        if first is None:
+            raise ValueError(f"Could not find the layers of {self.model_name} (no module ending in 'model.0').")
+        self.layers = [first[:-1] + layer.rsplit(".", 1)[-1] for layer in self.layers]
 
         # Model to device
         self.loaded_model.to(self.device)
@@ -74,13 +91,13 @@ class Yolo(NetSetBase):
     
     def extraction_function(self, data, layers_to_extract=None):
 
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+        layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+        extractor = create_extractor(self.loaded_model, layers)
 
         # Extract actual features
-        _, features = self.extractor_model(data)
+        _, features = extractor(data)
 
         return features
 

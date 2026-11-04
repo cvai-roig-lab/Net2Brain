@@ -1,7 +1,6 @@
 import warnings
-from .netsetbase import NetSetBase
+from .netsetbase import NetSetBase, create_extractor
 from .shared_functions import load_from_json
-import torchextractor as tx
 import os
 
 
@@ -77,13 +76,13 @@ class YOURNETSET(NetSetBase):  # Rename to your desired netset name
     
     def extraction_function(self, data, layers_to_extract=None, model=None):
 
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+        layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+        extractor = create_extractor(self.loaded_model, layers)
 
         # Extract actual features
-        _, features = self.extractor_model(data)
+        _, features = extractor(data)
 
         return features
 

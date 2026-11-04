@@ -1,10 +1,9 @@
 import warnings
-from .netsetbase import NetSetBase
+from .netsetbase import NetSetBase, create_extractor
 from .shared_functions import load_from_json
 from .implemented_models.cornet_rt_model import cornet_rt
 from .implemented_models.cornet_s_model import cornet_s
 from .implemented_models.cornet_z_model import cornet_z
-import torchextractor as tx
 import os
 
 class Cornet(NetSetBase):
@@ -67,9 +66,10 @@ class Cornet(NetSetBase):
         if self.model_name == "cornet_rt":
             clean_dict = {}
             for A_key, subtuple in features.items():
-                keys = [A_key + "_A", A_key + "_B"]
-                for counter, key in enumerate(keys):
-                    clean_dict.update({key: subtuple[counter].cpu()})
+                if not isinstance(subtuple, tuple):  # only the recurrent blocks return (output, state)
+                    clean_dict[A_key] = subtuple.cpu()
+                    continue
+                clean_dict[A_key + "_A"] = subtuple[0].cpu()  # subtuple[1] (state) is the same tensor
             return clean_dict
         else:
             return {key: value.cpu() for key, value in features.items()}
@@ -78,13 +78,13 @@ class Cornet(NetSetBase):
     
     def extraction_function(self, data, layers_to_extract=None):
 
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+        layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+        extractor = create_extractor(self.loaded_model, layers)
 
         # Extract actual features
-        _, features = self.extractor_model(data)
+        _, features = extractor(data)
 
         return features
 

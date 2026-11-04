@@ -145,68 +145,68 @@
   "PANNS_MobileNetV1": {
     "model": ".implemented_models.audio.load_panns",
     "nodes": [
-      "0",
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-      "10",
-      "11",
-      "12",
-      "13"
+      "features.0",
+      "features.1",
+      "features.2",
+      "features.3",
+      "features.4",
+      "features.5",
+      "features.6",
+      "features.7",
+      "features.8",
+      "features.9",
+      "features.10",
+      "features.11",
+      "features.12",
+      "features.13"
     ]
   },
   "PANNS_MobileNetV2": {
     "model": ".implemented_models.audio.load_panns",
     "nodes": [
-      "0",
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-      "10",
-      "11",
-      "12",
-      "13",
-      "14",
-      "15",
-      "16",
-      "17",
-      "18"
+      "features.0",
+      "features.1",
+      "features.2",
+      "features.3",
+      "features.4",
+      "features.5",
+      "features.6",
+      "features.7",
+      "features.8",
+      "features.9",
+      "features.10",
+      "features.11",
+      "features.12",
+      "features.13",
+      "features.14",
+      "features.15",
+      "features.16",
+      "features.17",
+      "features.18"
     ]
   },
   "PANNS_Res1dNet31": {
     "model": ".implemented_models.audio.load_panns",
     "nodes": [
-      "layer1",
-      "layer2",
-      "layer3",
-      "layer4",
-      "layer5",
-      "layer6",
-      "layer7"
+      "resnet.layer1",
+      "resnet.layer2",
+      "resnet.layer3",
+      "resnet.layer4",
+      "resnet.layer5",
+      "resnet.layer6",
+      "resnet.layer7"
     ]
   },
   "PANNS_Res1dNet51": {
     "model": ".implemented_models.audio.load_panns",
     "nodes": [
-      "layer1",
-      "layer2",
-      "layer3",
-      "layer4",
-      "layer5",
-      "layer6",
-      "layer7"
+      "resnet.layer1",
+      "resnet.layer2",
+      "resnet.layer3",
+      "resnet.layer4",
+      "resnet.layer5",
+      "resnet.layer6",
+      "resnet.layer7"
     ]
   },
   "PANNS_ResNet22": {
@@ -214,10 +214,10 @@
     "nodes": [
       "conv_block1",
       "conv_block_after1",
-      "layer1",
-      "layer2",
-      "layer3",
-      "layer4"
+      "resnet.layer1",
+      "resnet.layer2",
+      "resnet.layer3",
+      "resnet.layer4"
     ]
   },
   "PANNS_ResNet38": {
@@ -225,10 +225,10 @@
     "nodes": [
       "conv_block1",
       "conv_block_after1",
-      "layer1",
-      "layer2",
-      "layer3",
-      "layer4"
+      "resnet.layer1",
+      "resnet.layer2",
+      "resnet.layer3",
+      "resnet.layer4"
     ]
   },
   "PANNS_ResNet54": {
@@ -236,10 +236,10 @@
     "nodes": [
       "conv_block1",
       "conv_block_after1",
-      "layer1",
-      "layer2",
-      "layer3",
-      "layer4"
+      "resnet.layer1",
+      "resnet.layer2",
+      "resnet.layer3",
+      "resnet.layer4"
     ]
   },
   "PANNS_Wavegram_Cnn14": {
@@ -362,7 +362,25 @@
       "encoder.layer.11"
     ]
   },
-  "MIT/ast-finetuned-audioset-12-12-0.447MIT/ast-finetuned-speech-commands-v2": {
+  "MIT/ast-finetuned-audioset-12-12-0.447": {
+    "model": "transformers.ASTModel.from_pretrained",
+    "tokenizer": "transformers.ASTFeatureExtractor.from_pretrained",
+    "nodes": [
+      "encoder.layer.0",
+      "encoder.layer.1",
+      "encoder.layer.2",
+      "encoder.layer.3",
+      "encoder.layer.4",
+      "encoder.layer.5",
+      "encoder.layer.6",
+      "encoder.layer.7",
+      "encoder.layer.8",
+      "encoder.layer.9",
+      "encoder.layer.10",
+      "encoder.layer.11"
+    ]
+  },
+  "MIT/ast-finetuned-speech-commands-v2": {
     "model": "transformers.ASTModel.from_pretrained",
     "tokenizer": "transformers.ASTFeatureExtractor.from_pretrained",
     "nodes": [

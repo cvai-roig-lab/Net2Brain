@@ -1,5 +1,6 @@
 import os
-import requests
+from net2brain.architectures.shared_functions import download_to_path
+from net2brain.architectures.netsetbase import CACHE_DIR
 
 import torch
 import torch.nn as nn
@@ -97,7 +98,8 @@ class ModelBuilder:
 
             orig_resnet = ResNet(Bottleneck, [3, 4, 6, 3])
             if pretrained:
-                orig_resnet.load_state_dict(load_url(model_urls['resnet50'], map_location='cpu'), strict=False)
+                orig_resnet.load_state_dict(load_url(model_urls['resnet50'], model_dir=str(CACHE_DIR), map_location='cpu'),
+                                            strict=False)
 
             net_encoder = Resnet(orig_resnet)
         elif arch == 'resnet50dilated':
@@ -611,37 +613,25 @@ class UPerNet(nn.Module):
 
 
 def get_semseg_model(pretrained=True):
-    if not os.path.exists(r"checkpoints"):
-        os.makedirs(r"checkpoints")
+    encoder_path = CACHE_DIR / "encoder_epoch_30.pth"
+    decoder_path = CACHE_DIR / "decoder_epoch_30.pth"
 
     if pretrained:
 
-        # Check if the file exists in the current directory
-        if not os.path.exists(r"checkpoints\decoder_epoch_30.pth"):
-            # Download the file using requests
-            file_url = "http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50-upernet/decoder_epoch_30.pth"
-            r = requests.get(file_url)
-            print("~ Downloading weights")
-            with open(r"checkpoints\decoder_epoch_30.pth", "wb") as f:
-                f.write(r.content)
-
-        if not os.path.exists(r"checkpoints\encoder_epoch_30.pth"):
-            # Download the file using requests
-            file_url = "http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50-upernet/encoder_epoch_30.pth"
-            r = requests.get(file_url)
-            print("~ Downloading weights")
-            with open(r"checkpoints\encoder_epoch_30.pth", "wb") as f:
-                f.write(r.content)
+        base_url = "http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50-upernet/"
+        for path in (decoder_path, encoder_path):
+            if not path.exists():
+                download_to_path(base_url + path.name, path)
 
         net_encoder = ModelBuilder.build_encoder(
             arch='resnet50',
             fc_dim=2048,
-            weights=r"checkpoints\encoder_epoch_30.pth")
+            weights=str(encoder_path))
         net_decoder = ModelBuilder.build_decoder(
             arch='upernet',
             fc_dim=2048,
             num_class=150,
-            weights=r"checkpoints\decoder_epoch_30.pth",
+            weights=str(decoder_path),
             use_softmax=True)
 
     else:

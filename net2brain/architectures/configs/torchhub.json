@@ -8,14 +8,16 @@
             "backbone.4",
             "backbone.5",
             "backbone.6",
-            "backbone.7backbone.8",
+            "backbone.7",
+            "backbone.8",
             "backbone.9",
             "backbone.10",
             "backbone.11",
             "backbone.12",
             "backbone.13",
             "backbone.14",
-            "backbone.15backbone.16",
+            "backbone.15",
+            "backbone.16",
             "classifier",
             "classifier.1",
             "classifier.2",
@@ -88,14 +90,16 @@
             "backbone.4",
             "backbone.5",
             "backbone.6",
-            "backbone.7backbone.8",
+            "backbone.7",
+            "backbone.8",
             "backbone.9",
             "backbone.10",
             "backbone.11",
             "backbone.12",
             "backbone.13",
             "backbone.14",
-            "backbone.15backbone.16"
+            "backbone.15",
+            "backbone.16"
         ]
     }
 }

@@ -50,6 +50,32 @@ DEPRECATED_NETSETS = {
 }
 
 
+
+def split_multi_outputs(features):
+    """Detach features. Layers that return several tensors are saved as layer_0, layer_1, ..."""
+    def collect(value, key, out):
+        if torch.is_tensor(value):
+            out[key] = value
+        elif isinstance(value, dict):
+            for k, v in value.items():
+                collect(v, f"{key}_{k}", out)
+        elif isinstance(value, (tuple, list)):
+            for i, v in enumerate(value):
+                collect(v, f"{key}_{i}", out)
+
+    result = {}
+    for key, value in features.items():
+        tensors = {}
+        collect(value, key, tensors)
+        if not tensors:
+            raise TypeError(f"Layer {key} returned {type(value).__name__}, but tensors are expected.")
+        new = {key: next(iter(tensors.values()))} if len(tensors) == 1 else tensors
+        if result.keys() & new.keys():
+            raise ValueError(f"Duplicate feature names: {sorted(result.keys() & new.keys())}")
+        result.update(new)
+    return {key: value.detach().cpu() for key, value in result.items()}
+
+
 # FeatureExtractor class
 class FeatureExtractor:
     def __init__(self,
@@ -207,8 +233,8 @@ class FeatureExtractor:
                     self.netset.extraction_function = partial(self.netset.extraction_function, agg_frames=kwargs['agg_frames'])
 
         # Select preprocessor
-        if self.preprocessor is None:
-            self.preprocessor = self.netset.get_preprocessing_function(self.data_type)
+        preprocessor = (self.preprocessor if self.preprocessor is not None
+                        else self.netset.get_preprocessing_function(self.data_type))
 
         progress_bar = tqdm(data_files, desc='Processing files')
         
@@ -233,12 +259,13 @@ class FeatureExtractor:
 
                 # Preprocess data
                 #print("before", data.size)
-                preprocessed_data = self.preprocessor(data, self.model_name, self.device)
+                preprocessed_data = preprocessor(data, self.model_name, self.device)
                 #print("after", preprocessed_data.shape)
 
                 # Extract features
                 if self.extraction_function == None:
-                    features = self.netset.extraction_function(preprocessed_data, layers_to_extract)
+                    with torch.no_grad():
+                        features = self.netset.extraction_function(preprocessed_data, layers_to_extract)
                 else:
                     features = self.extraction_function(preprocessed_data, layers_to_extract, model=self.model)
 
@@ -250,7 +277,7 @@ class FeatureExtractor:
                     features = self.feature_cleaner(features)
 
                 # Append to list of data
-                data_from_file_list.append({key: value.detach().cpu() for key, value in features.items()})
+                data_from_file_list.append(split_multi_outputs(features))
                 del preprocessed_data, features
 
             # Combine Data from list into single dictionary depending on input type
@@ -340,42 +367,9 @@ class FeatureExtractor:
 
 
     def consolidate_per_txt_file(self):
-        """
-        Consolidate features from multiple sentences in a single file into separate files.
-
-        Parameters:
-        - save_path (str): Path to the folder containing .npz files.
-
-        Returns:
-        - None
-        """
-        
-        # Create new dir
-        if not os.path.exists(os.path.join(self.save_path, "sentences")):
-            os.mkdir(os.path.join(self.save_path, "sentences"))
-
-        # List all files in the given directory
-        files = [f for f in os.listdir(self.save_path) if f.endswith('.npz')]
-
-        for file_name in tqdm(files):
-            # Load the features from the original file
-            data = np.load(os.path.join(self.save_path, file_name))
-
-            # Extract original file name without extension
-            original_file_name = os.path.splitext(file_name)[0]
-
-            # Get the number of sentences in the file (assuming all layers have the same number of sentences)
-            num_sentences = len(list(data.values())[0][0])
-
-            for i in range(num_sentences):
-                # Create a new file name with index
-                new_file_name = f"{original_file_name}_sentence_{i}.npz"
-
-                # Extract features for the current sentence across all layers
-                sentence_features = {key: values[0][i] for key, values in data.items()}
-
-                # Save features for the current sentence to a new file
-                np.savez(os.path.join(self.save_path, "sentences", new_file_name), **sentence_features)
+        """Deprecated: extract() already saves each sentence separately."""
+        warnings.warn("consolidate_per_txt_file() is no longer needed and does nothing: "
+                      "extract() already saves each sentence separately.", FutureWarning, stacklevel=2)
 
 
 

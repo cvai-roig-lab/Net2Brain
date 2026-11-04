@@ -5,6 +5,7 @@ from torchlibrosa.augmentation import SpecAugmentation
 from torchlibrosa.stft import Spectrogram, LogmelFilterBank
 import urllib.request
 from net2brain.architectures.netsetbase import CACHE_DIR
+from net2brain.architectures.shared_functions import download_to_path
 
 
 def interpolate(x, ratio):
@@ -3325,8 +3326,13 @@ def load_panns(model_name: str, pretrained: bool = True):
     if pretrained:
         url = url_mapping[model_name]
         filename = CACHE_DIR / name_mapping[model_name]
-        urllib.request.urlretrieve(url, filename)
-        checkpoint = torch.load(filename, map_location='cpu')
+        if not filename.exists():
+            download_to_path(url, filename)
+        try:
+            checkpoint = torch.load(filename, map_location='cpu')
+        except Exception:  # unreadable file, e.g. an interrupted download: fetch it again
+            download_to_path(url, filename)
+            checkpoint = torch.load(filename, map_location='cpu')
         model.load_state_dict(checkpoint['model'])
 
     return model

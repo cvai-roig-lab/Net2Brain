@@ -28,6 +28,17 @@ def get_function_from_module(function_string):
     return getattr(module, function_name)
 
 
+def load_hf_model(from_pretrained, model_name, pretrained):
+    """Load a Hugging Face model, with random weights if pretrained is False."""
+    model_class = from_pretrained.__self__
+    if not pretrained:
+        return model_class(model_class.config_class.from_pretrained(model_name))
+    if model_class.__name__ == "AlignTextModel":  # its weights are stored inside the full AlignModel
+        from transformers import AlignModel
+        return AlignModel.from_pretrained(model_name).text_model
+    return from_pretrained(model_name)
+
+
 def download_to_path(url: str, dest: Path) -> None:
     tmp = dest.with_suffix(dest.suffix + ".tmp")
     try:

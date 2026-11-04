@@ -1,6 +1,6 @@
 
 import warnings
-from .netsetbase import NetSetBase
+from .netsetbase import NetSetBase, create_extractor
 from .shared_functions import load_from_json
 import timm
 from typing import Callable
@@ -9,7 +9,6 @@ from timm.data import resolve_data_config
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data.transforms_factory import create_transform as timm_create_transform
 from torchvision import transforms as T
-import torchextractor as tx
 from PIL import Image
 import os
 
@@ -86,13 +85,13 @@ class Timm(NetSetBase):
     
     def extraction_function(self, data, layers_to_extract=None):
 
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+        layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+        extractor = create_extractor(self.loaded_model, layers)
 
         # Extract actual features
-        _, features = self.extractor_model(data)
+        _, features = extractor(data)
 
         return features
 

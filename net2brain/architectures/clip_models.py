@@ -1,12 +1,25 @@
 import warnings
-from .netsetbase import NetSetBase
+from .netsetbase import NetSetBase, create_extractor
 from .shared_functions import load_from_json
-import torchextractor as tx
 import clip
 import torch
 import os
 import numpy as np
 from PIL import Image
+
+
+def random_clip_like(model):
+    """A CLIP model with the same architecture as `model`, but randomly initialised."""
+    visual, is_vit = model.visual, hasattr(model.visual, "proj")
+    return type(model)(
+        embed_dim=model.text_projection.shape[1],
+        image_resolution=visual.input_resolution,
+        vision_layers=visual.transformer.layers if is_vit else tuple(len(getattr(visual, f"layer{i}")) for i in range(1, 5)),
+        vision_width=visual.conv1.out_channels if is_vit else visual.layer1[0].conv1.out_channels,
+        vision_patch_size=visual.conv1.kernel_size[0] if is_vit else None,
+        context_length=model.context_length, vocab_size=model.vocab_size,
+        transformer_width=model.transformer.width, transformer_heads=model.transformer.width // 64,
+        transformer_layers=model.transformer.layers)
 
 
 class Clip(NetSetBase):
@@ -65,6 +78,8 @@ class Clip(NetSetBase):
         # Set the layers and model function from the attributes
         self.layers = model_attributes["nodes"]
         self.loaded_model = model_attributes["model_function"](self.model_name, device=self.device)[0]
+        if not pretrained:  # clip.load always loads pretrained weights
+            self.loaded_model = random_clip_like(self.loaded_model)
 
         # Model to device
         self.loaded_model.to(self.device)
@@ -144,17 +159,17 @@ class Clip(NetSetBase):
     
     def extraction_function(self, data, layers_to_extract=None):
 
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+        layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = tx.Extractor(self.loaded_model, self.layers)
+        extractor = create_extractor(self.loaded_model, layers)
 
         # Seperate image and text data
         image_data = data[0]
         tokenized_text = data[1]
 
         # Extract actual features
-        _, features = self.extractor_model(image_data, tokenized_text)
+        _, features = extractor(image_data, tokenized_text)
 
         return features
 
