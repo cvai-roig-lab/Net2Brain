@@ -40,10 +40,10 @@ To extract features, use the ``extract`` method with the following parameters:
 
 - ``data_path`` (required): Path to the image (.jpg, .png)/video (.mp4, .avi), /text dataset (.txt).
 - ``save_path`` (optional): Where to save the extracted features. Defaults to a folder named with the current date.
-- ``layers_to_extract`` (optional): Layers from which to extract features. Defaults to the layers specified during initialization.
+- ``layers_to_extract`` (optional): A list of layer names, or one of ``"top_level"``, ``"all"`` and ``"json"``. Defaults to ``"top_level"``.
 - ``consolidate_per_layer`` (optional): The features are extracted image-wise. This is defaulted to true and will consolidate them per layer if not set to False. Defautls to True.
-- ``dim_reduction`` (optional): Type of dimensionality reduction (For now: SRP) for extracted features. Defaults to None.
-- ``n_components`` (optonal): Number of components for dimensionality reduction. Defaults to 50.
+- ``dim_reduction`` (optional): Type of dimensionality reduction for extracted features: ``"srp"`` (Sparse Random Projection) or ``"pca"`` (Principal Component Analysis). Defaults to None.
+- ``n_components`` (optional): Number of components for dimensionality reduction. Defaults to 10,000.
 
 
 .. code-block:: python
@@ -54,7 +54,7 @@ To extract features, use the ``extract`` method with the following parameters:
 Inspecting and Modifying Layers to Extract
 ------------------------------------------
 
-Inspect default layers for extraction:
+Inspect the predefined layers from the model's JSON config (used with ``layers_to_extract="json"``):
 
 .. code-block:: python
 
@@ -78,7 +78,7 @@ Adding dimensionality reduction
 ----------------------------------------
 
 If you wish you can also reduce the dimensionality of the extracted feautures using:
-- ``dim_reduction`` (optional): Type of dimensionality reduction (For now: SRP) for extracted features. Defaults to None.
+- ``dim_reduction`` (optional): Type of dimensionality reduction for extracted features: ``"srp"`` (Sparse Random Projection) or ``"pca"`` (Principal Component Analysis). Defaults to None.
 
 .. code-block:: python
 
@@ -93,8 +93,8 @@ Extracting Features from Large Language Models
 We have also added optionality to extract features from Large Language Models (LLMs) using .txt files. 
 For this you just enter the path to your .txt files, in which each new line represents one new sentence.
 
-Since the feautures are saved per file, and since a .txt file might contain multiple sentences, 
-you can ``consolidate_per_txt_file()`` in order to seperate each sentence into its own .npz file!
+Each sentence is saved separately: by default as its own entry (``<file name>_sentence0000``, ...)
+in the per-layer files, or as its own .npz file with ``consolidate_per_layer=False``.
 
 
 .. code-block:: python
@@ -107,7 +107,6 @@ you can ``consolidate_per_txt_file()`` in order to seperate each sentence into i
     print(layers_to_extract)
 
     extractor.extract(data_path="textinput_folder")
-    extractor.consolidate_per_txt_file()
 
 
 

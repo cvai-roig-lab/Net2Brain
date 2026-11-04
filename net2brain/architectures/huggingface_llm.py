@@ -1,6 +1,6 @@
 import warnings
 from .netsetbase import NetSetBase, create_extractor
-from .shared_functions import load_from_json
+from .shared_functions import load_from_json, load_hf_model
 import os
 from transformers import AutoTokenizer, BartModel, AlignTextModel, AlbertModel, GPT2Tokenizer, GPT2Model
 import transformers
@@ -42,7 +42,7 @@ class Huggingface(NetSetBase):
 
         # Set the layers and model function from the attributes
         self.layers = model_attributes["nodes"]
-        self.loaded_model = model_attributes["model_function"](self.model_name)
+        self.loaded_model = load_hf_model(model_attributes["model_function"], self.model_name, pretrained)
         self.tokenizer = model_attributes["tokenizer"](self.model_name)
 
         
@@ -76,7 +76,7 @@ class Huggingface(NetSetBase):
         cleaned_features = {}
         for layer, tensor_tuple in features.items():
             # We only want the first tensor because the rest is attention
-            tensor = tensor_tuple[0]
+            tensor = tensor_tuple if torch.is_tensor(tensor_tuple) else tensor_tuple[0]
             
             # Check if the tensor requires grad, and detach if needed
             tensor = tensor.detach() if tensor.requires_grad else tensor
@@ -91,16 +91,16 @@ class Huggingface(NetSetBase):
     
     def extraction_function(self, data, layers_to_extract=None, model=None):
 
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+        layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Tokenizer for text
-        inputs = self.tokenizer(data, return_tensors="pt")
+        inputs = self.tokenizer(data, return_tensors="pt").to(self.device)
 
         # Create a extractor instance
-        self.extractor_model = create_extractor(self.loaded_model, self.layers)
+        extractor = create_extractor(self.loaded_model, layers)
 
         # Extract actual features
-        _, features = self.extractor_model(**inputs)
+        _, features = extractor(**inputs)
 
         return features
 

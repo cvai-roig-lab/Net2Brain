@@ -75,13 +75,13 @@ class Unet(NetSetBase):
     
     def extraction_function(self, data, layers_to_extract=None):
 
-        self.layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
+        layers = self.select_model_layers(layers_to_extract, self.layers, self.loaded_model)
 
         # Create a extractor instance
-        self.extractor_model = create_extractor(self.loaded_model, self.layers)
+        extractor = create_extractor(self.loaded_model, layers)
 
         # Extract actual features
-        _, features = self.extractor_model(data)
+        _, features = extractor(data)
 
         return features
 

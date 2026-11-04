@@ -34,6 +34,8 @@ def copy_module_output(output):
 
 def _capture_output_copy(module, input, output, module_name, feature_maps):
     # Store a copy, so later in-place ops (e.g. ReLU(inplace=True)) cannot change it
+    if module_name in feature_maps:
+        warnings.warn(f"Layer {module_name} ran more than once for one input; only its last output is saved.")
     feature_maps[module_name] = copy_module_output(output)
 
 
@@ -112,8 +114,16 @@ class NetSetBase:
                 valid_layers = [layer for layer in valid_layers if layer not in to_remove]
             elif layers_to_extract == 'all':
                 valid_layers = [layer for layer in tx.list_module_names(loaded_model) if layer != '']
-            elif layers_to_extract == 'json' and network_layers:
-                valid_layers = [layer for layer in network_layers if layer != '']
+            elif layers_to_extract == 'json':
+                json_layers = [layer for layer in (network_layers or []) if layer != '']
+                available_layers = tx.list_module_names(loaded_model)
+                valid_layers = [layer for layer in json_layers if layer in available_layers]
+                if not valid_layers:
+                    raise ValueError(f"No usable JSON layers for {self.model_name}. "
+                                     f"Use 'top_level', 'all' or a list of layer names.")
+                if len(valid_layers) < len(json_layers):
+                    warnings.warn(f"JSON layers not found in {self.model_name} and skipped: "
+                                  f"{[layer for layer in json_layers if layer not in valid_layers]}")
             else:
                 raise ValueError(f"Invalid value for layers_to_extract: {layers_to_extract}. "
                                  f"Should be 'top_level', 'all', 'json', or a list of layer names.")
@@ -355,6 +365,7 @@ class NetSetBase:
         warnings.warn("Will initiate random weights")
         if isinstance(m, nn.Linear):
             torch.nn.init.xavier_uniform_(m.weight)
-            m.bias.data.fill_(0.01)
+            if m.bias is not None:
+                m.bias.data.fill_(0.01)
         if isinstance(m, nn.Conv2d):
             torch.nn.init.xavier_uniform_(m.weight)

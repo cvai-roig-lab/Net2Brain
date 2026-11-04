@@ -1,6 +1,7 @@
 from functools import reduce
 import os  
-import requests
+from net2brain.architectures.shared_functions import download_to_path
+from net2brain.architectures.netsetbase import CACHE_DIR
 
 import torch
 import torch.nn as nn
@@ -347,22 +348,15 @@ def load_state_dict_compatibly(model, state_dict):
 def get_resnet50_places365(pretrained=True):
     model = ResNet50Places365()
 
-    if not os.path.exists(r"checkpoints"):
-        os.makedirs(r"checkpoints")
+    checkpoint_path = CACHE_DIR / "resnet50_places365.pth"
 
     if pretrained:
 
-        # Check if the file exists in the current directory
-        if not os.path.exists(r"checkpoints\resnet50_places365.pth"):
-            # Download the file using requests
-            file_url = "https://drive.google.com/uc?id=1qO96TKv2zeLI8Poi2ISKVCcLrrUOMRaz"
-            r = requests.get(file_url)
-            print("~ Downloading weights")
-            with open(r"checkpoints\resnet50_places365.pth", "wb") as f:
-                f.write(r.content)
+        if not checkpoint_path.exists():
+            download_to_path("https://drive.google.com/uc?id=1qO96TKv2zeLI8Poi2ISKVCcLrrUOMRaz", checkpoint_path)
         
         # Load the weights into the model
-        state_dict = torch.load(r"checkpoints\resnet50_places365.pth")
+        state_dict = torch.load(checkpoint_path, map_location='cpu')
         model = load_state_dict_compatibly(model, state_dict)
 
         

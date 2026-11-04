@@ -89,7 +89,7 @@ class MMAction(NetSetBase):
         cache_dir.mkdir(parents=True, exist_ok=True)
 
         checkpoint_path = cache_dir / "mma_checkpoints" / f"{self.model_name}.pth"
-        if not checkpoint_path.exists():
+        if pretrained and not checkpoint_path.exists():
             print(f"Downloading checkpoint for {self.model_name} to cache ...")
             checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
             download_to_path(checkpoint_url, checkpoint_path)
@@ -107,7 +107,8 @@ class MMAction(NetSetBase):
 
         cfg = Config.fromfile(config_path)
         self.loaded_model = MMA_MODELS.build(cfg.model)
-        load_checkpoint(self.loaded_model, str(checkpoint_path))
+        if pretrained:
+            load_checkpoint(self.loaded_model, str(checkpoint_path))
 
         # Model to device
         self.loaded_model.to(self.device)
@@ -218,6 +219,7 @@ class MMAction(NetSetBase):
                 # this unsqueeze is needed because of a peculiarity that some squeezing is done
                 # before passing to the model (otherwise batch dim would be just the crops/frames)
             except RuntimeError:
+                extractor_model.clear_placeholder()  # drop outputs from the failed attempt
                 # pad the input such as that data[i].shape[0] is divisible by 8
                 # this is needed for models like TSM that handle "segments" internally from batchdim
                 div_by = 8
