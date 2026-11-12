@@ -195,8 +195,8 @@ def load_state_dict(file_url, linear_keyword):
 def load_pretrained_weights(model, file_url, linear_keyword):
     """Load MoCo v3 weights into `model` and verify that they actually arrived.
 
-    Only the (unused) linear classification head is expected to stay randomly
-    initialized. Anything else missing means the checkpoint layout changed and the
+    Only the linear classification head is missing from the checkpoint; it is
+    replaced by an identity. Anything else missing means the checkpoint layout changed and the
     features would silently be extracted from an untrained network.
     """
     state_dict = load_state_dict(file_url, linear_keyword)
@@ -210,6 +210,8 @@ def load_pretrained_weights(model, file_url, linear_keyword):
             f"Missing keys: {sorted(unexpected_missing)}. "
             f"Unexpected keys: {sorted(msg.unexpected_keys)}."
         )
+    # The checkpoint has no trained head, so it outputs the pooled features instead of a random projection
+    setattr(model, linear_keyword, nn.Identity())
     return model
 
 def vit_base_300ep(pretrained: bool=True, **kwargs):

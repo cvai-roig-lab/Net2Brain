@@ -29,11 +29,12 @@ class Yolo(NetSetBase):
         
 
     def image_preprocessing(self, image, model_name, device):
+        # YOLOv5 expects values in [0, 1] without normalization
         if not model_name.endswith("6"):
-            return super().image_preprocessing(image, model_name, device)
-        # P6 models need input sizes divisible by 64: 256 crop with the same crop ratio as 256 -> 224
-        transforms = trn.Compose([trn.Resize((292, 292)), trn.CenterCrop(256), trn.ToTensor(),
-                                  trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+            transforms = trn.Compose([trn.Resize((256, 256)), trn.CenterCrop(224), trn.ToTensor()])
+        else:
+            # P6 models need input sizes divisible by 64: 256 crop with the same crop ratio as 256 -> 224
+            transforms = trn.Compose([trn.Resize((292, 292)), trn.CenterCrop(256), trn.ToTensor()])
         img_tensor = transforms(image).unsqueeze(0)
         return img_tensor.cuda() if device == 'cuda' else img_tensor
 

@@ -19,7 +19,7 @@ By using the Model Taxonomy, researchers can efficiently scout through various m
 
 .. code-block:: python
 
-    from net2brain.feature_extraction import (
+    from net2brain.taxonomy import (
         show_all_architectures,
         show_all_netsets,
         show_taxonomy,
@@ -45,7 +45,10 @@ For a closer look at the models within a specific netset:
 
 .. code-block:: python
 
-    print_netset_models('standard')
+    print_netset_models('Standard')
+
+``print_netset_models`` needs the netset name as listed by ``show_all_netsets()``. ``FeatureExtractor`` also accepts
+the lower-case netset names shown in the taxonomy (e.g. ``netset="standard"``).
 
 Finding a Specific Model
 ^^^^^^^^^^^^^^^^^^^^^^^^

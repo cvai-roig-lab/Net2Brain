@@ -11,11 +11,12 @@ from .eval_helper import *
 
 class Searchlight():
 
-    def __init__(self, model_rdms_path, searchlight_file, datatype="None", save_path="./", distance_metric="pearson"):
+    def __init__(self, model_rdms_path, searchlight_file, datatype="None", save_path="./", distance_metric="spearman"):
         """Initiate RSA
 
         Args:
             json_dir (str/path): Path to json dir
+            distance_metric (str): "spearman" (correlation of the ranked RDMs) or "pearson"
         """
 
         # Find all model RDMs
@@ -23,16 +24,19 @@ class Searchlight():
         self.model_rdms = self.folderlookup(model_rdms_path)
         self.model_rdms.sort(key=natural_keys)
 
-        # Open Searchlight Path
-        searchlight_rdm = np.load(searchlight_file)['arr_0']
+        # Open Searchlight Path (first key: 'arr_0', or 'rdm' from RDMCreator)
+        searchlight_rdm = np.load(searchlight_file)
+        searchlight_rdm = searchlight_rdm[list(searchlight_rdm.keys())[0]]
         self.searchlight_rdm = searchlight_rdm.transpose(1, 0, 2, 3)
 
         # Other parameters
         self.save_path = save_path
         self.datatype = datatype
 
-        if distance_metric.lower() == "pearson":
-            self.distance = self.pearson_matrix
+        self.distance_metric = distance_metric.lower()
+        if self.distance_metric not in ("spearman", "pearson"):
+            raise ValueError("Invalid metric. Choose between: spearman, pearson")
+        self.distance = self.pearson_matrix  # Pearson r; for "spearman" of the ranked RDMs (evaluate_searchlight)
 
     def check_squareform(self, rdm):
         """Ensure that the RDM is in squareform.
@@ -106,7 +110,7 @@ class Searchlight():
 
         # Calculate Covariance
         covariance = (centered_x * centered_y).sum(dim=dim, keepdim=True)
-        bessel_corrected_covariance = covariance / (x.shape[dim])
+        bessel_corrected_covariance = covariance / (x.shape[dim] - 1)
 
         x_std = x.std(dim=dim, keepdim=True)
         y_std = y.std(dim=dim, keepdim=True)
@@ -187,13 +191,15 @@ class Searchlight():
             [type]: [description]
         """
 
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         model_ranks_cuda = []  # model rdms list to feed in gpu
 
         for i, model_rdm in enumerate(this_model_rdm):
-            model_rdm_ranks = self.return_ranks(self.get_uppertriangular(
-                model_rdm))  # return rank of model rdms
+            model_rdm_ranks = self.get_uppertriangular(model_rdm)
+            if self.distance_metric == "spearman":
+                model_rdm_ranks = stats.rankdata(model_rdm_ranks)  # average ranks for ties
             model_rdm_ranks = torch.from_numpy(
-                model_rdm_ranks).float().cuda()  # convert to cuda
+                model_rdm_ranks).float().to(device)  # convert to cuda
             model_ranks_cuda.append(model_rdm_ranks)
 
 
@@ -214,14 +220,11 @@ class Searchlight():
             fmri_rdm_ut.append(fmri_rdm_ut_sub)
 
         fmri_rdm_ut = np.array(fmri_rdm_ut)
-        fmri_rdm = np.zeros_like(fmri_rdm_ut)
 
-        # calculate rank of searchlight rdms
-        for subject in range(num_subjects):
-            fmri_rdm_ranks = self.return_ranks_sl(fmri_rdm_ut[subject, :])
-            fmri_rdm[subject, :] = fmri_rdm_ranks  # rank RDMs of subjects
+        # calculate rank of searchlight rdms (average ranks for ties)
+        fmri_rdm = stats.rankdata(fmri_rdm_ut, axis=-1) if self.distance_metric == "spearman" else fmri_rdm_ut
 
-        fmri_rdm = torch.from_numpy(fmri_rdm).float().cuda()  # to GPU
+        fmri_rdm = torch.from_numpy(fmri_rdm).float().to(device)  # to GPU
 
         results = []
 
@@ -287,7 +290,8 @@ class Searchlight():
             self.current_layer = layer
             self.layer_counter = counter
 
-            this_model_rdm = np.load(op.join(self.model_rdms_path, layer))['arr_0']
+            this_model_rdm = np.load(op.join(self.model_rdms_path, layer))
+            this_model_rdm = this_model_rdm[list(this_model_rdm.keys())[0]]
             this_model_rdm = [self.check_squareform(this_model_rdm)]
             self.evaluate_searchlight(noise_ceiling, this_model_rdm)
 

@@ -34,6 +34,7 @@ setup(
         'pycocotools',
         'pytest',
         'scikit_learn',
+        'scikit-image',
         'scipy',
         'torch',
         'tqdm',

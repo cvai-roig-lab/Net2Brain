@@ -136,6 +136,5 @@ def cornet_rt(pretrained=True, map_location=None, times=5):
         checkpoint = torch.utils.model_zoo.load_url(url, map_location="cpu")
         state_dict = checkpoint['state_dict']
         state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
-        state_dict = {k.replace("decoder.linear.", "fc."): v for k, v in state_dict.items()}
-        model.load_state_dict(state_dict, strict=False)
+        model.load_state_dict(state_dict)
     return model

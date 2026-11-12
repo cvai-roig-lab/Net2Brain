@@ -23,7 +23,7 @@ The ``FeatureExtractor`` class requires the model from which features will be ex
 
 Additional optional parameters to customize the FeatureExtractor, especially when using your own custom model, will be discussed further below.
 
-- ``preprocessor`` (optional): Your custom data transform function (if not provided, standard ImageNet transformations will be used)
+- ``preprocessor`` (optional): Your custom data transform function (if not provided, standard ImageNet transformations will be used; some netsets, e.g. Timm, Clip, Taskonomy and Yolo, use their own preprocessing)
 - ``feature_cleaner`` (optional):  Your custom feature cleaner (if not provided, no cleaning will be done)
 - ``extraction_function`` (optional): Your custom extraction function (if not provided, standard Torchextractor will be used)
 
@@ -38,10 +38,10 @@ Extracting Features
 
 To extract features, use the ``extract`` method with the following parameters:
 
-- ``data_path`` (required): Path to the image (.jpg, .png)/video (.mp4, .avi), /text dataset (.txt).
+- ``data_path`` (required): Path to the image (.jpg, .png)/video (.mp4, .avi), /text dataset (.txt). Hidden files (e.g. macOS ``._`` files) are skipped.
 - ``save_path`` (optional): Where to save the extracted features. Defaults to a folder named with the current date.
 - ``layers_to_extract`` (optional): A list of layer names, or one of ``"top_level"``, ``"all"`` and ``"json"``. Defaults to ``"top_level"``.
-- ``consolidate_per_layer`` (optional): The features are extracted image-wise. This is defaulted to true and will consolidate them per layer if not set to False. Defautls to True.
+- ``consolidate_per_layer`` (optional): The features are extracted image-wise. This is defaulted to true and will consolidate them per layer if not set to False. If ``save_path`` already holds consolidated features of other stimuli for an extracted layer (e.g. after the stimulus set changed), ``extract`` raises an error instead of overwriting them: use an empty ``save_path``, or extract all batches into a new ``save_path`` with ``consolidate_per_layer=False`` and call ``fx.consolidate_per_layer()`` once. Defaults to True.
 - ``dim_reduction`` (optional): Type of dimensionality reduction for extracted features: ``"srp"`` (Sparse Random Projection) or ``"pca"`` (Principal Component Analysis). Defaults to None.
 - ``n_components`` (optional): Number of components for dimensionality reduction. Defaults to 10,000.
 

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
-from .eval_helper import get_npy_files, get_layers_ncondns
+from .eval_helper import get_npy_files, get_layers_ncondns, sort_feature_files
 
 
 class CKA:
@@ -114,7 +114,7 @@ class CKA:
             float: The CKA score for the given layer and fMRI data.
         """
         # Gather DNN features for the specified layer across all stimuli
-        feat_files = sorted(glob.glob(os.path.join(feat_path, "*.npz")))
+        feat_files = sort_feature_files(glob.glob(os.path.join(feat_path, "*.npz")))
         dnn_features = []
 
         for file in feat_files:
@@ -174,7 +174,7 @@ class CKA:
             _, layer_list, _ = get_layers_ncondns(feat_path)  # Helper function to extract layers
 
             # Extract ROI name
-            roi_name = os.path.basename(roi_file).split(".")[0]
+            roi_name = os.path.splitext(os.path.basename(roi_file))[0]
 
             # Compute CKA for each layer
             for layer_name in tqdm(layer_list, desc=f"Processing Layers for ROI: {roi_name}"):

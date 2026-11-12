@@ -166,11 +166,11 @@ pip install -U git+https://github.com/cvai-roig-lab/Net2Brain
 __Net2Brain__ provides a comprehensive model taxonomy system to assist users in selecting the most suitable models for their studies. This taxonomy system classifies models based on attributes such as dataset, training method, and visual task. Let's take a look at an example that showcases the usage of the taxonomy system:
 
 ```python
-from net2brain.feature_extraction import show_taxonomy
-from net2brain.feature_extraction import find_model_by_dataset
-from net2brain.feature_extraction import find_model_by_training_method
-from net2brain.feature_extraction import find_model_by_visual_task
-from net2brain.feature_extraction import find_model_by_custom
+from net2brain.taxonomy import show_taxonomy
+from net2brain.taxonomy import find_model_by_dataset
+from net2brain.taxonomy import find_model_by_training_method
+from net2brain.taxonomy import find_model_by_visual_task
+from net2brain.taxonomy import find_model_by_custom
 
 # Show the taxonomy
 show_taxonomy()
@@ -259,10 +259,12 @@ To perform RSA evaluation, follow these steps:
 
 ```python
 from net2brain.evaluations.rsa import RSA
-from net2brain.utils.download_datasets import load_dataset
+from net2brain.utils.download_datasets import DatasetBonnerPNAS2017
 
 # Load the ROIs
-stimuli_path, roi_path = load_dataset("bonner_pnas2017")
+paths_bonner = DatasetBonnerPNAS2017.load_dataset()
+stimuli_path = paths_bonner["stimuli_path"]
+roi_path = paths_bonner["roi_path"]
 
 # Define the paths to the model and brain RDMs
 model_rdms = "AlexNet_RDM"
@@ -288,8 +290,8 @@ from net2brain.evaluations.plotting import Plotting
 # Initialize the plotter with the DataFrame
 plotter = Plotting([dataframe1])
 
-# Plot the results
-# Optionally, pass metrix='R' if you do not want to lot with R2
+# Plot the results (R2)
+# To plot R instead, evaluate with RSA(..., squared=False) and call plotter.plot(metric="R")
 results_dataframe = plotter.plot()
 ```
 

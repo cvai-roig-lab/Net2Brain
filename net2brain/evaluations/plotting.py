@@ -28,22 +28,23 @@ class Plotting:
         else:
             raise TypeError("The 'dataframes' argument must be either a DataFrame or a list of DataFrames.")
 
+    def resolve_metric(self, metric):
+        """Default metric: the first of 'R2', 'R', 'Distance' present in all dataframes."""
+        if metric is None:
+            metric = next((m for m in ("R2", "R", "Distance") if all(m in d.columns for d in self.dataframes)), "R2")
+        return metric
+
     def prepare_dataframe(self, dataframe, metric):
-        """Prepare the dataframe with the necessary metric calculations."""
+        """Return a copy with a fresh index. Values are plotted as stored (no conversion between R and R2)."""
         if metric not in dataframe.columns:
-            if metric == 'R2':
-                dataframe['R2'] = dataframe['R']**2
-                dataframe['LNC'] = dataframe['LNC']**2
-                dataframe['UNC'] = dataframe['UNC']**2
-            elif metric == 'R':
-                dataframe['R'] = np.sqrt(dataframe['R2'])
-                dataframe['LNC'] = np.sqrt(dataframe['LNC'])
-                dataframe['UNC'] = np.sqrt(dataframe['UNC'])
-        return dataframe
+            raise ValueError(f"Metric '{metric}' not found. Available columns: {list(dataframe.columns)}")
+        return dataframe.reset_index(drop=True)
 
 
-    def get_patch_index(self, ax, n_rois, index):
-        return index * n_rois % len(ax.patches) + index * n_rois // len(ax.patches)
+    def get_patch_index(self, ax, n_rois, row):
+        # seaborn draws one patch per (Model, ROI) in hue_order x order, also for missing pairs
+        rois, models = self._order
+        return models.index(row["Model"]) * len(rois) + rois.index(row["ROI"])
 
 
     def add_significance_markers(self, ax, plotting_df, metric, pairs):
@@ -51,7 +52,7 @@ class Plotting:
         n_rois = plotting_df["ROI"].nunique()
         for index, row in plotting_df.iterrows():
             if row['Significance'] < 0.05:
-                patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+                patch = ax.patches[self.get_patch_index(ax, n_rois, row)]
                 x = patch.get_x() + patch.get_width() / 2
                 y = patch.get_height()
             ax.text(x, y + 0.01, '*', ha='center', va='bottom', c='k')
@@ -63,18 +64,21 @@ class Plotting:
         for index, row in plotting_df.iterrows():
             if np.isnan(row["LNC"]) or np.isnan(row["UNC"]):
                 continue
-            patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+            patch = ax.patches[self.get_patch_index(ax, n_rois, row)]
             x = patch.get_x()
             width = patch.get_width()
             ax.hlines(y=row["LNC"], xmin=x, xmax=x + width, linewidth=1, color="k", linestyle="dashed")
             ax.hlines(y=row["UNC"], xmin=x, xmax=x + width, linewidth=1, color="k", linestyle="dashed")
 
 
-    def plot(self, pairs=[], metric='R2', rotation=30):
+    def plot(self, pairs=[], metric=None, rotation=30):
+        metric = self.resolve_metric(metric)
         max_dataframes = []
         for dataframe in self.dataframes:
             dataframe = self.prepare_dataframe(dataframe, metric)
-            max_dataframes.append(dataframe.loc[dataframe.groupby('ROI')[metric].idxmax()])
+            grouped = dataframe.groupby(['ROI', 'Model'])[metric]
+            # For a distance the best layer is the lowest
+            max_dataframes.append(dataframe.loc[grouped.idxmin() if metric == 'Distance' else grouped.idxmax()])
         
         plotting_df = pd.concat(max_dataframes, ignore_index=True)
 
@@ -94,13 +98,15 @@ class Plotting:
         # Use a predefined seaborn palette for nicer colors
         palette = sns.color_palette("tab10", n_colors=len(plotting_df['Model'].unique()))
 
-        sns.barplot(data=plotting_df, x="ROI", y=metric, hue="Model", palette=palette, alpha=.6, ax=ax)
+        self._order = (list(pd.unique(plotting_df['ROI'])), list(model_order))
+        sns.barplot(data=plotting_df, x="ROI", y=metric, hue="Model", palette=palette, alpha=.6, ax=ax,
+                    order=self._order[0], hue_order=self._order[1])
         ax.set_xticklabels(ax.get_xticklabels(), rotation=rotation, ha='right', rotation_mode='anchor')
         
         # Decorate the plot with error bars, significance markers, and noise ceiling
         self.decorate_plot(ax, plotting_df, metric, pairs)
 
-        ax.set_title("R2 for best performing layer", fontsize=16)
+        ax.set_title(f"{metric} for best performing layer", fontsize=16)
         plt.subplots_adjust(right=0.85)
         plt.show()  # Ensure this is the only plt.show() in this function
 
@@ -121,16 +127,15 @@ class Plotting:
         """Decorate the plot with error bars, significance markers, and noise ceiling."""
         n_rois = plotting_df["ROI"].nunique()
         for index, row in plotting_df.iterrows():
-            patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+            patch = ax.patches[self.get_patch_index(ax, n_rois, row)]
             x = patch.get_x()
             width = patch.get_width()
             x_middle = x + width / 2
             y = patch.get_height()
-            lower_limit = max(y - row["SEM"], 0)
-            upper_limit = y + row["SEM"]
-            ax.errorbar(x_middle, y, yerr=[[y - lower_limit], [upper_limit - y]], fmt=" ", c="k", capsize=width)
+            sem = np.nan_to_num(row["SEM"])
+            ax.errorbar(x_middle, y, yerr=sem, fmt=" ", c="k", capsize=width)
             if row["Significance"] < 0.05:
-                ax.text(x_middle, upper_limit, "*", ha="center", va="bottom", c="k")
+                ax.text(x_middle, y + sem if y >= 0 else y - sem, "*", ha="center", va="bottom" if y >= 0 else "top", c="k")
 
         bar_width = ax.patches[0].get_width()
         for pair in pairs:
@@ -145,8 +150,8 @@ class Plotting:
 
                 if len(indices) == 2:  # Check if both bars are found
                     index1, index2 = indices
-                    patch1 = ax.patches[self.get_patch_index(ax, n_rois, index1)]
-                    patch2 = ax.patches[self.get_patch_index(ax, n_rois, index2)]
+                    patch1 = ax.patches[self.get_patch_index(ax, n_rois, plotting_df.loc[index1])]
+                    patch2 = ax.patches[self.get_patch_index(ax, n_rois, plotting_df.loc[index2])]
 
                     x1 = patch1.get_x() + bar_width / 2
                     y1 = patch1.get_height()
@@ -166,10 +171,10 @@ class Plotting:
 
 
 
-    def plot_all_layers(self, metric='R2', columns_per_row=4, simplified_legend=False, rotation=45):
-        for dataframe in self.dataframes:
-            dataframe = self.prepare_dataframe(dataframe, metric)
-        rois = sorted(pd.concat(self.dataframes)['ROI'].unique())
+    def plot_all_layers(self, metric=None, columns_per_row=4, simplified_legend=False, rotation=45):
+        metric = self.resolve_metric(metric)
+        dataframes = [self.prepare_dataframe(df, metric) for df in self.dataframes]
+        rois = sorted(pd.concat(dataframes)['ROI'].unique())
         n_rois = len(rois)
         rows = int(np.ceil((n_rois) / columns_per_row))
 
@@ -180,7 +185,7 @@ class Plotting:
 
         for i, roi in enumerate(rois):
             ax = axes[i]
-            roi_df = pd.concat([df[df['ROI'] == roi] for df in self.dataframes])
+            roi_df = pd.concat([df[df['ROI'] == roi] for df in dataframes])
 
             try:
                 roi_df['Layer_num'] = roi_df['Layer'].str.extract('\((\d+)\)').astype(int)
@@ -218,7 +223,8 @@ class Plotting:
                         ax.errorbar(x_pos, layer_df[metric].values, yerr=layer_df['SEM'].values, fmt='none', ecolor='black', capsize=5, capthick=2)
 
                         if layer_df['Significance'].values < 0.05:
-                            ax.text(x_pos, layer_df[metric].values + layer_df['SEM'].values, '*', ha='center', va='bottom', color='black')
+                            value, sem = layer_df[metric].values, layer_df['SEM'].values
+                            ax.text(x_pos, value + sem if value >= 0 else value - sem, '*', ha='center', va='bottom' if value >= 0 else 'top', color='black')
 
                     current_pos = end_pos + model_spacing  # Update position for the next model group
 
@@ -231,8 +237,10 @@ class Plotting:
             ax.set_title(f'Correlation Analysis for {roi}', fontsize=16)
             ax.set_xlabel('Model Architectures', fontsize=16)
             ax.set_ylabel('Correlation Coefficient (R)', fontsize=16)
-            ymax = roi_df[metric].max() + (0.1 if roi_df[metric].max() < 0.05 else 0.2)
-            ax.set_ylim(0, min(1.2, ymax))
+            sem = roi_df['SEM'].fillna(0)
+            ymin, ymax = min(0, (roi_df[metric] - sem).min()), max(0, (roi_df[metric] + sem).max())
+            margin = 0.1 * ((ymax - ymin) or 1)
+            ax.set_ylim(ymin - margin if ymin < 0 else 0, ymax + margin)
 
 
         for j in range(i + 1, rows * columns_per_row):
@@ -290,7 +298,7 @@ class Plotting:
     def decorate_subplot(self, ax, df, metric):
         n_rois = df["ROI"].nunique()
         for index, row in df.iterrows():
-            patch = ax.patches[self.get_patch_index(ax, n_rois, index)]
+            patch = ax.patches[self.get_patch_index(ax, n_rois, row)]
             x = patch.get_x()
             width = patch.get_width()
             x_middle = x + width / 2
@@ -413,7 +421,8 @@ class Plotting:
                     "This dataframe has no time axis (its 'Values' are 1D), so it "
                     "cannot be plotted over time. Use 'plotting_components' instead."
                 )
-            self.add_std_deviation(dataframe)
+            # Work on a copy with a fresh index (palette[index] below)
+            dataframe = self.add_std_deviation(dataframe.reset_index(drop=True))
 
             # Average 2D arrays over the first axis
             dataframe["Values_plotting"] = dataframe["Values"].apply(lambda x: np.mean(x, axis=0) if self.is_2d_array(x) else x)
