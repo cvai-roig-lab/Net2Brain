@@ -19,7 +19,7 @@ By using the Model Taxonomy, researchers can efficiently scout through various m
 
 .. code-block:: python
 
-    from net2brain.feature_extraction import (
+    from net2brain.taxonomy import (
         show_all_architectures,
         show_all_netsets,
         show_taxonomy,
@@ -45,7 +45,10 @@ For a closer look at the models within a specific netset:
 
 .. code-block:: python
 
-    print_netset_models('standard')
+    print_netset_models('Standard')
+
+``print_netset_models`` needs the netset name as listed by ``show_all_netsets()``. ``FeatureExtractor`` also accepts
+the lower-case netset names shown in the taxonomy (e.g. ``netset="standard"``).
 
 Finding a Specific Model
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -76,10 +79,10 @@ You can find models based on specific attributes:
     find_model_by_dataset("Taskonomy")
 
     # Discover models by their training method
-    find_model_by_training_method("SimCLR")
+    find_model_by_training_method("Contrastive Language Image Pre-Training")
 
     # Search for models trained for a particular visual task
-    find_model_by_visual_task("Panoptic Segmentation")
+    find_model_by_visual_task("Semantic Segmentation")
 
 Custom Searches
 ^^^^^^^^^^^^^^^
@@ -88,4 +91,4 @@ For tailored searches combining various attributes or focusing on a specific mod
 
 .. code-block:: python
 
-    find_model_by_custom(["COCO", "Object Detection"], model_name="fpn")
+    find_model_by_custom(["COCO", "Instance Segmentation"], model_name="yolo")

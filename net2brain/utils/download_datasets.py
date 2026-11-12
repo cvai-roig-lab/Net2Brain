@@ -54,7 +54,7 @@ class BaseDataset:
         2. split -b 9000m dataset.zip dataset.part
         """
         urls = self.DATASET_URLS[self.dataset_name]
-        if not os.path.exists(self.dataset_folder):
+        if not os.path.isdir(self.dataset_folder) or not os.listdir(self.dataset_folder):
             print(f"Downloading dataset '{self.dataset_name}'...")
             if isinstance(urls, str):
                 urls = [urls]
@@ -89,6 +89,7 @@ class BaseDataset:
                 
                 # Download with progress bar
                 response = requests.get(url, stream=True)
+                response.raise_for_status()
                 total_size = int(response.headers.get('content-length', 0))
                 
                 with open(path, 'wb') as f, tqdm(
@@ -719,6 +720,8 @@ class DatasetAlgonauts_NSD_Shared(BaseDataset):
 
         # Load the NSD to COCO mapping
         df = pd.read_csv(coco_path, dtype={'nsd_id': str, 'coco_id': str})
+        # Match NSD ids without leading zeros (file names are zero-padded), as NSDtoCOCO does
+        df['nsd_id'] = df['nsd_id'].str.lstrip('0')
 
         for filename in tqdm(os.listdir(folder)):
             basename, extension = os.path.splitext(filename)
@@ -728,6 +731,7 @@ class DatasetAlgonauts_NSD_Shared(BaseDataset):
                 nsd_id = nsd_id_match.group(1)
             else:
                 nsd_id = basename
+            nsd_id = nsd_id.lstrip('0')
 
             if nsd_id in df['nsd_id'].values:
                 coco_id = df[df['nsd_id'] == nsd_id]['coco_id'].values[0]

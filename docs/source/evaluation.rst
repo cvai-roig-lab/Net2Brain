@@ -33,6 +33,17 @@ The RSA module within **Net2Brain** simplifies the performance of RSA, offering 
     # Display the Results
     print(results_df)
 
+With ``squared=True`` (default) the DataFrame holds the mean over subjects of r² (``R2``), the per-subject values
+(``R2_array``) and ``%R2`` (relative to the lower noise ceiling ``LNC``); with ``squared=False`` the same for r (``R``,
+``R_array``, ``%R``). ``Significance`` is the p-value of a one-sided one-sample t-test of the per-subject correlations
+r against 0 (mean r > 0), also when ``squared=True``. For MEG/EEG data the correlations and the noise ceiling are
+computed per timepoint and averaged over timepoints if ``timepoint_agg=True`` (else one value per timepoint).
+
+``evaluate`` takes two optional arguments:
+
+- **distance_metric**: How the RDMs are compared, ``"spearman"`` (default) or ``"pearson"``. Other values raise a ValueError.
+- **correction**: ``None`` (default, uncorrected) or ``"bonferroni"`` (over the layers of each ROI, capped at 1). Other values raise a ValueError.
+
 Significant Model Comparisons
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -41,6 +52,14 @@ When the objective is to ascertain whether one model outperforms another signifi
 .. code-block:: python
 
     test_statistic, significant_pairs = rsa_evaluation.compare_model(another_evaluation)
+
+``compare_model`` scores both models with the ``distance_metric`` of the last ``evaluate()`` call of
+``rsa_evaluation`` (Spearman without one); MEG/EEG data need ``timepoint_agg=True`` and ``model_timepoints=False``. It
+chooses the best layer of each model on a random half of the subjects (fixed seed) and compares the two chosen layers
+with a paired t-test of the per-subject r on the other half (also when ``squared=True``). Choosing and testing on the
+same subjects would favour the model with more layers. The split halves the number of test subjects, so the test has
+little power with few subjects. ``test_statistic`` holds ``(tstat, p)`` per ROI (``tstat`` is positive if
+``another_evaluation`` is better).
 
 Visualizing RSA Results
 -----------------------
@@ -54,7 +73,7 @@ Required for plotting:
 
 - **dataframes**: A single DataFrame from the evaluation or a list of them.
 - **pairs**: (Optional) A list of significant pairs derived from the evaluation function.
-- **metric**: (Optional) The evaluation metric, either R² or R.
+- **metric**: (Optional) ``"R2"``, ``"R"`` or ``"Distance"``. Defaults to the first of these that all DataFrames contain. Values are plotted as stored (there is no conversion between R and R²), so ``metric="R"`` needs an ``R`` column, e.g. RSA with ``squared=False``. For ``"Distance"`` (distributional comparisons) the lowest value is the best layer.
 
 .. code-block:: python
 
@@ -77,8 +96,16 @@ Required for plotting:
 Weighted RSA
 ----------------
 
-**Net2Brain** extends support for Weighted RSA, incorporating weights into the analysis to refine model 
-performance assessment and the study of neural representation correlations with computational models.
+**Net2Brain** extends support for Weighted RSA, which combines the RDMs of all layers of a model into one weighted
+model RDM with non-negative weights. The stimuli are split once at random (fixed seed) into ``min(5, n_stimuli // 3)``
+folds. For every fold and every held-out subject, the weights are fit (least squares with intercept) on the mean RDM of
+the other subjects, using only the pairs of the training stimuli, and the weighted RDM is correlated (Pearson) with the
+held-out subject's RDM on the pairs of the held-out stimuli. ``R2`` is the mean over subjects of r² (r averaged over the
+folds), ``Significance`` a one-sided t-test of r against 0 over subjects, and ``LNC``/``UNC`` are Pearson noise ceilings
+on the same held-out pairs, aggregated like ``R2``. The output has one row per ROI (``Layer`` "All"). MEG/EEG RDMs are averaged over time
+first. ``R2`` and ``Significance`` depend on the random split of the stimuli; for weak effects they can differ
+considerably between splits. At least 6 stimuli and 2 subjects are needed; ``squared``, ``distance_metric`` and
+``ridge_weight`` are not used.
 
 WRSA necessitates:
 
@@ -89,7 +116,7 @@ WRSA necessitates:
 .. code-block:: python
 
     # Example with WRSA
-    from net2brain.evaluations.wrsa import WRSA
+    from net2brain.evaluations.weighted_rsa import WRSA
     
     # Initialize WRSA
     wrsa_evaluation = WRSA(model_rdms_path, brain_rdms_path, model_name="ResNet50")
@@ -113,14 +140,14 @@ but users can apply the feature if they have suitable RDMs.
 
     from net2brain.evaluations.searchlight import Searchlight
     
-    # Initialize Searchlight
+    # Initialize Searchlight (distance_metric: "spearman", the default, or "pearson")
     searchlight_evaluation = Searchlight(model_rdms_path, searchlight_rdms_path)
     
-    # Conduct Evaluation - Returns a DataFrame
-    searchlight_results_df = searchlight_evaluation.evaluate()
+    # Conduct Evaluation - Returns a dictionary
+    searchlight_results = searchlight_evaluation.evaluate()
     
     # Present the Results
-    print(searchlight_results_df)
+    print(searchlight_results)
 
 
 
@@ -128,6 +155,12 @@ Linear Encoding Models:
 ----------------
 
 Another integrated analysis pipeline is a linear encoder. Given a npy file with voxel values, and extracted features, the encoder performs an X-fold regression where the training data is used to train a PCA embedding and a linear regression to predict voxel values. The output is the testing split X-fold average pearson correlation.
+
+The feature files are paired with the rows of the brain data in natural order of their file names (``stimulus_2``
+before ``stimulus_10``), as in RDM creation; a warning is shown if this differs from alphabetical order, which earlier
+versions used. A different number of feature files and brain-data rows raises an error.
+``Significance`` is NaN for ``Linear_Encoding``, ``Ridge_Encoding`` and ``Stacked_Encoding``: the earlier t-tests across
+folds, voxels or ROIs treated dependent values as independent, and no valid test is implemented.
 
 .. note::
 
@@ -137,7 +170,7 @@ Another integrated analysis pipeline is a linear encoder. Given a npy file with 
 Prerequisites for the linear encoding function include:
 
 - **feat_path**: The file path directing to the model's features.
-- **roi_path**: The file path for brain data formatted as RDM.
+- **roi_path**: The file path for brain data (``.npy``, stimuli x voxels).
 - **model_name**: The identifier for the model, crucial for subsequent visualization.
 - **trn_tst_split**: (Optional) specifies the train-test data ratio per fold, with a default of 0.8.
 - **n_folds**: (Optional) The cross-validation folds count, preset to 3.
@@ -157,7 +190,7 @@ Prerequisites for the linear encoding function include:
         n_folds=3,
         trn_tst_split=0.8,
         n_components=100,
-        batch_size=100
+        batch_size=100,
         return_correlations=True,
         save_path="path/to/csv"
     )
@@ -185,9 +218,25 @@ The requirements for VPA are:
 - **independent_variable**: A list with one entry per independent variable. Each entry is itself a list of RDM paths belonging to that group, which are averaged together when ``average_models=True``. A bare path string is also accepted for a single-model group.
 - **variable_names**: The labels for the independent variables, integral for visualization.
 
+Optional arguments of ``evaluate``:
+
+- **average_models**: Average the RDMs within each independent variable. Defaults to False.
+- **n_permutations**: Number of permutations for the significance test. Defaults to 1000; 0 skips the test (Significance is NaN).
+- **seed**: Seed of the permutations. Defaults to 0.
+
 Returns:
 
-- **dataframe**: Contains all unique and shared variances, plus the upper and lower noise ceiling as ``UNC`` and ``LNC`` rows. The dataframe can be filtered to only contain relevant information.
+- **dataframe**: Contains the R² of every combination of independent variables (``R1``, ``R12``, ...), all unique and shared variances (``y1``, ``y12``, ...), plus the upper and lower noise ceiling as ``UNC`` and ``LNC`` rows. The dataframe can be filtered to only contain relevant information.
+
+Significance is computed with a permutation test: the stimulus labels of the independent variables are permuted
+(the same permutation for all of them) and the mean over subjects is compared with the permutation null. For
+time-resolved data the null is the maximum over timepoints, so the p-values are corrected for all timepoints.
+p-values are given for every R² row (``R1``, ``R12``, ..., each tested on its own: they are corrected over
+timepoints, not across rows, so correct for the number of rows you test yourself). The unique and shared variances
+(``y1``, ``y12``, ...) have NaN as significance: the permutation tests whether any variable relates to the brain, not
+whether one variable adds to the others, so it would give false positives for them. The test generalizes over stimuli;
+the subjects are treated as fixed. If R² is NaN for a brain RDM (NaN or infinite values, or an exactly constant
+RDM), the p-values are NaN and a warning is shown.
 
 
 
@@ -201,8 +250,8 @@ Returns:
     VPA_eval = VPA(dependent_variable, independent_variables, variable_names)
     dataframe = VPA_eval.evaluate(average_models=True)
 
-    # Filter the dataframe to include only the unique variances and the shared variance by all variables
-    dataframe = dataframe.query("Variable in ['y1234', 'y1', 'y2', 'y3', 'y4']").reset_index(drop=True)
+    # Keep the R² of the full model (it has p-values) and the unique variances (no p-values)
+    dataframe = dataframe.query("Variable in ['R1234', 'y1', 'y2', 'y3', 'y4']").reset_index(drop=True)
 
 
 
@@ -274,6 +323,8 @@ Distributional Comparison evaluates the similarity between datasets by comparing
 - **Jensen-Shannon Divergence (JSD):** Measures the divergence between two probability distributions. It is symmetric and bounded between 0 and 1.
 - **Wasserstein Distance (WD):** Also known as Earth Mover's Distance, measures the cost of transforming one distribution into the other.
 
+Each feature is standardized; JSD (base 2) is computed on histograms with shared bins, Wasserstein on the samples. The distances are averaged across features.
+
 .. note::
 
    Run and test this code by using `this notebook <https://github.com/cvai-roig-lab/Net2Brain/blob/main/notebooks/3_Evaluation.ipynb>`_!
@@ -285,15 +336,15 @@ Prerequisites for the Distributional Comparison function include:
 - **metric**: The distance metric used to compare distributions. Options are:
   - **"jsd"**: Jensen-Shannon Divergence.
   - **"wasserstein"**: Wasserstein Distance.
-- **"bins":**  Number of bins for histogramming.
+- **"bins":**  Number of bins for histogramming (JSD only), defaults to 50.
 - **model_name**: The identifier for the model, crucial for labeling the output.
 
 .. warning::
 
-   If the feature lengths differ between the feature data and brain data, PCA is applied to reduce dimensionality to the same size. While this ensures compatibility, it alters the feature space.
+   Both the feature data and the brain data are reduced via PCA to ``min(n_features, n_voxels, n_stimuli - 1)`` components. While this ensures compatibility, it alters the feature space.
 
 Returns:
-- **dataframe**: Contains distributional comparison scores for each ROI and each layer of the DNN.
+- **dataframe**: Contains distributional comparison scores in the ``Distance`` column (lower means more similar) for each ROI and each layer of the DNN; ``Significance``, ``SEM``, ``LNC`` and ``UNC`` are NaN.
 
 .. code-block:: python
 
@@ -341,11 +392,11 @@ Prerequisites for the Stacked Encoding function include:
 - **save_path**: Directory to save encoding results and variance partitioning data.
 
 Returns:
-- **dataframe**: Contains model performance metrics per layer and ROI.
+- **dataframe**: Contains model performance metrics per layer and ROI. ``R`` is the Pearson r between the out-of-fold predictions and the data, averaged over voxels; ``Significance`` is NaN.
 
 .. code-block:: python
 
-    from brain_encoder import Stacked_Encoding
+    from net2brain.evaluations.stacked_encoding import Stacked_Encoding
 
     # Basic usage
     results_df = Stacked_Encoding(
@@ -366,15 +417,15 @@ Returns:
 Stacked Variance Partitioning
 -----------------------------------
 
-Stacked Variance Partitioning analyzes the importance of different neural network layers in predicting brain activity. It operates in two directions:
+Stacked Variance Partitioning (structured variance partitioning, Lin et al.) analyzes which layers of a network are needed to predict
+brain activity. It compares the full stacked model with stacked models on nested sets of layers, ordered from the first to the last layer:
 
-- **Forward direction**: Starts with simple layers and adds complexity.
-  - Identifies the minimum complexity required for prediction.
+- **Forward direction**: Layers are removed from the first one on (models on layers k+1..K). A voxel is assigned the first layer whose removal (together with the layers before it) drops the R² below 95% of the full model, i.e. the lowest layer that is still needed.
 
-- **Backward direction**: Starts with complex layers and removes them.
-  - Determines whether brain regions also process lower-level information.
+- **Backward direction**: Layers are removed from the last one on (models on layers 1..K-k), giving the highest layer that is still needed.
 
-This method defines an *interval* of relevant layers for each brain region.
+Together they define an *interval* of relevant layers for each voxel. The assignment is not a significance test: every voxel where the full
+model has R² > 0 gets a layer (the others get NaN), so restrict the maps to voxels where the full model predicts well.
 
 .. note::
 
@@ -382,9 +433,11 @@ This method defines an *interval* of relevant layers for each brain region.
 
 Prerequisites for the Stacked Variance Partitioning function include:
 
-- **r2s**: Array of R² values for individual layer models (`n_layers × n_voxels`).
-- **stacked_r2s**: Array of R² values for the full stacked model (`n_voxels,`).
-- **save_path**: Path to save variance partitioning results as an `.npz` file.
+- **nested_r2s_forward**: R² of the forward nested stacked models (`n_layers × n_voxels`), row k = layers k+1..K.
+- **nested_r2s_backward**: R² of the backward nested stacked models (`n_layers × n_voxels`), row k = layers 1..K-k.
+- **save_path**: Path to save variance partitioning results as an `.npz` file (optional; by default nothing is saved).
+
+Both are computed by ``nested_stacked_r2s(data, features)`` and saved by ``Stacked_Encoding(vpa=True)`` as ``r2s_array`` and ``r2sr``.
 
 
 Returns:
@@ -392,19 +445,14 @@ Returns:
 
 .. code-block:: python
 
-    from brain_encoder import Stacked_Variance_Partitioning
-    import numpy as np
-    
-    # Load R² values from stacked encoding
-    r2s = np.load("path/to/r2s.npy")                # R² values for individual layers
-    stacked_r2s = np.load("path/to/stacked_r2s.npy")  # R² values for stacked model
+    from net2brain.evaluations.stacked_encoding import nested_stacked_r2s
+    from net2brain.evaluations.stacked_variance_partitioning import Stacked_Variance_Partitioning
+
+    # brain_data: n_stimuli x n_voxels, features: list of n_stimuli x n_dim arrays from the first to the last layer
+    forward, backward = nested_stacked_r2s(brain_data, [layer1_features, layer2_features, layer3_features], n_folds=5)
 
     # Perform variance partitioning
-    vp_results = Stacked_Variance_Partitioning(
-        r2s=r2s,
-        stacked_r2s=stacked_r2s,
-        save_path="results/variance_partitioning"
-    )
+    vp_results = Stacked_Variance_Partitioning(forward, backward, save_path="results/variance_partitioning")
 
     # Access the results
     forward_layers = vp_results["vp_sel_layer_forward"]   # Layers selected in forward analysis

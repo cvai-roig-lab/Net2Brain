@@ -52,6 +52,7 @@ Available Netsets
 
 13. **MoCo v3** (`MoCoV3`)
     Self-supervised ResNet50 and Vision Transformer encoders trained on ImageNet with momentum contrastive learning, useful as a contrast to supervised training of the same architectures. Details are on the `MoCo v3 GitHub repository <https://github.com/facebookresearch/moco-v3>`_.
+    The MoCo v3 checkpoints contain no trained classification head, so with ``pretrained=True`` the ``fc`` (ResNet50) and ``head`` (ViT) layers are identity layers: they repeat the features of ``avgpool`` (flattened) and ``pre_logits``.
 
 
 Adding Your Own Models

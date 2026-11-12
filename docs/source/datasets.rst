@@ -9,13 +9,15 @@ Currently, you can choose from the following datasets:
 - ``"92images"``
 - ``"bonner_pnas2017"``
 
-Each dataset is uniquely identified by a name that can be used to load it with the `load_dataset` function. For example, to load the dataset from the study by Bonner et al. (2017), use the following code:
+Each dataset has its own class with a `load_dataset` function. For example, to load the dataset from the study by Bonner et al. (2017), use the following code:
 
 .. code-block:: python
 
-    from net2brain.utils.download_datasets import load_dataset
+    from net2brain.utils.download_datasets import DatasetBonnerPNAS2017
     # Load stimuli and brain data from the specified dataset
-    stimuli_path, roi_path = load_dataset("bonner_pnas2017")
+    paths_bonner = DatasetBonnerPNAS2017.load_dataset()
+    stimuli_path = paths_bonner["stimuli_path"]
+    roi_path = paths_bonner["roi_path"]
 
 This function returns the paths to the stimuli images and the region of interest (ROI) data, setting the stage for subsequent feature extraction and analysis.
 
@@ -51,12 +53,12 @@ These datasets can be loaded using specific classes in the Net2Brain toolkit:
 .. code-block:: python
 
 
-    from net2brain.utils.download_datasets import Dataset78images, Dataset92images, DatasetBonnerPNAS2017, DatasetAlgonauts_NSD, DatasetNSD_872, DatasetThings_fMRI, DatasetBoldMoments
+    from net2brain.utils.download_datasets import Dataset78images, Dataset92images, DatasetBonnerPNAS2017, DatasetAlgonauts_NSD, DatasetAlgonauts_NSD_Shared, DatasetThings_fMRI, DatasetBoldMoments
     paths_78 = Dataset78images().load_dataset()
     paths_92 = Dataset92images().load_dataset()
     paths_bonner = DatasetBonnerPNAS2017().load_dataset()
     paths_Algonauts = DatasetAlgonauts_NSD().load_dataset()
-    paths_NSD_872 = DatasetNSD_872().load_dataset()
+    paths_NSD_shared = DatasetAlgonauts_NSD_Shared().load_dataset()
     paths_things = DatasetThings_fMRI.load_dataset()
     paths_BoldMoments = DatasetBoldMoments.load_dataset()
 
@@ -66,7 +68,7 @@ These datasets can be loaded using specific classes in the Net2Brain toolkit:
 
 **Special Functions for NSD and Algonauts Datasets**
 
-The DatasetAlgonauts_NSD and NSD_872 dataset, sharing roots with the COCO dataset, is enriched by functions that facilitate seamless interactions:
+The DatasetAlgonauts_NSD and DatasetAlgonauts_NSD_Shared datasets, sharing roots with the COCO dataset, are enriched by functions that facilitate seamless interactions:
 
 - **ID Conversion:** Switch between NSD and COCO identifiers.
 - **Image Downloads:** Access original COCO images directly from NSD.
@@ -77,8 +79,8 @@ The DatasetAlgonauts_NSD and NSD_872 dataset, sharing roots with the COCO datase
 
 .. code-block:: python
 
-    from net2brain.utils.download_datasets import DatasetNSD_872
-    nsd_dataset = DatasetNSD_872() 
+    from net2brain.utils.download_datasets import DatasetAlgonauts_NSD_Shared
+    nsd_dataset = DatasetAlgonauts_NSD_Shared() 
     paths = nsd_dataset.load_dataset()
 
     # Convert NSD ID to COCO ID and vice versa
@@ -89,7 +91,7 @@ The DatasetAlgonauts_NSD and NSD_872 dataset, sharing roots with the COCO datase
     nsd_dataset.Download_COCO_Images("NSD Dataset/NSD_872_images", "NSD Dataset/coco_images")
     nsd_dataset.Download_COCO_Segmentation_Masks("NSD Dataset/NSD_872_images", "NSD Dataset/coco_masks")
     nsd_dataset.Download_COCO_Captions("NSD Dataset/NSD_872_images", "NSD Dataset/coco_captions")
-    nsd_dataset.Visualize("NSD Dataset/coco_images", "NSD Dataset/coco_masks", "03171")
+    nsd_dataset.Visualize("NSD Dataset/coco_images", "NSD Dataset/coco_masks", str(nsd_dataset.NSDtoCOCO("03171")))
 
     # Cropping and renaming for compatibility
     nsd_dataset.Crop_COCO_to_NSD("NSD Dataset/coco_images", "NSD Dataset/coco_images")

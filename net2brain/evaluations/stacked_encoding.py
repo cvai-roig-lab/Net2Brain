@@ -7,12 +7,12 @@ import glob
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from scipy.stats import zscore, ttest_1samp, sem
+from scipy.stats import zscore, sem
 from scipy.optimize import minimize
 from sklearn.decomposition import PCA, IncrementalPCA
 from .stacked_ridge_tools import cross_val_ridge, R2, ridge, R2r
 from .stacked_variance_partitioning import forward_variance_partitioning, backward_variance_partitioning
-from .eval_helper import get_npy_files
+from .eval_helper import get_npy_files, sort_feature_files
 
 
 def solve_stacking_weights(P):
@@ -295,7 +295,8 @@ def stacking_fmri(
     )
 
 
-def stacking_CV_fmri(data, features, method="cross_val_ridge", n_folds=5, score_f=R2):
+def stacking_CV_fmri(data, features, method="cross_val_ridge", n_folds=5, score_f=R2, return_predictions=False,
+                     _return_fold_errors=False):
     """
     A function that performs cross-validated feature stacking to predict fMRI
     signal from a set of predictors.
@@ -307,6 +308,8 @@ def stacking_CV_fmri(data, features, method="cross_val_ridge", n_folds=5, score_
     - method (str): A string indicating the method to use to train the model. Default is "cross_val_ridge".
     - n_folds (int): An integer indicating the number of cross-validation folds to use. Default is 5.
     - score_f (function): A function to use for scoring the model. Default is R2.
+    - return_predictions (bool): If True, also return the out-of-fold predictions of each feature space
+      (n_features x n_time x n_voxels) and of the stacked model (n_time x n_voxels).
 
     Returns:
     - A tuple containing the following elements:
@@ -338,6 +341,8 @@ def stacking_CV_fmri(data, features, method="cross_val_ridge", n_folds=5, score_
     preds_test = np.zeros((n_features, n_time, n_voxels))
     weighted_pred = np.zeros((n_features, n_time, n_voxels))
     S_average = np.zeros((n_voxels, n_features))
+    # Error matrices of every fold, only kept for the nested models of variance partitioning
+    P_folds = np.zeros((n_folds, n_voxels, n_features, n_features)) if _return_fold_errors else None
 
     # perform cross-validation by fold
     for ind_num in tqdm(range(n_folds), desc="Processing folds"):
@@ -379,6 +384,8 @@ def stacking_CV_fmri(data, features, method="cross_val_ridge", n_folds=5, score_
         for i in range(n_features):
             for j in range(n_features):
                 P[:, i, j] = np.mean(err[i] * err[j], axis=0)
+        if _return_fold_errors:
+            P_folds[ind_num] = P
 
         S = np.zeros((n_voxels, n_features))
         stacked_pred_train = np.zeros_like(train_data)
@@ -421,7 +428,7 @@ def stacking_CV_fmri(data, features, method="cross_val_ridge", n_folds=5, score_
     S_average = S_average / n_folds
 
     # return the results
-    return (
+    results = (
         r2s,
         stacked_r2s,
         r2s_weighted,
@@ -429,7 +436,65 @@ def stacking_CV_fmri(data, features, method="cross_val_ridge", n_folds=5, score_
         stacked_train,
         S_average,
     )
+    if return_predictions:
+        results += (preds_test, stacked_pred)
+    if _return_fold_errors:
+        # Internal: error matrices of each fold and the fold indices (reused for the nested models of SVP)
+        results += (P_folds, ind)
+    return results
 
+
+def _subset_stacked_r2(data, preds_test, P_folds, ind, layers, score_f=R2):
+    """
+    Out-of-fold R² of the stacked model on a subset of the layers, from the per-layer fits of the full model.
+
+    The ridge fit of each layer (and so its predictions and errors) does not depend on the other layers, so only
+    the stacking weights are re-solved on the sub-block of each fold's error matrix.
+    """
+    layers = list(layers)
+    stacked_pred = np.zeros(data.shape)
+    for fold in range(P_folds.shape[0]):
+        test_ind = ind == fold
+        P = P_folds[fold][:, layers][:, :, layers]
+        z = preds_test[layers][:, test_ind]
+        for i in range(data.shape[1]):
+            stacked_pred[test_ind, i] = np.dot(solve_stacking_weights(P[i]), z[:, :, i])
+    return score_f(stacked_pred, zscore(data))
+
+
+def _nested_stacked_r2s(data, r2s, stacked_r2s, preds_test, P_folds, ind, score_f=R2):
+    """Nested models from the results of the full stacked fit (r2s: single layers, stacked_r2s: all layers)"""
+    n_layers = len(r2s)
+    forward = np.empty((n_layers, data.shape[1]))
+    backward = np.empty_like(forward)
+    forward[0] = backward[0] = stacked_r2s
+    for k in range(1, n_layers - 1):
+        forward[k] = _subset_stacked_r2(data, preds_test, P_folds, ind, range(k, n_layers), score_f)
+        backward[k] = _subset_stacked_r2(data, preds_test, P_folds, ind, range(n_layers - k), score_f)
+    # A single layer is stacked with weight 1, so its stacked R² is its own R²
+    if n_layers > 1:
+        forward[-1], backward[-1] = r2s[-1], r2s[0]
+    return forward, backward
+
+
+def nested_stacked_r2s(data, features, n_folds=5):
+    """
+    Out-of-fold R² of the nested stacked models used by structured variance partitioning (Lin et al.).
+
+    Args:
+    - data (ndarray): fMRI data, n_stimuli x n_voxels.
+    - features (list): Feature spaces (n_stimuli x n_dim each), ordered from the first to the last layer.
+    - n_folds (int): Number of cross-validation folds (the same folds for all nested models).
+
+    Returns:
+    - forward (ndarray): (n_layers, n_voxels), row k = stacked model on layers k+1..K.
+    - backward (ndarray): (n_layers, n_voxels), row k = stacked model on layers 1..K-k.
+      Row 0 of both is the full model. The per-layer ridge fits of the full model are reused, only the stacking
+      weights are re-solved for each nested model.
+    """
+    r2s, stacked_r2s, _, _, _, _, preds_test, _, P_folds, ind = stacking_CV_fmri(
+        data, features, n_folds=n_folds, return_predictions=True, _return_fold_errors=True)
+    return _nested_stacked_r2s(data, r2s, stacked_r2s, preds_test, P_folds, ind)
 
 
 def Stacked_Encoding(feat_path, 
@@ -457,6 +522,7 @@ def Stacked_Encoding(feat_path,
             If None, PCA will not be used 
             If a specific number is provided, PCA will be used with these number of components.
         vpa (bool): If true, will computed stacked variance partitioning anaylsis and save locally
+            (on the nested stacked models, see nested_stacked_r2s)
         save_path (str): Directory path to save the results.
         
     Returns:
@@ -464,8 +530,8 @@ def Stacked_Encoding(feat_path,
             - ROI: Name of the brain region
             - Layer: Name of the model layer or "stacked_layers" for the combined model
             - Model: Name of the model
-            - R: Correlation coefficient (square root of R²)
-            - Significance: p-value for statistical significance
+            - R: Pearson r between the out-of-fold predictions and the data, averaged over voxels
+            - Significance: NaN (no valid significance test is implemented)
             - SEM: Standard error of the mean
             - Various additional metrics
     """
@@ -535,6 +601,15 @@ def apply_pca_to_features(features, n_components=100):
     
     return reduced_features, explained_variance        
 
+def _mean_voxel_r(pred, data):
+    """Mean over voxels of the Pearson r between predicted and measured responses"""
+    p = pred - pred.mean(axis=0)
+    d = data - data.mean(axis=0)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        r = (p * d).sum(axis=0) / np.sqrt((p ** 2).sum(axis=0) * (d ** 2).sum(axis=0))
+    return np.nanmean(r)
+
+
 # Calculate SEM for each layer and stacked model
 def compute_sem(values):
     """Compute the standard error of the mean"""
@@ -573,14 +648,21 @@ def _stacked_encoding(feat_path, roi_path, model_name,  save_path, n_folds, use_
     # Load ROI data
     print(f"Loading ROI data from {roi_path}")
     roi_data = np.load(roi_path, allow_pickle=True)
-    roi_name = os.path.basename(roi_path).split(".")[0]
+    roi_name = os.path.splitext(os.path.basename(roi_path))[0]
     print(f"ROI data shape: {roi_data.shape}")
     n_samples = roi_data.shape[0]
     
     # Get feature files
     feat_files = glob.glob(os.path.join(feat_path, '*.np[zy]'))
-    feat_files.sort()
+    feat_files = sort_feature_files(feat_files)
     print(f"Found {len(feat_files)} feature files")
+
+    # Check that the number of feature files matches the number of brain samples
+    if len(feat_files) != n_samples:
+        raise ValueError(
+            f"Mismatch in number of stimuli: found {len(feat_files)} feature files but the brain data "
+            f"'{roi_path}' has {n_samples} rows. Each feature file must correspond to exactly one row "
+            f"(stimulus) of the brain data, in the same order.")
     
     # Scan first file to get layer names
     first_file = feat_files[0]
@@ -639,26 +721,32 @@ def _stacked_encoding(feat_path, roi_path, model_name,  save_path, n_folds, use_
     
     print(f"Running stacked encoding with {len(all_features)} feature spaces...")
     # Run stacked encoding
-    r2s, stacked_r2s, r2s_weighted, r2s_train, stacked_train, S_average = stacking_CV_fmri(
+    results = stacking_CV_fmri(
         data=roi_data,
         features=all_features,
         method="cross_val_ridge",
         n_folds=n_folds,
-        score_f=R2
+        score_f=R2,
+        return_predictions=True,
+        _return_fold_errors=vpa
     )
+    r2s, stacked_r2s, r2s_weighted, r2s_train, stacked_train, S_average, preds_test, stacked_pred = results[:8]
     
     vp_results = {}
     if vpa:
+        # Nested stacked models (layers k+1..K forward, 1..K-k backward), reusing the per-layer fits
+        forward, backward = _nested_stacked_r2s(roi_data, r2s, stacked_r2s, preds_test, *results[8:])
+
         # Forward variance partitioning
         print("Running variance partitioning: Forward Pass")
-        vp, vp_square, r2s_array, vp_sel_layer_forward = forward_variance_partitioning(r2s, stacked_r2s)
+        vp, vp_square, r2s_array, vp_sel_layer_forward = forward_variance_partitioning(forward)
         print(f"Forward VP shape: {vp.shape}")
         print(f"Forward VP square shape: {vp_square.shape}")
 
 
         # Backward variance partitioning
         print("Running variance partitioning: Backward Pass")
-        vpr, vpr_square, r2sr, vpr_sel_layer_backward = backward_variance_partitioning(r2s)
+        vpr, vpr_square, r2sr, vpr_sel_layer_backward = backward_variance_partitioning(backward)
         print(f"Backward VP shape: {vpr.shape}")
         print(f"Backward VP square shape: {vpr_square.shape}")
         print("Selected layers you will find in save-file")
@@ -682,13 +770,11 @@ def _stacked_encoding(feat_path, roi_path, model_name,  save_path, n_folds, use_
         # Calculate SEM across voxels
         sem_value = compute_sem(r2s[i, :])
         
-        # Calculate significance (p-value) compared to zero using t-test
-        t_stat, p_value = ttest_1samp(r2s[i, :], 0)
-        significance = p_value
+        # No p-value: the voxels are correlated, so a t-test across voxels is invalid
+        significance = np.nan
         
-        # Average R values
-        r_values = np.sqrt(np.abs(r2s[i, :]))
-        avg_r = np.mean(r_values)
+        # Pearson r between the out-of-fold predictions and the data, averaged over voxels
+        avg_r = _mean_voxel_r(preds_test[i], roi_data)
         
         # Average R2 across voxels
         avg_r2 = np.mean(r2s[i, :])
@@ -710,12 +796,10 @@ def _stacked_encoding(feat_path, roi_path, model_name,  save_path, n_folds, use_
     
     # Add result for stacked model
     sem_stacked = compute_sem(stacked_r2s)
-    t_stat_stacked, p_value_stacked = ttest_1samp(stacked_r2s, 0)
-    significance_stacked = p_value_stacked
+    significance_stacked = np.nan
     avg_stacked_r2 = np.mean(stacked_r2s)
     
-    stacked_r_values = np.sqrt(np.abs(stacked_r2s))
-    avg_stacked_r = np.mean(stacked_r_values)
+    avg_stacked_r = _mean_voxel_r(stacked_pred, roi_data)
     
     stacked_result = {
         "ROI": roi_name,

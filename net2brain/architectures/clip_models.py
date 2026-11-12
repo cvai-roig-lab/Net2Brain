@@ -77,7 +77,7 @@ class Clip(NetSetBase):
 
         # Set the layers and model function from the attributes
         self.layers = model_attributes["nodes"]
-        self.loaded_model = model_attributes["model_function"](self.model_name, device=self.device)[0]
+        self.loaded_model, self.preprocess = model_attributes["model_function"](self.model_name, device=self.device)
         if not pretrained:  # clip.load always loads pretrained weights
             self.loaded_model = random_clip_like(self.loaded_model)
 
@@ -95,7 +95,7 @@ class Clip(NetSetBase):
 
 
     def image_preprocessing(self, image, model_name, device):
-        image = super().image_preprocessing(image, model_name, device)
+        image = self.preprocess(image).unsqueeze(0)
         text = torch.cat([clip.tokenize("a photo of a word")])
         
         # Send to device
@@ -106,7 +106,7 @@ class Clip(NetSetBase):
         return [image, text]
 
     def video_preprocessing(self, frame, model_name, device):
-        image = super().video_preprocessing(frame, model_name, device)
+        image = self.preprocess(Image.fromarray(frame)).unsqueeze(0)
         text = torch.cat([clip.tokenize("a photo of a word")])
 
         # Send to device
@@ -139,7 +139,7 @@ class Clip(NetSetBase):
     
     def multimodal_preprocessing(self, tuple_path, model_name, device):
         loaded_image, loaded_text = tuple_path
-        image = super().image_preprocessing(loaded_image, model_name, device)
+        image = self.preprocess(loaded_image).unsqueeze(0)
         text_raw = super().text_preprocessing(loaded_text, model_name, device)
         text = torch.cat([clip.tokenize(text_raw)])
         

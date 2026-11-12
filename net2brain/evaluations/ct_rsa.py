@@ -43,12 +43,15 @@ class CTRSA():
             before_onset: Time in seconds before stimulus onset, used to convert timepoint indices to seconds and to define the baseline window for baseline correction.
 
         Returns:
-            final_df: A DataFrame with one row per brain timepoint, containing the maximum RSA score across all model timepoints and layers for that brain timepoint,
+            final_df: A DataFrame with one row per ROI and brain timepoint, containing the maximum RSA score across all model timepoints and layers for that brain timepoint,
             as well as the corresponding layer and model timepoint information. The DataFrame is baseline-corrected if baseline_correction is True.
+            The "R" column holds R2 values if squared.
         """
 
         df = self.rsa.evaluate()
         df.drop(columns=["Significance"], inplace=True)
+        # The score column is "R2" if squared
+        df = df.rename(columns=dict(zip(self.rsa.get_rnames(), ["R", "%R", "R_array"])))
 
         df["Layer"] = (
             df["Layer"]
@@ -61,7 +64,14 @@ class CTRSA():
         if self.rsa.layer_skips:
             layer_order = [lay for lay in layer_order if lay not in self.rsa.layer_skips]
         df["Layer"] = df["Layer"].map({lay: i for i, lay in enumerate(layer_order)})
-        df.sort_values(by=["Layer"], inplace=True)
+
+        # Each ROI separately
+        return pd.concat([self._evaluate_roi(roi_df, baseline_correction, sfreq, before_onset)
+                          for _, roi_df in df.groupby("ROI", sort=False)], ignore_index=True)
+
+    def _evaluate_roi(self, df, baseline_correction, sfreq, before_onset):
+        """CT-RSA for the rows (one per layer) of a single ROI"""
+        df = df.sort_values(by=["Layer"])
 
         df["R"] = df["R"].apply(np.array)
         max_len = df["R"].apply(len).max()
@@ -120,7 +130,7 @@ class CTRSA():
                     "Layer_at_max_R_names": row["Layer_at_max_R_names"][rep_idx][t_idx]
                 }
                 for k, v in metadata.items():
-                    new_row[k] = v
+                    new_row[k] = v[t] if k in ("LNC", "UNC") else v  # noise ceiling per brain timepoint
                 rows.append(new_row)
                 t_idx = t_idx + 1
         long_df = pd.DataFrame(rows)
