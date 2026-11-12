@@ -20,7 +20,8 @@ def estimate_from_files(file_list: list, key: int, feat_dim: tuple, open_func: C
         feat_dim: Tuple of dimensions of the feature data.
         open_func: Function to open the data.
         dim_reduction: Dimensionality reduction method to use. Choose 'srp' or 'pca'.
-        n_samples_estim: Number of samples to use for the estimation.
+        n_samples_estim: Number of samples to use for the estimation (a seeded random subset of the files if there
+            are more files, all files otherwise).
         n_components: Number of components to reduce to.
         srp_before_pca (bool): Whether to apply Sparse Random Projection (SRP) before PCA. Use when features are so
             high-dimensional that PCA runs out of memory. Num of dims estimated by SRP.
@@ -34,8 +35,11 @@ def estimate_from_files(file_list: list, key: int, feat_dim: tuple, open_func: C
 
     """
     # Estimate the dimensionality reduction from a subset of the data
+    n_samples_estim = min(n_samples_estim, len(file_list))
+    # Random subset (not the first files), so that files sorted by name (e.g. by category) are all represented
+    subset = np.sort(np.random.default_rng(0).choice(len(file_list), n_samples_estim, replace=False))
     feats_for_estim = np.empty((n_samples_estim, *feat_dim))
-    for i, file in enumerate(file_list[:n_samples_estim]):
+    for i, file in enumerate([file_list[j] for j in subset]):
         if clip_idx is not None:
             if time_idx is not None:
                 feats_for_estim[i, :] = open_func(file)[key][:, clip_idx, time_idx].squeeze()

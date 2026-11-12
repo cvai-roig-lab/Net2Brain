@@ -5,6 +5,8 @@ from torchvision import transforms as trn
 from .shared_functions import load_from_json
 from .implemented_models import taskonomy_model
 import torch
+import numpy as np
+from skimage.color import rgb2lab
 from PIL import Image
 import os
 
@@ -72,39 +74,26 @@ class Taskonomy(NetSetBase):
 
         # Colorization needs a different preprocessing to be 1D
         if model_name == 'colorization':
-            image = image.convert('L')
+            # Lightness channel of Lab (0-100), rescaled to [-1, 1]
+            image = trn.Resize((256, 256))(image.convert('RGB'))
+            lightness = rgb2lab(np.asarray(image) / 255.0)[:, :, 0]
+            image_tensor = torch.tensor(lightness / 50 - 1, dtype=torch.float32)[None, None]
+        else:
             transforms = trn.Compose([
-                trn.Resize((224, 224)),
+                trn.Resize((256, 256)),
                 trn.ToTensor(),
             ])
-            image_tensor = transforms(image).unsqueeze(0)
+            # Taskonomy models expect values in [-1, 1]
+            image_tensor = transforms(image).unsqueeze(0) * 2 - 1
 
-            # Send to CUDA if needed
-            if device == 'cuda':
-                image_tensor = image_tensor.cuda()
-            return image_tensor
-        else:
-            return super().image_preprocessing(image, model_name, device)
+        # Send to CUDA if needed
+        if device == 'cuda':
+            image_tensor = image_tensor.cuda()
+        return image_tensor
 
 
     def video_preprocessing(self, frame, model_name, device):
-        
-        # Colorization needs a different preprocessing to be 1D
-        if model_name == 'colorization':
-            frame = Image.fromarray(frame)
-            image = frame.convert('L')
-            transforms = trn.Compose([
-                trn.Resize((224, 224)),
-                trn.ToTensor(),
-            ])
-            image_tensor = transforms(image).unsqueeze(0)
-
-            # Send to CUDA if needed
-            if device == 'cuda':
-                image_tensor = image_tensor.cuda()
-            return image_tensor
-        else:
-            return super().video_preprocessing(frame, model_name, device)
+        return self.image_preprocessing(Image.fromarray(frame), model_name, device)
 
     def clean_extracted_features(self, features):
         return features

@@ -66,6 +66,9 @@ class NetSetBase:
 
     @classmethod
     def initialize_netset(cls, model_name, netset_name, device):
+        if netset_name not in cls._registry:  # case-insensitive, taxonomy.csv writes e.g. "timm" and "standard"
+            names = {name.lower(): name for name in [*cls._registry, 'MMAction', 'Clip']}
+            netset_name = names.get(str(netset_name).lower(), netset_name)
         if netset_name in cls._registry:
             return cls._registry[netset_name](model_name, device)
         else:
@@ -309,7 +312,11 @@ class NetSetBase:
         return [ordered_loaded_data]
 
     def load_image_data(self, data_path):
-        return [Image.open(data_path).convert('RGB')]
+        image = Image.open(data_path)
+        # 16-bit grayscale images are scaled to 8 bit (convert('RGB') would clip them), unless already in 8-bit range
+        if image.mode in ('I', 'I;16', 'I;16B', 'I;16L') and np.asarray(image).max() > 255:
+            image = Image.fromarray((np.asarray(image, dtype=np.float64) / 257).round().clip(0, 255).astype(np.uint8))
+        return [image.convert('RGB')]
 
     def load_video_data(self, data_path, pick_frames=None):
         """
@@ -332,8 +339,10 @@ class NetSetBase:
             ret, frame = cap.read()
             if not ret:
                 break
-            frames.append(frame)
+            frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         cap.release()
+        if not frames:
+            raise ValueError(f"Could not read any frames from {data_path}.")
         if pick_frames is not None:
             # get `pick_frames` number of uniform indices
             indices = np.linspace(0, len(frames) - 1, pick_frames, dtype=int)

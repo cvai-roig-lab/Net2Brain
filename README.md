@@ -22,6 +22,10 @@ To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.
 
 # Updates 
 
+# Updates 11/26
+1. **Version 1.4.1** with bug fixes in evaluation, feature extraction, RDM creation and plotting. RSA correlation values are unchanged; p-values and some methods (e.g. weighted RSA, stacked encoding) give different results. See the [release notes](https://github.com/cvai-roig-lab/Net2Brain/releases/tag/v.1.4.1) for details.
+
+
 # Updates 08/26
 1. **New netset** `MoCoV3`, with self-supervised ResNet50 (100/300/1000 epochs) and ViT-S/ViT-B (300 epochs) encoders trained on ImageNet
 
@@ -166,11 +170,11 @@ pip install -U git+https://github.com/cvai-roig-lab/Net2Brain
 __Net2Brain__ provides a comprehensive model taxonomy system to assist users in selecting the most suitable models for their studies. This taxonomy system classifies models based on attributes such as dataset, training method, and visual task. Let's take a look at an example that showcases the usage of the taxonomy system:
 
 ```python
-from net2brain.feature_extraction import show_taxonomy
-from net2brain.feature_extraction import find_model_by_dataset
-from net2brain.feature_extraction import find_model_by_training_method
-from net2brain.feature_extraction import find_model_by_visual_task
-from net2brain.feature_extraction import find_model_by_custom
+from net2brain.taxonomy import show_taxonomy
+from net2brain.taxonomy import find_model_by_dataset
+from net2brain.taxonomy import find_model_by_training_method
+from net2brain.taxonomy import find_model_by_visual_task
+from net2brain.taxonomy import find_model_by_custom
 
 # Show the taxonomy
 show_taxonomy()
@@ -179,13 +183,13 @@ show_taxonomy()
 find_model_by_dataset("Taskonomy")
 
 # Find models based on training method
-find_model_by_training_method("SimCLR")
+find_model_by_training_method("Contrastive Language Image Pre-Training")
 
 # Find models based on visual task
-find_model_by_visual_task("Panoptic Segmentation")
+find_model_by_visual_task("Semantic Segmentation")
 
 # Find models based on custom attributes
-find_model_by_custom(["COCO", "Object Detection"], model_name="fpn")
+find_model_by_custom(["COCO", "Instance Segmentation"], model_name="yolo")
 ```
 
 This taxonomy system provides a convenient way to search for models that align with specific research requirements.
@@ -259,10 +263,12 @@ To perform RSA evaluation, follow these steps:
 
 ```python
 from net2brain.evaluations.rsa import RSA
-from net2brain.utils.download_datasets import load_dataset
+from net2brain.utils.download_datasets import DatasetBonnerPNAS2017
 
 # Load the ROIs
-stimuli_path, roi_path = load_dataset("bonner_pnas2017")
+paths_bonner = DatasetBonnerPNAS2017.load_dataset()
+stimuli_path = paths_bonner["stimuli_path"]
+roi_path = paths_bonner["roi_path"]
 
 # Define the paths to the model and brain RDMs
 model_rdms = "AlexNet_RDM"
@@ -288,8 +294,8 @@ from net2brain.evaluations.plotting import Plotting
 # Initialize the plotter with the DataFrame
 plotter = Plotting([dataframe1])
 
-# Plot the results
-# Optionally, pass metrix='R' if you do not want to lot with R2
+# Plot the results (R2)
+# To plot R instead, evaluate with RSA(..., squared=False) and call plotter.plot(metric="R")
 results_dataframe = plotter.plot()
 ```
 

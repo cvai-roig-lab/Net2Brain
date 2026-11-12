@@ -122,7 +122,7 @@ class RDMCreator:
                 The number of samples used for estimating the dimensionality reduction.
             n_components: int or None
                 The number of components to reduce the features to. If None, the number of components is estimated.
-                For PCA, `n_components` must be smaller than `n_samples_estim`.
+                For PCA, `n_components` must be smaller than `n_samples_estim` and the number of stimuli.
             srp_before_pca (bool): Whether to apply Sparse Random Projection (SRP) before PCA. Use when features are so
                 high-dimensional that PCA runs out of memory. Num of dims estimated by SRP.
             max_dim_allowed: int or None

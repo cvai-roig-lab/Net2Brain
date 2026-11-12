@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='net2brain',
-    version='1.4.0',
+    version='1.4.1',
     author='Roig Lab',
     packages=find_packages(),
     package_data={
@@ -34,6 +34,7 @@ setup(
         'pycocotools',
         'pytest',
         'scikit_learn',
+        'scikit-image',
         'scipy',
         'torch',
         'tqdm',

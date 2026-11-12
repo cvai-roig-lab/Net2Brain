@@ -35,6 +35,22 @@ def natural_keys(text):
     return [atoi(c) for c in re.split(r'(\d+)', text)]
 
 
+_order_warned = False
+
+
+def sort_feature_files(files):
+    """Natural order of the stimulus names (stimulus_2 before stimulus_10), as in RDM creation. Warns (once) if this
+    differs from the alphabetical order that encoding and CKA used before."""
+    global _order_warned
+    ordered = sorted(files, key=lambda f: natural_keys(os.path.splitext(os.path.basename(f))[0]))
+    if ordered != sorted(files) and not _order_warned:
+        _order_warned = True
+        warnings.warn("Feature files are now paired with the brain-data rows in natural order of their names "
+                      "(stimulus_2 before stimulus_10), not in alphabetical order as before. Make sure the rows "
+                      "of your brain data follow this order.")
+    return ordered
+
+
 def loadmat(matfile):
     """loads the input files if in .mat format
 

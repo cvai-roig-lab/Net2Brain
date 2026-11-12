@@ -287,15 +287,14 @@ class MMAction(NetSetBase):
                         f"Expected 6D tensor, got {value.ndim}D tensor for key {key}. "
                         f"Shape: {value.shape}"
                     )
-                if key not in features_all_clips:
-                    features_all_clips[key] = value
-                else:
-                    features_all_clips[key] = torch.concat([features_all_clips[key], value], dim=1)
-                    if agg_frames == 'across_clips':
-                        features_all_clips[key] = features_all_clips[key].mean(1, keepdim=True)
-                    elif agg_frames == 'within_clips':
-                        features_all_clips[key] = features_all_clips[key].mean(2, keepdim=True)
-                    elif agg_frames == 'all':
-                        features_all_clips[key] = features_all_clips[key].mean(1, keepdim=True)
-                        features_all_clips[key] = features_all_clips[key].mean(2, keepdim=True)
+                features_all_clips.setdefault(key, []).append(value)
+
+        # Aggregate once all clips are collected
+        for key, values in features_all_clips.items():
+            value = torch.concat(values, dim=1)
+            if agg_frames in ('across_clips', 'all'):
+                value = value.mean(1, keepdim=True)
+            if agg_frames in ('within_clips', 'all'):
+                value = value.mean(2, keepdim=True)
+            features_all_clips[key] = value
         return features_all_clips

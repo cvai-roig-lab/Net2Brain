@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from scipy.stats import entropy
+from scipy.spatial.distance import jensenshannon
 from scipy.stats import wasserstein_distance
 from .eval_helper import get_npy_files, get_layers_ncondns
 import os
@@ -19,9 +19,9 @@ def reduce_features(X1, X2, print_statement):
             print("This is to be expected, hence the larger dimension will be reduced via PCA to the smaller dimension.")
 
     # Reduce to the smaller number of features
-    n_features = min(X1.shape[1], X2.shape[1])
-    pca_X1 = PCA(n_components=n_features)
-    pca_X2 = PCA(n_components=n_features)
+    n_features = min(X1.shape[1], X2.shape[1], X1.shape[0] - 1)  # centred data has at most n_samples - 1 components with variance
+    pca_X1 = PCA(n_components=n_features, random_state=0)
+    pca_X2 = PCA(n_components=n_features, random_state=0)
     X1_reduced = pca_X1.fit_transform(X1)
     X2_reduced = pca_X2.fit_transform(X2)
     return X1_reduced, X2_reduced
@@ -43,37 +43,31 @@ class DistributionalComparison:
     def __init__(self):
         self.reduced_feat_information = True
 
-    def compute_jsd(self, p, q, eps=1e-8):
+    def compute_jsd(self, p, q):
         """
         Compute the Jensen-Shannon Divergence between two probability distributions.
         
         Parameters:
-            p (numpy.ndarray): First distribution (normalized histogram).
-            q (numpy.ndarray): Second distribution (normalized histogram).
-            eps (float): Small value to avoid division by zero.
+            p (numpy.ndarray): First histogram (counts or normalized).
+            q (numpy.ndarray): Second histogram, over the same bins as p.
         
         Returns:
-            float: Jensen-Shannon Divergence.
+            float: Jensen-Shannon Divergence (base 2, between 0 and 1).
         """
-        p = np.clip(p, eps, 1)  # Avoid log(0)
-        q = np.clip(q, eps, 1)
-        m = 0.5 * (p + q)
-        jsd = 0.5 * (entropy(p, m) + entropy(q, m))
-        return jsd
+        return jensenshannon(p, q, base=2) ** 2
 
-    def compute_wasserstein(self, p, q, bins):
+    def compute_wasserstein(self, x1, x2):
         """
         Compute the Wasserstein Distance (Earth Mover's Distance) between two distributions.
         
         Parameters:
-            p (numpy.ndarray): First distribution (normalized histogram).
-            q (numpy.ndarray): Second distribution (normalized histogram).
-            bins (numpy.ndarray): Bin centers for the distributions.
+            x1 (numpy.ndarray): Samples of the first distribution (1-D).
+            x2 (numpy.ndarray): Samples of the second distribution (1-D).
         
         Returns:
             float: Wasserstein Distance.
         """
-        return wasserstein_distance(bins, bins, u_weights=p, v_weights=q)
+        return wasserstein_distance(x1, x2)
 
     def feature_distribution(self, X, bins=50):
         """
@@ -98,7 +92,7 @@ class DistributionalComparison:
         return np.array(histograms), np.array(bin_centers)
 
     
-    def compare_distributions(self, X1, X2, metric, bins):
+    def compare_distributions(self, X1, X2, metric, bins=50):
         """
         Compare feature-wise distributions between two datasets.
 
@@ -106,10 +100,10 @@ class DistributionalComparison:
             X1 (numpy.ndarray): First dataset (n_samples x n_features).
             X2 (numpy.ndarray): Second dataset (n_samples x n_features).
             metric (str): Distance metric ('jsd' or 'wasserstein').
-            bins (int): Number of bins for the histograms.
+            bins (int): Number of histogram bins, shared by both datasets (only used for 'jsd').
 
         Returns:
-            float: Average distributional distance between the two datasets.
+            float: Average distributional distance between the two datasets (lower = more similar).
         """
         # Standardize the data
         scaler_dnn = StandardScaler()
@@ -117,19 +111,16 @@ class DistributionalComparison:
         X1 = scaler_dnn.fit_transform(X1)
         X2= scaler_fmri.fit_transform(X2)
         
-        # Compute histograms and bin centers for both datasets
-        hist1, bin_centers1 = self.feature_distribution(X1, bins=bins)
-        hist2, bin_centers2 = self.feature_distribution(X2, bins=bins)
-        
         # Ensure the number of features matches
-        assert hist1.shape == hist2.shape, "Datasets must have the same number of features."
+        assert X1.shape[1] == X2.shape[1], "Datasets must have the same number of features."
 
         distances = []
-        for i in range(hist1.shape[0]):
+        for i in range(X1.shape[1]):
             if metric == 'jsd':
-                dist = self.compute_jsd(hist1[i], hist2[i])
+                edges = np.histogram_bin_edges(np.concatenate([X1[:, i], X2[:, i]]), bins=bins)  # shared bins
+                dist = self.compute_jsd(np.histogram(X1[:, i], edges)[0], np.histogram(X2[:, i], edges)[0])
             elif metric == 'wasserstein':
-                dist = self.compute_wasserstein(hist1[i], hist2[i], bin_centers1[i])
+                dist = self.compute_wasserstein(X1[:, i], X2[:, i])
             else:
                 raise ValueError("Invalid metric. Choose 'jsd' or 'wasserstein'.")
             distances.append(dist)
@@ -214,7 +205,7 @@ class DistributionalComparison:
             _, layer_list, _ = get_layers_ncondns(feat_path)  # Helper function to extract layers
 
             # Extract ROI name
-            roi_name = os.path.basename(roi_file).split(".")[0]
+            roi_name = os.path.splitext(os.path.basename(roi_file))[0]
             
             # Compute Distributional Comparison for each layer
             for layer_name in tqdm(layer_list, desc=f"Processing Layers for ROI: {roi_name}"):
@@ -226,8 +217,7 @@ class DistributionalComparison:
                     "ROI": roi_name,
                     "Layer": layer_name,
                     "Model": model_name + "_" + metric,
-                    "R": comp_score,
-                    "%R2": np.nan,  # Placeholder for future use
+                    "Distance": comp_score,  # lower = more similar
                     "Significance": np.nan,
                     "SEM": np.nan,
                     "LNC": np.nan,  # Placeholder for Local Noise Ceiling
@@ -236,7 +226,7 @@ class DistributionalComparison:
                 rows.append(row)  # Add the row to the list
 
         # Create the DataFrame from the collected rows
-        all_rois_df = pd.DataFrame(rows, columns=['ROI', 'Layer', 'Model', 'R', '%R2', 'Significance', 'SEM', 'LNC', 'UNC'])
+        all_rois_df = pd.DataFrame(rows, columns=['ROI', 'Layer', 'Model', 'Distance', 'Significance', 'SEM', 'LNC', 'UNC'])
         
         return all_rois_df
     

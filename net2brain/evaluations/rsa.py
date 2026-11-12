@@ -1,3 +1,4 @@
+import copy
 import os
 import os.path as op
 
@@ -172,8 +173,8 @@ class RSA():
             # Take mean
             r = np.mean(corr_list, axis=0)
 
-            # ttest: Ttest_1sampResult(statistic=3.921946, pvalue=0.001534)
-            significance = stats.ttest_1samp(corr_list, 0)[1]
+            # one-sided t-test of r (not r**2, which is always >= 0) against 0
+            significance = stats.ttest_1samp(corr, 0, alternative="greater")[1]
             # standard error of mean
             sem = stats.sem(corr_list)  # standard error of mean
         else:
@@ -233,8 +234,8 @@ class RSA():
         # Take mean
         r = np.mean(corr_list)
 
-        # ttest: Ttest_1sampResult(statistic=3.921946, pvalue=0.001534)
-        significance = stats.ttest_1samp(corr_list, 0)[1]
+        # one-sided t-test of r (not r**2, which is always >= 0) against 0
+        significance = stats.ttest_1samp(corr, 0, alternative="greater")[1]
 
         # standard error of mean
         sem = stats.sem(corr_list)  # standard error of mean
@@ -286,21 +287,31 @@ class RSA():
 
     def evaluate(self, correction=None, distance_metric="spearman") -> pd.DataFrame:
         """Function to evaluate all DNN RDMs to all ROI RDMs
+
+        Significance is the p-value of a one-sided one-sample t-test of the per-subject r against 0.
+
+        Args:
+            correction (str, optional): None or "bonferroni" (over the layers of each ROI)
+            distance_metric (str): "spearman" or "pearson"
         Returns:
             dict: final dict containing all results
         """
 
         # Convert to lowercase for case-insensitive matching
-        self.distance_metric = distance_metric.lower()
+        metric = distance_metric.lower()
 
-        # Check if the requested distance metric exists in the registered functions
-        if distance_metric in registered_distance_functions:
-            self.distance = registered_distance_functions[distance_metric]
-        else:
-            # Dynamically generate a list of available metrics for the warning
-            available_metrics = list(registered_distance_functions.keys())
-            warnings.warn(f"Invalid metric. Choose between: {', '.join(available_metrics)}")
-            return None
+        # RSA needs a correlation: distances are lower for better models, and the cosine of two
+        # unrelated RDMs (non-negative entries) is close to 1, so neither can be tested against 0.
+        # Checked before it is stored, so a failed call leaves no invalid metric for compare_model
+        if metric not in ("spearman", "pearson"):
+            raise ValueError(f"Invalid metric '{metric}'. Choose between: spearman, pearson")
+        self.distance_metric = metric
+        self.distance = registered_distance_functions[self.distance_metric]
+
+        if correction is not None:
+            correction = str(correction).lower()
+            if correction != "bonferroni":
+                raise ValueError(f"Unknown correction '{correction}'. Choose 'bonferroni' or None.")
 
         r_name, r_percent_name, r_array_name = self.get_rnames()
         all_rois_df = pd.DataFrame(
@@ -311,7 +322,8 @@ class RSA():
             self.find_datatype(op.join(self.brain_rdms_path, roi))
 
             # Calculate Noise Ceiing for this ROI
-            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), distance_metric, self.squared)
+            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric,
+                                              self.squared, timepoint_agg=self.timepoint_agg)
             self.this_nc = noise_ceiling_calc.noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
@@ -325,45 +337,64 @@ class RSA():
                 layer_dict["Model"] = [self.model_name]
                 layer_df = pd.DataFrame.from_dict(layer_dict)
                 if correction == "bonferroni":
-                    layer_df['Significance'] = layer_df['Significance'] * len(all_layers_dict)
+                    layer_df['Significance'] = layer_df['Significance'].apply(
+                        lambda p: np.minimum(p * len(all_layers_dict), 1))
                 all_rois_df = pd.concat([all_rois_df, layer_df], ignore_index=True)
 
         return all_rois_df
 
     def compare_model(self, other_RSA):
         """Function to evaluate all DNN RDMs to all ROI RDMs
+
+        The best layer of each model is chosen on a random half of the subjects (fixed seed) and the two
+        layers are compared with a paired t-test of the per-subject r on the other half. Choosing and
+        testing on the same subjects would favour the model with more layers.
         Returns:
             dict: final dict containing all results
         """
 
         comp_dic = dict()
         sig_pairs = []
+        # Choose and test on the per-subject r, not r**2 (which hides the sign). Copies keep the callers' settings.
+        model_RSA, other_RSA = copy.copy(self), copy.copy(other_RSA)
+        model_RSA.squared = other_RSA.squared = False
+        # Both models are scored with this object's metric (evaluate()'s default without a prior evaluate())
+        model_RSA.distance_metric = getattr(self, "distance_metric", "spearman")
+        model_RSA.distance = other_RSA.distance = registered_distance_functions[model_RSA.distance_metric]
 
         for counter, roi in enumerate(self.brain_rdms):
 
-            self.find_datatype(op.join(self.brain_rdms_path, roi))
+            model_RSA.find_datatype(op.join(self.brain_rdms_path, roi))
             other_RSA.find_datatype(op.join(self.brain_rdms_path, roi))
             
             # Calculate Noise Ceiing for this ROI
-            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), self.distance_metric, self.squared)
-            self.this_nc = noise_ceiling_calc.noise_ceiling()
+            noise_ceiling_calc = NoiseCeiling(roi, op.join(self.brain_rdms_path, roi), model_RSA.distance_metric, False)
+            model_RSA.this_nc = noise_ceiling_calc.noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
-            model_layers_dict = self.evaluate_roi(roi)
+            model_layers_dict = model_RSA.evaluate_roi(roi)
 
             # Calculate Noise Ceiing for this ROI
             other_RSA.this_nc = NoiseCeiling(roi, op.join(other_RSA.brain_rdms_path, roi),
-                                             self.distance_metric, self.squared).noise_ceiling()
+                                             model_RSA.distance_metric, False).noise_ceiling()
 
             # Return Correlation Values for this ROI to all model layers
             other_layers_dict = other_RSA.evaluate_roi(roi)
 
-            r_name, _, r_array_name = self.get_rnames()
+            if np.ndim(model_layers_dict[0]["R_array"][0]) != 1 or np.ndim(other_layers_dict[0]["R_array"][0]) != 1:
+                raise ValueError("compare_model needs one correlation per subject and layer. "
+                                 "Use timepoint_agg=True and model_timepoints=False for MEG/EEG data.")
 
-            model_ii = np.argmax([layer_dict[r_name] for layer_dict in model_layers_dict])
-            other_ii = np.argmax([layer_dict[r_name] for layer_dict in other_layers_dict])
+            # Split the subjects: choose the layers on one half, test on the other
+            n_subjects = len(model_layers_dict[0]["R_array"][0])
+            order = np.random.default_rng(0).permutation(n_subjects)
+            select, test = order[:n_subjects // 2], order[n_subjects // 2:]
 
-            tstat, p = stats.ttest_rel(other_layers_dict[other_ii][r_array_name][0], model_layers_dict[model_ii][r_array_name][0])
+            model_ii = np.argmax([np.mean(np.array(d["R_array"][0])[select]) for d in model_layers_dict])
+            other_ii = np.argmax([np.mean(np.array(d["R_array"][0])[select]) for d in other_layers_dict])
+
+            tstat, p = stats.ttest_rel(np.array(other_layers_dict[other_ii]["R_array"][0])[test],
+                                       np.array(model_layers_dict[model_ii]["R_array"][0])[test])
 
             scan_key = "(" + str(counter) + ") " + roi[:-4]
 

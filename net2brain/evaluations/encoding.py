@@ -6,14 +6,14 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import pickle
-from scipy.stats import pearsonr, spearmanr, ttest_1samp, sem
-from sklearn.model_selection import train_test_split, GridSearchCV, ShuffleSplit, cross_val_score
+from scipy.stats import pearsonr, spearmanr, sem
+from sklearn.model_selection import train_test_split, GridSearchCV, ShuffleSplit
 from sklearn.decomposition import IncrementalPCA
 from sklearn.random_projection import johnson_lindenstrauss_min_dim
 from sklearn.random_projection import SparseRandomProjection
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.preprocessing import StandardScaler
-from net2brain.evaluations.eval_helper import sq, get_npy_files, get_layers_ncondns
+from net2brain.evaluations.eval_helper import sq, get_npy_files, get_layers_ncondns, sort_feature_files
 
 
 def apply_pooling_numpy(features: np.ndarray, pooling: str) -> np.ndarray:
@@ -50,7 +50,7 @@ def apply_pooling_numpy(features: np.ndarray, pooling: str) -> np.ndarray:
 
 
 def average_df_across_layers(combined_df):
-    """Function to average correlation values across layers and recalculate significance"""
+    """Function to average correlation values across layers (Significance is NaN)"""
 
     # Ensure the 'Layer' column is treated as a categorical type with original order
     combined_df['Layer'] = pd.Categorical(combined_df['Layer'], categories=combined_df['Layer'].unique(), ordered=True)
@@ -61,12 +61,11 @@ def average_df_across_layers(combined_df):
         '%R2': 'mean'
     }).reset_index()
 
-    # Recalculate significance across all 'R' values in the combined DataFrame
-    layer_significance = combined_df.groupby('Layer', sort=False)['R'].apply(lambda x: ttest_1samp(x, 0)[1])
+    # SEM across the brain data files
     layer_sem = combined_df.groupby('Layer', sort=False)['R'].apply(sem)
 
-    # Merge significance and SEM back into the averaged DataFrame
-    averaged_df['Significance'] = layer_significance.values
+    # No p-value: a t-test across ROIs is invalid when they share signal (e.g. several ROIs of one subject)
+    averaged_df['Significance'] = np.nan
     averaged_df['SEM'] = layer_sem.values
 
     # Add placeholder values for 'LNC' and 'UNC'
@@ -74,6 +73,17 @@ def average_df_across_layers(combined_df):
     averaged_df['UNC'] = np.nan
 
     return averaged_df
+
+
+def _check_n_stimuli(n_feat_files, roi_paths):
+    """Check that the number of feature files matches the number of brain data rows."""
+    for roi_path in roi_paths:
+        n_rows = np.load(roi_path, mmap_mode='r').shape[0]
+        if n_rows != n_feat_files:
+            raise ValueError(
+                f"Mismatch in number of stimuli: found {n_feat_files} feature files but the brain data "
+                f"'{roi_path}' has {n_rows} rows. Each feature file must correspond to exactly one row "
+                f"(stimulus) of the brain data, in the same order.")
 
 
 def _extract_and_process_activation(feat, layer_id, pooling=None):
@@ -92,11 +102,10 @@ def _extract_and_process_activation(feat, layer_id, pooling=None):
     layer_data = feat[layer_id]
     
     if pooling is not None:
-        # Handle different layer formats properly
-        if layer_data.ndim == 3:  # (1, seq_len, hidden_dim) format
-            new_activation = apply_pooling_numpy(layer_data.squeeze(0), pooling)
-        elif layer_data.ndim == 2:  # (seq_len, hidden_dim) format
-            new_activation = apply_pooling_numpy(layer_data, pooling)
+        # Remove singleton dimensions, e.g. (1, seq_len, hidden_dim) or (seq_len, 1, hidden_dim)
+        squeezed = np.squeeze(layer_data)
+        if squeezed.ndim <= 2:
+            new_activation = apply_pooling_numpy(squeezed, pooling)
         else:
             new_activation = layer_data.flatten()
     else:
@@ -149,75 +158,66 @@ def encode_layer(trn_Idx, tst_Idx, feat_path, layer_id, pooling, batch_size, n_c
 
     activations = []
     feat_files = glob.glob(feat_path + '/*.np[zy]')
-    feat_files.sort()
+    feat_files = sort_feature_files(feat_files)
 
     # Initialize srp to None
     srp = None
 
     # ===== SETUP PCA AND SRP =====
-    if save_path is None or not os.path.exists(save_path):
-
-        # Setup Sparse Random Projection if needed
-        if srp_before_pca:
-            all_data_for_estim = []
-            srp_trn = trn_Idx if srp_on_subset is None else trn_Idx[:srp_on_subset]
-            for jj, ii in enumerate(srp_trn):
-                feat = np.load(feat_files[ii], allow_pickle=True)
-                new_activation = _extract_and_process_activation(feat, layer_id, pooling)
-                if all_data_for_estim and new_activation.shape != all_data_for_estim[-1].shape:
-                    raise ValueError("Elements in activations do not have the same shape. "
-                                     "Please specify a pooling method: 'mean', 'max', 'first', or 'last'.")
-                all_data_for_estim.append(new_activation)
-            
-            srp = SparseRandomProjection(n_components=johnson_lindenstrauss_min_dim(len(all_data_for_estim)))
-            srp.fit(np.stack(all_data_for_estim, axis=0))
-            if save_pca:
-                with open(save_path.split('pca.pkl')[0]+'srp.pkl', "wb") as f:
-                    pickle.dump(srp, f)
-            del all_data_for_estim
-
-        # Setup and train IncrementalPCA
-        pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
-        for jj, ii in enumerate(trn_Idx):
+    # Setup Sparse Random Projection if needed
+    if srp_before_pca:
+        all_data_for_estim = []
+        srp_trn = trn_Idx if srp_on_subset is None else trn_Idx[:srp_on_subset]
+        for jj, ii in enumerate(srp_trn):
             feat = np.load(feat_files[ii], allow_pickle=True)
             new_activation = _extract_and_process_activation(feat, layer_id, pooling)
-
-            # Check if pooling is needed but not enabled
-            if pooling is None and activations and new_activation.shape != activations[-1].shape:
+            if all_data_for_estim and new_activation.shape != all_data_for_estim[-1].shape:
                 raise ValueError("Elements in activations do not have the same shape. "
-                                 "This likely means you have variable-length sequences (e.g., different sentence lengths in LLMs). "
                                  "Please specify a pooling method: 'mean', 'max', 'first', or 'last'.")
-            activations.append(new_activation)
+            all_data_for_estim.append(new_activation)
 
-            # Fit PCA in batches
-            if ((jj + 1) % batch_size) == 0 or (jj + 1) == len(trn_Idx):
-                if (jj + 1) == len(trn_Idx) and len(trn_Idx) % batch_size != 0:
-                    effective_batch_size = len(trn_Idx) % batch_size
-                else:
-                    effective_batch_size = batch_size
-                    
-                if srp_before_pca:
-                    pca.partial_fit(srp.transform(np.stack(activations[-effective_batch_size:], axis=0)))
-                else:
-                    pca.partial_fit(np.stack(activations[-effective_batch_size:], axis=0))
-                
-                if mem_mode == 'saver':
-                    del activations
-                    activations = []
-
+        srp = SparseRandomProjection(n_components=johnson_lindenstrauss_min_dim(len(all_data_for_estim)))
+        srp.fit(np.stack(all_data_for_estim, axis=0))
         if save_pca:
-            with open(save_path, "wb") as f:
-                pickle.dump(pca, f)
-    else:
-        # Load existing PCA and SRP models
-        with open(save_path, "rb") as f:
-            pca = pickle.load(f)
-        if srp_before_pca:
-            with open(save_path.split('pca.pkl')[0] + 'srp.pkl', "rb") as f:
-                srp = pickle.load(f)
+            with open(save_path.split('pca.pkl')[0]+'srp.pkl', "wb") as f:
+                pickle.dump(srp, f)
+        del all_data_for_estim
+
+    # Setup and train IncrementalPCA
+    pca = IncrementalPCA(n_components=n_components, batch_size=batch_size)
+    for jj, ii in enumerate(trn_Idx):
+        feat = np.load(feat_files[ii], allow_pickle=True)
+        new_activation = _extract_and_process_activation(feat, layer_id, pooling)
+
+        # Check if pooling is needed but not enabled
+        if pooling is None and activations and new_activation.shape != activations[-1].shape:
+            raise ValueError("Elements in activations do not have the same shape. "
+                             "This likely means you have variable-length sequences (e.g., different sentence lengths in LLMs). "
+                             "Please specify a pooling method: 'mean', 'max', 'first', or 'last'.")
+        activations.append(new_activation)
+
+        # Fit PCA in batches
+        if ((jj + 1) % batch_size) == 0 or (jj + 1) == len(trn_Idx):
+            if (jj + 1) == len(trn_Idx) and len(trn_Idx) % batch_size != 0:
+                effective_batch_size = len(trn_Idx) % batch_size
+            else:
+                effective_batch_size = batch_size
+
+            if srp_before_pca:
+                pca.partial_fit(srp.transform(np.stack(activations[-effective_batch_size:], axis=0)))
+            else:
+                pca.partial_fit(np.stack(activations[-effective_batch_size:], axis=0))
+
+            if mem_mode == 'saver':
+                del activations
+                activations = []
+
+    if save_pca:
+        with open(save_path, "wb") as f:
+            pickle.dump(pca, f)
 
     # ===== TRANSFORM TRAINING DATA =====
-    if mem_mode == 'saver' or (save_path is not None and os.path.exists(save_path)):
+    if mem_mode == 'saver':
         transformed_activations = []
         for ii in trn_Idx:
             feat = np.load(feat_files[ii], allow_pickle=True)
@@ -265,16 +265,11 @@ def train_regression_per_ROI(trn_x, tst_x, trn_y, tst_y, veRSA=False, save_model
     Returns:
         List of correlation coefficients (numpy.ndarray) or single value output of veRSA (float).
     """
-    if save_path is None or not os.path.exists(save_path):
-        reg = LinearRegression().fit(trn_x, trn_y)
-        y_prd = reg.predict(tst_x)
-        if save_model:
-            with open(save_path, "wb") as f:
-                pickle.dump(reg, f)
-    else:
-        with open(save_path, "rb") as f:
-            reg = pickle.load(f)
-        y_prd = reg.predict(tst_x)
+    reg = LinearRegression().fit(trn_x, trn_y)
+    y_prd = reg.predict(tst_x)
+    if save_model:
+        with open(save_path, "wb") as f:
+            pickle.dump(reg, f)
     if not veRSA:
         correlation_lst = np.zeros(y_prd.shape[1])
         for v in range(y_prd.shape[1]):
@@ -339,7 +334,8 @@ def Ridge_Encoding(feat_path,
         avg_across_feat (bool, deprecated): Deprecated parameter. Use `pooling='mean'` instead.
 
     Returns:
-        all_rois_df (pd.DataFrame): DataFrame summarizing the analysis results including correlations and statistical significance.
+        all_rois_df (pd.DataFrame): DataFrame summarizing the analysis results including correlations
+            (Significance is NaN: no valid significance test is implemented).
         corr_dict (dict): Dictionary containing correlation values for each layer and ROI (only if return_correlations is True).
     """
     # Handle deprecated avg_across_feat parameter
@@ -441,7 +437,8 @@ def Linear_Encoding(feat_path,
         avg_across_feat (bool, deprecated): Deprecated parameter. Use `pooling='mean'` instead.
 
     Returns:
-        all_rois_df (pd.DataFrame): DataFrame summarizing the analysis results including correlations and statistical significance.
+        all_rois_df (pd.DataFrame): DataFrame summarizing the analysis results including correlations
+            (Significance is NaN: no valid significance test is implemented).
         corr_dict (dict): Dictionary containing correlation values for each layer and ROI (only if return_correlations is True).
     """
     # Handle deprecated avg_across_feat parameter
@@ -625,10 +622,13 @@ def _linear_encoding(feat_path,
 
     # Load feature files and get layer information
     feat_files = glob.glob(feat_path + '/*.np[zy]')
-    feat_files.sort()
+    feat_files = sort_feature_files(feat_files)
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
     layer_list = [layer for layer in layer_list if layer not in layer_skips]
     num_layers = len(layer_list)
+
+    # Check that features and brain data have the same number of stimuli
+    _check_n_stimuli(len(feat_files), roi_paths)
 
     # Loop over each fold for cross-validation
     for fold_ii in range(n_folds):
@@ -661,7 +661,7 @@ def _linear_encoding(feat_path,
                                             save_path=f'{prediction_save_path}/pca.pkl' if save_pca else None)
 
             # Update progress bar with current layer and ROI info
-            roi_names = [roi_path.split(os.sep)[-1].split(".")[0] for roi_path in roi_paths]
+            roi_names = [os.path.splitext(os.path.basename(roi_path))[0] for roi_path in roi_paths]
             if len(roi_names) == 1:
                 layer_progress.set_postfix({"Layer": layer_id, "ROI": roi_names[0]})
             else:
@@ -669,7 +669,7 @@ def _linear_encoding(feat_path,
 
             # Iterate through all ROI folder paths
             for counter, roi_path in enumerate(roi_paths):
-                roi_name = roi_path.split(os.sep)[-1].split(".")[0]
+                roi_name = os.path.splitext(os.path.basename(roi_path))[0]
 
                 # Load fMRI data for the current ROI and split into training and testing sets
                 fmri_data = np.load(roi_path)
@@ -694,7 +694,7 @@ def _linear_encoding(feat_path,
     # Iterate through each layer and ROI
     for layer_id in layers:
         for roi_path in roi_paths:
-            roi_name = roi_path.split(os.sep)[-1].split(".")[0]
+            roi_name = os.path.splitext(os.path.basename(roi_path))[0]
 
             # If we have more than one fold, collect the R values across folds from fold_dict
             if n_folds > 1:
@@ -705,8 +705,8 @@ def _linear_encoding(feat_path,
                 # Get average R value across folds
                 R = np.mean(r_values_across_folds)
 
-                # Perform t-test on the R values across folds
-                _, significance = ttest_1samp(r_values_across_folds, 0)
+                # No p-value: the folds share stimuli, so a t-test across folds is invalid
+                significance = np.nan
 
                 # Compute the Standard Error of the Mean (SEM)
                 sem_value = sem(r_values_across_folds)
@@ -719,8 +719,8 @@ def _linear_encoding(feat_path,
                 if not veRSA:
                     # Retrieve the per-voxel correlations for this specific layer/ROI
                     r_lst_this = corr_dict[0][layer_id][roi_name]
-                    # Perform t-test on the r_lst values since they are also correlation values
-                    _, significance = ttest_1samp(r_lst_this, 0)
+                    # No p-value: the voxels are correlated, so a t-test across voxels is invalid
+                    significance = np.nan
                     # Compute the Standard Error of the Mean (SEM)
                     sem_value = sem(r_lst_this)
                 else:
@@ -768,43 +768,35 @@ def train_Ridgeregression_per_ROI(trn_x, tst_x, trn_y, tst_y, veRSA=False, save_
     Returns:
         List of correlation coefficients (numpy.ndarray) or single value output of veRSA (float).
     """
-    if save_path is None or not os.path.exists(save_path):
-        # Standardize the features
-        scaler = StandardScaler()
-        trn_x = scaler.fit_transform(trn_x)
-        tst_x = scaler.transform(tst_x)
+    # Standardize the features
+    scaler = StandardScaler()
+    trn_x = scaler.fit_transform(trn_x)
+    tst_x = scaler.transform(tst_x)
 
-        reg = Ridge()
-        param_grid = {'alpha': np.logspace(-2, 2, 5)}
+    reg = Ridge()
+    # Wide grid: the best alpha is often far above 100 (the old upper edge)
+    param_grid = {'alpha': np.logspace(-1, 8, 10)}
 
-        # Define cross-validation strategies
-        inner_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
-        outer_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
+    # Define cross-validation strategies
+    inner_cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=1)
 
-        # Inner loop: hyperparameter tuning
-        grid_search = GridSearchCV(estimator=reg, param_grid=param_grid, cv=inner_cv, n_jobs=-1)
+    # Inner loop: hyperparameter tuning
+    grid_search = GridSearchCV(estimator=reg, param_grid=param_grid, cv=inner_cv, n_jobs=-1)
 
-        X_sample, _, y_sample, _ = train_test_split(trn_x, trn_y, test_size=0.5, random_state=1)
+    X_sample, _, y_sample, _ = train_test_split(trn_x, trn_y, test_size=0.5, random_state=1)
 
-        # Outer loop: model evaluation
-        nested_cv_scores = cross_val_score(grid_search, X=X_sample, y=y_sample, cv=outer_cv, n_jobs=-1)
+    # Train the best model on the full dataset
+    grid_search.fit(X_sample, y_sample)
+    best_params = grid_search.best_params_
 
-        # Train the best model on the full dataset
-        grid_search.fit(X_sample, y_sample)
-        best_params = grid_search.best_params_
+    best_model = Ridge(**best_params)
+    best_model.fit(trn_x, trn_y)
 
-        best_model = Ridge(**best_params)
-        best_model.fit(trn_x, trn_y)
+    y_prd = best_model.predict(tst_x)
 
-        y_prd = best_model.predict(tst_x)
-
-        if save_model:
-            with open(save_path, "wb") as f:
-                pickle.dump(best_model, f)
-    else:
-        with open(save_path, "rb") as f:
-            reg = pickle.load(f)
-        y_prd = reg.predict(tst_x)
+    if save_model:
+        with open(save_path, "wb") as f:
+            pickle.dump(best_model, f)
 
     if not veRSA:
         correlation_lst = np.zeros(y_prd.shape[1])
@@ -835,7 +827,7 @@ def encode_layer_ridge(layer_id, trn_Idx, tst_Idx, feat_path, pooling=None):
     - trn, tst (numpy.ndarray): Processed training and test activations
     """
     feat_files = glob.glob(feat_path + '/*.np[zy]')
-    feat_files.sort()
+    feat_files = sort_feature_files(feat_files)
 
     trn = []
     for ii in trn_Idx:
@@ -887,10 +879,13 @@ def _ridge_encoding(feat_path,
 
     # Load feature files and get layer information
     feat_files = glob.glob(feat_path + '/*.np[zy]')
-    feat_files.sort()
+    feat_files = sort_feature_files(feat_files)
     num_layers, layer_list, num_condns = get_layers_ncondns(feat_path)
     layer_list = [layer for layer in layer_list if layer not in layer_skips]
     num_layers = len(layer_list)
+
+    # Check that features and brain data have the same number of stimuli
+    _check_n_stimuli(len(feat_files), roi_paths)
 
     # Loop over each fold for cross-validation
     for fold_ii in range(n_folds):
@@ -921,7 +916,7 @@ def _ridge_encoding(feat_path,
             # Iterate through all ROI folder paths
             for counter, roi_path in enumerate(roi_paths):
                 # print(f"Processing ROI file {counter}, {roi_path}")
-                roi_name = roi_path.split(os.sep)[-1].split(".")[0]
+                roi_name = os.path.splitext(os.path.basename(roi_path))[0]
 
                 # Load fMRI data for the current ROI and split into training and testing sets
                 fmri_data = np.load(roi_path)
@@ -947,7 +942,7 @@ def _ridge_encoding(feat_path,
     # Iterate through each layer and ROI
     for layer_id in layers:
         for roi_path in roi_paths:
-            roi_name = roi_path.split(os.sep)[-1].split(".")[0]
+            roi_name = os.path.splitext(os.path.basename(roi_path))[0]
 
             # If we have more than one fold, collect the R values across folds from fold_dict
             if n_folds > 1:
@@ -958,8 +953,8 @@ def _ridge_encoding(feat_path,
                 # Get average R value across folds
                 R = np.mean(r_values_across_folds)
 
-                # Perform t-test on the R values across folds
-                _, significance = ttest_1samp(r_values_across_folds, 0)
+                # No p-value: the folds share stimuli, so a t-test across folds is invalid
+                significance = np.nan
 
                 # Compute the Standard Error of the Mean (SEM)
                 sem_value = sem(r_values_across_folds)
@@ -972,8 +967,8 @@ def _ridge_encoding(feat_path,
                 if not veRSA:
                     # Retrieve the per-voxel correlations for this specific layer/ROI
                     r_lst_this = corr_dict[0][layer_id][roi_name]
-                    # Perform t-test on the r_lst values since they are also correlation values
-                    _, significance = ttest_1samp(r_lst_this, 0)
+                    # No p-value: the voxels are correlated, so a t-test across voxels is invalid
+                    significance = np.nan
                     # Compute the Standard Error of the Mean (SEM)
                     sem_value = sem(r_lst_this)
                 else:

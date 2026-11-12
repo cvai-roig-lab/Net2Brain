@@ -1,4 +1,6 @@
+import itertools
 import os
+import warnings
 import os.path as op
 
 import numpy as np
@@ -46,33 +48,11 @@ class VPA():
 
         # Other attributes
         self.variable_names = variable_names
-
-        # Declare function 
-        function_map = {
-            2: self.evaluate_2,
-            3: self.evaluate_3,
-            4: self.evaluate_4
-        }
-        self.VPA_function = function_map[len(independent_variables)]
+        self.independent_variables = list(independent_variables)
 
 
 
 
-
-    def dim_fitter(self, ind_var):
-        """Function to fit dimensions for VPA depending on its dimension
-
-        Args:
-            ind_var (array): Independent variable
-
-        Returns:
-            ind_var (array): Reshaped
-        """
-        if ind_var.ndim==1:
-            return ind_var.reshape(-1, 1)
-        else:
-            return ind_var.T
-        
 
     def noise_ceiling_r2(self, rdm1, rdm2):
         """Calculate Spearman for noiseceiling
@@ -315,475 +295,94 @@ class VPA():
             vectors.append(self.get_uppertriangular(rdm))
         return np.array(vectors)
 
-    def calculate_p_values(self, models_data):
+    def _subsets(self, k):
+        """All non-empty subsets of the k variables, ordered by size"""
+        return [c for r in range(1, k + 1) for c in itertools.combinations(range(k), r)]
+
+    def _components(self, r2, k):
+        """Unique and shared variance from the R2 of every subset (last axis, ordered as _subsets).
+
+        The part shared by exactly the variables in c is the sum over non-empty A in c of
+        (-1)^(|A|+1) * (R2(rest + A) - R2(rest)), where rest are the other variables.
         """
-        Calculate p-values for each time-step in models_data using one-sample t-test among participants.
+        subsets = self._subsets(k)
+        pos = {c: i for i, c in enumerate(subsets)}
+        f = lambda key: r2[..., pos[key]] if key else 0
+        out = []
+        for c in subsets:
+            rest = tuple(j for j in range(k) if j not in c)
+            value = 0
+            for r in range(1, len(c) + 1):
+                for A in itertools.combinations(c, r):
+                    value = value + (-1) ** (r + 1) * (f(tuple(sorted(rest + A))) - f(rest))
+            out.append(value)
+        return np.stack(out, -1)
 
-        Args:
-            models_data (numpy array): Data array with shape (num_subs, num_time_steps).
+    def _pair_index(self, perm, n_stim, rows, cols):
+        """Index into the condensed RDM vector after relabelling the stimuli with perm (rows, cols: np.triu_indices)"""
+        a, b = perm[rows], perm[cols]
+        lo, hi = np.minimum(a, b), np.maximum(a, b)
+        return n_stim * lo - lo * (lo + 1) // 2 + hi - lo - 1
 
-        Returns:
-            numpy array: Array of p-values for each time-step.
+    def _design(self, n_pairs):
+        """Load the predictor RDMs once. Returns the centred design (pairs, columns) and the columns per variable."""
+        blocks, columns, start = [], [], 0
+        for variable in self.independent_variables:
+            rdms = self._load_independent(variable)
+            if self.average_models:
+                rdms = np.mean(rdms, axis=0, keepdims=True)
+            if rdms.shape[1] != n_pairs:
+                raise ValueError(f"The predictor RDMs have {rdms.shape[1]} pairs, the brain RDMs {n_pairs}.")
+            blocks.append(rdms.T)
+            columns.append(list(range(start, start + len(rdms))))
+            start += len(rdms)
+        X = np.concatenate(blocks, axis=1).astype(float)
+        return X - X.mean(0), columns
+
+    def _subset_r2(self, Y, yy, X, subset_columns, G_inv):
+        """In-sample OLS R2 (with intercept) of every subset for every row of Y, (rows, subsets).
+
+        Y holds the centred brain RDMs (rows, pairs) and yy their squared norms; X is the centred, possibly
+        row-permuted design (pairs, columns). A permutation does not change X^T X, so
+        R2 = b^T (X_s^T X_s)^-1 b / |y|^2 with b = X_s^T y.
         """
-        num_subs, num_time_steps = models_data.shape
-        p_values = np.zeros(num_time_steps)
-
-        # For each time step calculate p-value across all participants
-        for time_step in range(num_time_steps):
-            t_stat, p_val = ttest_1samp(models_data[:, time_step], 0)
-            p_values[time_step] = p_val
-
-        # Correct P-Values
-        bools, corrected_p_values = statsmodels.stats.multitest.fdrcorrection(p_values)
-
-        return corrected_p_values
-
-
-
-    def VPA_2(self, dep_var):
-        """VPA for 2 independent variables
-
-        Args:
-            dep_var (array): Dependent variable
-
-        Returns:
-            y12: Total variance
-            y1: Unique Variance 1
-            y2: Unique variance 2
-        """
-
-        # Open RDMs
-        ind_var_1 = self._load_independent(self.independent_1)
-        ind_var_2 = self._load_independent(self.independent_2)
-
-        # Average if wanted
-        if self.average_models:
-            ind_var_1 = np.mean(ind_var_1, axis=0)
-            ind_var_2 = np.mean(ind_var_2, axis=0)
-
-
-        # Initialize the linear regression model
-        lm = linear_model.LinearRegression()
-
-        # Calculate R-squared values for each independent variable
-        R1 = lm.fit(self.dim_fitter(ind_var_1), dep_var).score(self.dim_fitter(ind_var_1), dep_var)
-        R2 = lm.fit(self.dim_fitter(ind_var_2), dep_var).score(self.dim_fitter(ind_var_2), dep_var)
-
-        # Calculate R-squared values for combinations of independent variables
-        R12 = lm.fit(np.vstack((ind_var_1, ind_var_2)).T, dep_var).score(np.vstack((ind_var_1, ind_var_2)).T, dep_var)
-
-        # Calculate variance partitioning components
-        y12 = R1 + R2 - R12
-        y1 = R1 - y12
-        y2 = R2 - y12
-
-        return {'R1': R1, 'R2': R2, 'R12': R12, 'y12': y12, 'y1': y1, 'y2': y2}
-
-
-
-    def VPA_3(self, dep_var):
-        """VPA for 3 independent variables
-
-        Args:
-            dep_var (array): Dependent variable
-
-        Returns:
-            y123: Total variance
-            y1: Unique Variance 1
-            y2: Unique variance 2
-            y3: Unique variance 3
-        """
-
-        # Open RDMs
-        ind_var_1 = self._load_independent(self.independent_1)
-        ind_var_2 = self._load_independent(self.independent_2)
-        ind_var_3 = self._load_independent(self.independent_3)
-
-        # Average if wanted
-        if self.average_models:
-            ind_var_1 = np.mean(ind_var_1, axis=0)
-            ind_var_2 = np.mean(ind_var_2, axis=0)
-            ind_var_3 = np.mean(ind_var_3, axis=0)
-
-
-        # Initialize the linear regression model
-        lm = linear_model.LinearRegression()
-
-        # Calculate R-squared values for each independent variable
-        R1 = lm.fit(self.dim_fitter(ind_var_1), dep_var).score(self.dim_fitter(ind_var_1), dep_var)
-        R2 = lm.fit(self.dim_fitter(ind_var_2), dep_var).score(self.dim_fitter(ind_var_2), dep_var)
-        R3 = lm.fit(self.dim_fitter(ind_var_3), dep_var).score(self.dim_fitter(ind_var_3), dep_var)
-
-        # Calculate R-squared values for combinations of independent variables
-        R12 = lm.fit(np.vstack((ind_var_1, ind_var_2)).T, dep_var).score(np.vstack((ind_var_1, ind_var_2)).T, dep_var)
-        R13 = lm.fit(np.vstack((ind_var_1, ind_var_3)).T, dep_var).score(np.vstack((ind_var_1, ind_var_3)).T, dep_var)
-        R23 = lm.fit(np.vstack((ind_var_2, ind_var_3)).T, dep_var).score(np.vstack((ind_var_2, ind_var_3)).T, dep_var)
-
-        R123 = lm.fit(np.vstack((ind_var_1, ind_var_2, ind_var_3)).T, dep_var).score(np.vstack((ind_var_1, ind_var_2, ind_var_3)).T, dep_var)
-
-        # Calculate variance partitioning components
-        y123 = R1 + R2 + R3 - R12 - R13 - R23 + R123
-        y12 = R1 + R2 - R12 - y123
-        y13 = R1 + R3 - R13 - y123
-        y23 = R2 + R3 - R23 - y123
-        y1 = R1 - y12 - y13 - y123
-        y2 = R2 - y12 - y23 - y123
-        y3 = R3 - y13 - y23 - y123
-
-        return {'R1': R1, 'R2': R2, 'R3': R3, 'R12': R12, 'R13': R13, 'R23': R23, 'R123': R123, 'y123': y123, 'y12': y12, 'y13': y13, 'y23': y23, 'y1': y1, 'y2': y2, 'y3': y3}
-    
-
-
-    def VPA_4(self, dep_var):
-        """VPA for 4 independent variables
-
-        Args:
-            dep_var (array): Dependent variable
-
-        Returns:
-            y123: Total variance
-            y1: Unique Variance 1
-            y2: Unique variance 2
-            y3: Unique variance 3
-            y4: Unique variance 4
-        """
-        
-        # Open RDMs
-        ind_var_1 = self._load_independent(self.independent_1)
-        ind_var_2 = self._load_independent(self.independent_2)
-        ind_var_3 = self._load_independent(self.independent_3)
-        ind_var_4 = self._load_independent(self.independent_4)
-
-        # Average if wanted
-        if self.average_models:
-            ind_var_1 = np.mean(ind_var_1, axis=0)
-            ind_var_2 = np.mean(ind_var_2, axis=0)
-            ind_var_3 = np.mean(ind_var_3, axis=0)
-            ind_var_4 = np.mean(ind_var_4, axis=0)
-
-        # Initialize the linear regression model
-        lm = linear_model.LinearRegression()
-
-        # Calculate R-squared values for each independent variable
-        R1 = lm.fit(self.dim_fitter(ind_var_1), dep_var).score(self.dim_fitter(ind_var_1), dep_var)
-        R2 = lm.fit(self.dim_fitter(ind_var_2), dep_var).score(self.dim_fitter(ind_var_2), dep_var)
-        R3 = lm.fit(self.dim_fitter(ind_var_3), dep_var).score(self.dim_fitter(ind_var_3), dep_var)
-        R4 = lm.fit(self.dim_fitter(ind_var_4), dep_var).score(self.dim_fitter(ind_var_4), dep_var)
-
-        # Calculate R-squared values for combinations of independent variables
-        R12 = lm.fit(np.vstack((ind_var_1, ind_var_2)).T, dep_var).score(np.vstack((ind_var_1, ind_var_2)).T, dep_var)
-        R13 = lm.fit(np.vstack((ind_var_1, ind_var_3)).T, dep_var).score(np.vstack((ind_var_1, ind_var_3)).T, dep_var)
-        R14 = lm.fit(np.vstack((ind_var_1, ind_var_4)).T, dep_var).score(np.vstack((ind_var_1, ind_var_4)).T, dep_var)
-        R23 = lm.fit(np.vstack((ind_var_2, ind_var_3)).T, dep_var).score(np.vstack((ind_var_2, ind_var_3)).T, dep_var)
-        R24 = lm.fit(np.vstack((ind_var_2, ind_var_4)).T, dep_var).score(np.vstack((ind_var_2, ind_var_4)).T, dep_var)
-        R34 = lm.fit(np.vstack((ind_var_3, ind_var_4)).T, dep_var).score(np.vstack((ind_var_3, ind_var_4)).T, dep_var)
-
-        # Calculate R-squared values for combinations of independent variables
-        R123 = lm.fit(np.vstack((ind_var_1, ind_var_2,ind_var_3)).T, dep_var).score(np.vstack((ind_var_1, ind_var_2,ind_var_3)).T, dep_var)
-        R134 = lm.fit(np.vstack((ind_var_1, ind_var_3,ind_var_4)).T, dep_var).score(np.vstack((ind_var_1, ind_var_3,ind_var_4)).T, dep_var)
-        R124 = lm.fit(np.vstack((ind_var_1, ind_var_2,ind_var_4)).T, dep_var).score(np.vstack((ind_var_1, ind_var_2,ind_var_4)).T, dep_var)
-        R234 = lm.fit(np.vstack((ind_var_2, ind_var_3,ind_var_4)).T, dep_var).score(np.vstack((ind_var_2, ind_var_3,ind_var_4)).T, dep_var)
-        
-        R1234 = lm.fit(np.vstack((ind_var_1, ind_var_2, ind_var_3, ind_var_4)).T, dep_var).score(np.vstack((ind_var_1, ind_var_2, ind_var_3, ind_var_4)).T, dep_var)
-
-        # Calculate variance partitioning components
-        y1234 = R1 + R2 + R3 + R4 - R12 - R13 - R14 - R23 - R24 - R34 + R123 + R134+ R124 + R234 - R1234
-        y123 = R1 + R2 + R3 - R12 - R13 - R23 + R123 - y1234
-        y124 = R1 + R2 + R4 - R12 - R14 - R24 + R124 - y1234
-        y134 = R1 + R3 + R4 - R13 - R14 - R34 + R134 - y1234
-        y234 = R2 + R3 + R4 - R23 - R24 - R34 + R234 - y1234
-        y12 = R1 + R2 - R12 - y123 - y124 - y1234
-        y13 = R1 + R3 - R13 - y123 - y134 - y1234
-        y14 = R1 + R4 - R14 - y124 - y134 - y1234
-        y23 = R2 + R3 - R23 - y123 - y234 - y1234
-        y24 = R2 + R4 - R24 - y124 - y234 - y1234
-        y34 = R3 + R4 - R34 - y134 - y234 - y1234
-        y1 = R1 - y12 - y13 - y14 - y123 - y124 - y134 - y1234
-        y2 = R2 - y12 - y23 - y24 - y123 - y234 - y124 - y1234
-        y3 = R3 - y13 - y23 - y34 - y123 - y234 - y134 - y1234
-        y4 = R4 - y14 - y24 - y34 - y124 - y134 - y234 - y1234
-
-        return {
-        'R1': R1, 'R2': R2, 'R3': R3, 'R4': R4,
-        'R12': R12, 'R13': R13, 'R14': R14, 'R23': R23, 'R24': R24, 'R34': R34,
-        'R123': R123, 'R124': R124, 'R134': R134, 'R234': R234, 'R1234': R1234,
-        'y1234': y1234, 'y123': y123, 'y124': y124, 'y134': y134, 'y234': y234,
-        'y12': y12, 'y13': y13, 'y14': y14, 'y23': y23, 'y24': y24, 'y34': y34,
-        'y1': y1, 'y2': y2, 'y3': y3, 'y4': y4}
-
-    
-
-
-    def evaluate_2(self, dep_var, num_subjects, eeg_time):
-        """Evaluation function for VPA with 2 variables
-
-        Args:
-            dep_var (array): Dependent variable
-            num_subjects (int): Number of Subjects in independent variable
-            eeg_time (int): Number of ms captured in EEG data
-
-        Returns:
-            all_variances_df: Pandas dataframe with results
-        """
-
-        all_variances_df = pd.DataFrame(columns=['Variable', 'Description', 'Values', 'Significance', 'Color'])
-
-        # Initialize arrays for storing values
-        R1_values = np.zeros((num_subjects, eeg_time))
-        R2_values = np.zeros((num_subjects, eeg_time))
-        R12_values = np.zeros((num_subjects, eeg_time))
-        y12_values = np.zeros((num_subjects, eeg_time))
-        y1_values = np.zeros((num_subjects, eeg_time))
-        y2_values = np.zeros((num_subjects, eeg_time))
-
-        R_un = np.zeros(eeg_time)
-        R_ln = np.zeros(eeg_time)
-
-        for time in range(eeg_time):
-            R_un[time] = self.get_uppernoiseceiling(np.squeeze(dep_var[:,time]))
-            R_ln[time] = self.get_lowernoiseceiling(np.squeeze(dep_var[:,time]))
-
-            for i in range(num_subjects):
-                this_dep_var = np.squeeze(dep_var[i,time,:])
-                results = self.VPA_2(this_dep_var)
-                R1_values[i, time] = results['R1']
-                R2_values[i, time] = results['R2']
-                R12_values[i, time] = results['R12']
-                y12_values[i, time] = results['y12']
-                y1_values[i, time] = results['y1']
-                y2_values[i, time] = results['y2']
-
-        # Calculate significance for all values
-        sig_R1 = self.calculate_p_values(R1_values)
-        sig_R2 = self.calculate_p_values(R2_values)
-        sig_R12 = self.calculate_p_values(R12_values)
-        sig_y12 = self.calculate_p_values(y12_values)  # Calculate significance for y12
-        sig_y1 = self.calculate_p_values(y1_values)
-        sig_y2 = self.calculate_p_values(y2_values)
-
-        # Define naming convention for the dataframe
-        variables = ['R1', 'R2', 'R12', 'y12', 'y1', 'y2']  # Include y12 in the list
-        descriptions = [self.variable_names[0] + ' Influence', self.variable_names[1] + ' Influence', 
-                        'Combined Influence', 'Shared Variance', 'Unique ' + self.variable_names[0], 'Unique ' + self.variable_names[1]]
-        values = [R1_values, R2_values, R12_values, y12_values, y1_values, y2_values]
-        significances = [sig_R1, sig_R2, sig_R12, sig_y12, sig_y1, sig_y2]
-
-        # Surface the noise ceiling as its own rows instead of discarding it
-        variables += ['UNC', 'LNC']
-        descriptions += ['Upper Noise Ceiling', 'Lower Noise Ceiling']
-        values += [R_un, R_ln]
-        significances += [np.full(eeg_time, np.nan), np.full(eeg_time, np.nan)]
-
-        data_to_append = []
-
-        for var, desc, val, sig in zip(variables, descriptions, values, significances):
-            data_to_append.append({
-                'Variable': var,
-                'Description': desc,
-                'Values': val,
-                'Significance': sig,
-                'Color': None  # Assign colors if desired for visualization
-            })
-
-        all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
-
-        return all_variances_df
-
-
-
-
-    def evaluate_3(self, dep_var, num_subjects, eeg_time):
-        """Evaluation function for VPA with 3 variables
-
-        Args:
-            dep_var (array): Dependent variable
-            num_subjects (int): Number of Subjects in independent variable
-            eeg_time (int): Number of ms captured in EEG data
-
-        Returns:
-            all_variances_df: Pandas dataframe with results
-        """
-
-        all_variances_df = pd.DataFrame(columns=['Variable', 'Description', 'Values', 'Significance', 'Color'])
-
-        # Initialize arrays for storing values
-        R1_values = np.zeros((num_subjects, eeg_time))
-        R2_values = np.zeros((num_subjects, eeg_time))
-        R3_values = np.zeros((num_subjects, eeg_time))
-        R12_values = np.zeros((num_subjects, eeg_time))
-        R13_values = np.zeros((num_subjects, eeg_time))
-        R23_values = np.zeros((num_subjects, eeg_time))
-        R123_values = np.zeros((num_subjects, eeg_time))
-        y123_values = np.zeros((num_subjects, eeg_time))
-        y12_values = np.zeros((num_subjects, eeg_time))
-        y13_values = np.zeros((num_subjects, eeg_time))
-        y23_values = np.zeros((num_subjects, eeg_time))
-        y1_values = np.zeros((num_subjects, eeg_time))
-        y2_values = np.zeros((num_subjects, eeg_time))
-        y3_values = np.zeros((num_subjects, eeg_time))
-
-        R_un = np.zeros(eeg_time)
-        R_ln = np.zeros(eeg_time)
-
-        for time in range(eeg_time):
-            R_un[time] = self.get_uppernoiseceiling(np.squeeze(dep_var[:,time]))
-            R_ln[time] = self.get_lowernoiseceiling(np.squeeze(dep_var[:,time]))
-
-            for i in range(num_subjects):
-                this_dep_var = np.squeeze(dep_var[i,time,:])
-                results = self.VPA_3(this_dep_var)
-                R1_values[i, time], R2_values[i, time], R3_values[i, time], R12_values[i, time], R13_values[i, time], R23_values[i, time], R123_values[i, time], y123_values[i, time], y12_values[i, time], y13_values[i, time], y23_values[i, time], y1_values[i, time], y2_values[i, time], y3_values[i, time] = (results['R1'], results['R2'], results['R3'], results['R12'], results['R13'], results['R23'], results['R123'], results['y123'], results['y12'], results['y13'], results['y23'], results['y1'], results['y2'], results['y3'])
-
-        # Calculate significance for all values
-        sig_R1 = self.calculate_p_values(R1_values)
-        sig_R2 = self.calculate_p_values(R2_values)
-        sig_R3 = self.calculate_p_values(R3_values)
-        sig_R12 = self.calculate_p_values(R12_values)
-        sig_R13 = self.calculate_p_values(R13_values)
-        sig_R23 = self.calculate_p_values(R23_values)
-        sig_R123 = self.calculate_p_values(R123_values)
-        sig_y123 = self.calculate_p_values(y123_values)
-        sig_y12 = self.calculate_p_values(y12_values)
-        sig_y13 = self.calculate_p_values(y13_values)
-        sig_y23 = self.calculate_p_values(y23_values)
-        sig_y1 = self.calculate_p_values(y1_values)
-        sig_y2 = self.calculate_p_values(y2_values)
-        sig_y3 = self.calculate_p_values(y3_values)
-
-        # Define naming convention for the dataframe
-        variables = ['R1', 'R2', 'R3', 'R12', 'R13', 'R23', 'R123', 'y123', 'y12', 'y13', 'y23', 'y1', 'y2', 'y3']
-        descriptions = [
-            self.variable_names[0] + ' Influence', self.variable_names[1] + ' Influence', self.variable_names[2] + ' Influence',
-            'Combined ' + self.variable_names[0] + ' and ' + self.variable_names[1] + ' Influence',
-            'Combined ' + self.variable_names[0] + ' and ' + self.variable_names[2] + ' Influence',
-            'Combined ' + self.variable_names[1] + ' and ' + self.variable_names[2] + ' Influence',
-            'Combined All Variables Influence',
-            'Shared Variance All', 'Shared Variance ' + self.variable_names[0] + ' and ' + self.variable_names[1],
-            'Shared Variance ' + self.variable_names[0] + ' and ' + self.variable_names[2],
-            'Shared Variance ' + self.variable_names[1] + ' and ' + self.variable_names[2],
-            'Unique ' + self.variable_names[0], 'Unique ' + self.variable_names[1], 'Unique ' + self.variable_names[2]
-        ]
-        values = [R1_values, R2_values, R3_values, R12_values, R13_values, R23_values, R123_values, y123_values, y12_values, y13_values, y23_values, y1_values, y2_values, y3_values]
-        significances = [sig_R1, sig_R2, sig_R3, sig_R12, sig_R13, sig_R23, sig_R123, sig_y123, sig_y12, sig_y13, sig_y23, sig_y1, sig_y2, sig_y3]
-
-        # Surface the noise ceiling as its own rows instead of discarding it
-        variables += ['UNC', 'LNC']
-        descriptions += ['Upper Noise Ceiling', 'Lower Noise Ceiling']
-        values += [R_un, R_ln]
-        significances += [np.full(eeg_time, np.nan), np.full(eeg_time, np.nan)]
-
-        data_to_append = []
-
-        for var, desc, val, sig in zip(variables, descriptions, values, significances):
-            data_to_append.append({
-                'Variable': var,
-                'Description': desc,
-                'Values': val,
-                'Significance': sig,
-                'Color': None  # Assign colors if desired for visualization
-            })
-
-        all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
-
-        return all_variances_df
-
-
-
-    def evaluate_4(self, dep_var, num_subjects, eeg_time):
-        """Evaluation function for VPA with 4 variables
-
-        Args:
-            dep_var (array): Dependent variable
-            num_subjects (int): Number of Subjects in independent variable
-            eeg_time (int): Number of ms captured in EEG data
-
-        Returns:
-            all_variances_df: Pandas dataframe with results
-        """
-
-        all_variances_df = pd.DataFrame(columns=['Variable', 'Description', 'Values', 'Significance', 'Color'])
-
-        # Initialize arrays for storing values, including combined R values
-        R_values = {f'R{i+1}': np.zeros((num_subjects, eeg_time)) for i in range(4)}
-        for i in range(4):
-            for j in range(i+1, 4):
-                R_values[f'R{i+1}{j+1}'] = np.zeros((num_subjects, eeg_time))
-        R_values['R1234'] = np.zeros((num_subjects, eeg_time))
-        y_values = {f'y{i+1}': np.zeros((num_subjects, eeg_time)) for i in range(4)}
-        for i in range(3):
-            for j in range(i+1, 4):
-                y_values[f'y{i+1}{j+1}'] = np.zeros((num_subjects, eeg_time))
-        for i in range(2):
-            for j in range(i+1, 3):
-                for k in range(j+1, 4):
-                    y_values[f'y{i+1}{j+1}{k+1}'] = np.zeros((num_subjects, eeg_time))
-        y_values['y1234'] = np.zeros((num_subjects, eeg_time))
-
-        R_un = np.zeros(eeg_time)
-        R_ln = np.zeros(eeg_time)
-
-        for time in range(eeg_time):
-            R_un[time] = self.get_uppernoiseceiling(np.squeeze(dep_var[:,time]))
-            R_ln[time] = self.get_lowernoiseceiling(np.squeeze(dep_var[:,time]))
-
-            for i in range(num_subjects):
-                this_dep_var = np.squeeze(dep_var[i,time,:])
-                results = self.VPA_4(this_dep_var)
-                for key, value in results.items():
-                    if key in R_values:
-                        R_values[key][i, time] = value
-                    elif key in y_values:
-                        y_values[key][i, time] = value
-
-        # Calculate significance for all R and y values
-        sig_values = {}
-        for key, value in {**R_values, **y_values}.items():
-            sig_values[key] = self.calculate_p_values(value)
-
-        # Define naming convention for the dataframe
-        data_to_append = []
-        for key, value in R_values.items():
-            if len(key) <= 2:
-                desc = self.variable_names[int(key[1])-1] + ' Influence'
-            else:
-                desc = 'Combined ' + ' and '.join([self.variable_names[int(c)-1] for c in key[1:]]) + ' Influence'
-
-            data_to_append.append({
-                'Variable': key,
-                'Description': desc,
-                'Values': value,
-                'Significance': sig_values[key],
-                'Color': None
-            })
-        for key, value in y_values.items():
-            if len(key) <= 2:
-                desc = 'Unique ' + self.variable_names[int(key[1])-1]
-            else:
-                desc = 'Shared Variance ' + ' and '.join([self.variable_names[int(c)-1] for c in key[1:]])
-            data_to_append.append({
-                'Variable': key,
-                'Description': desc,
-                'Values': value,
-                'Significance': sig_values[key],
-                'Color': None
-            })
-
-        # Surface the noise ceiling as its own rows instead of discarding it
-        data_to_append.append({'Variable': 'UNC', 'Description': 'Upper Noise Ceiling', 'Values': R_un, 'Significance': np.full(eeg_time, np.nan), 'Color': None})
-        data_to_append.append({'Variable': 'LNC', 'Description': 'Lower Noise Ceiling', 'Values': R_ln, 'Significance': np.full(eeg_time, np.nan), 'Color': None})
-
-        all_variances_df = pd.concat([all_variances_df, pd.DataFrame(data_to_append)], ignore_index=True)
-
-        return all_variances_df
-
-
-
-
-    def evaluate(self, average_models=False):
+        B = Y @ X
+        r2 = np.stack([np.einsum("ni,ij,nj->n", B[:, c], g, B[:, c]) for c, g in zip(subset_columns, G_inv)], axis=-1)
+        return r2 / yy[:, None]
+
+    def _row_description(self, kind, subset, k):
+        """Description of an R (kind 'R') or variance component (kind 'y') row"""
+        names = [self.variable_names[j] for j in subset]
+        if kind == "R":
+            if len(subset) == 1:
+                return names[0] + " Influence"
+            return "Combined All Variables Influence" if len(subset) == k else "Combined " + " and ".join(names) + " Influence"
+        if len(subset) == 1:
+            return "Unique " + names[0]
+        return "Shared Variance All" if len(subset) == k else "Shared Variance " + " and ".join(names)
+
+    def evaluate(self, average_models=False, n_permutations=1000, seed=0):
         """Function wrapper for the entire VPA evaluation
+
+        For every subject (and timepoint) the brain RDM is regressed on every subset of the independent variables
+        (OLS with intercept, in-sample R2). R<vars> are these R2 values and y<vars> the unique (one variable) and
+        shared (several variables) components obtained from them.
+
+        Significance comes from a permutation test: the stimulus labels of the predictor RDMs are permuted (rows and
+        columns together, the same permutation for every predictor), and the group mean over subjects is compared
+        with the permutation null. For time-resolved data the maximum over timepoints is used as null (corrected
+        for all timepoints; each tested row is corrected on its own, not across rows). p-values are given for every
+        R row (R1, R12, ..., each a Mantel-type test of that combination's R2). The variance components (y1, y12,
+        ...) have NaN as Significance: this permutation tests only the null that no variable relates to the brain,
+        which does not hold for a component while another variable explains the brain (an unrelated variable's
+        unique variance was significant in up to ~30% of simulated data sets). The test generalizes over stimuli;
+        the subjects are treated as fixed.
 
         Args:
             average_models (bool, optional): Bool if independent variables should be averaged within. Defaults to False.
+            n_permutations (int, optional): Number of permutations. 0 skips the test (Significance is NaN).
+                Defaults to 1000.
+            seed (int, optional): Seed of the permutations. Defaults to 0.
 
         Returns:
             all_variances_df: Pandas dataframe with results
@@ -791,15 +390,66 @@ class VPA():
 
         self.average_models=average_models
 
-        # Load dependent variable
+        # Load dependent variable (subjects, time, pairs)
         dep_var, is_timeresolved = self._load_dependent(self.dependent_variable)
+        num_subjects, eeg_time, n_pairs = dep_var.shape
+        n_stim = int(round((1 + np.sqrt(1 + 8 * n_pairs)) / 2))
 
-        # Get Subjects and time from the dimensions (16, 100, 1225)
-        num_subjects = dep_var.shape[0]
-        eeg_time = dep_var.shape[1]
+        X, columns = self._design(n_pairs)
+        k = len(columns)
+        subsets = self._subsets(k)
+        subset_columns = [sum((columns[j] for j in c), []) for c in subsets]
+        G = X.T @ X
+        G_inv = [np.linalg.pinv(G[np.ix_(c, c)]) for c in subset_columns]
 
-        # Calculate VPA
-        all_variances_df = self.VPA_function(dep_var, num_subjects, eeg_time)
+        R_un = np.zeros(eeg_time)
+        R_ln = np.zeros(eeg_time)
+        for time in range(eeg_time):
+            R_un[time] = self.get_uppernoiseceiling(np.squeeze(dep_var[:,time]))
+            R_ln[time] = self.get_lowernoiseceiling(np.squeeze(dep_var[:,time]))
+
+        # Centred brain RDMs, one row per subject and timepoint (centred in place, without temporaries: dep_var is
+        # loaded here and not used afterwards)
+        Y = np.asarray(dep_var, dtype=float).reshape(-1, n_pairs)
+        Y -= Y.mean(axis=1, keepdims=True)
+        yy = np.einsum("ij,ij->i", Y, Y)
+        r2 = self._subset_r2(Y, yy, X, subset_columns, G_inv).reshape(num_subjects, eeg_time, len(subsets))
+        comps = self._components(r2, k)
+
+        # Permutation null of the group mean of every R row, maximum over timepoints
+        observed = r2.mean(axis=0)
+        p_values = np.full(observed.shape, np.nan)
+        if n_permutations > 0:
+            rng = np.random.default_rng(seed)
+            rows, cols = np.triu_indices(n_stim, 1)
+            null_max = np.empty((n_permutations, observed.shape[1]))
+            for i in range(n_permutations):
+                X_perm = X[self._pair_index(rng.permutation(n_stim), n_stim, rows, cols)]
+                r2_perm = self._subset_r2(Y, yy, X_perm, subset_columns, G_inv)
+                null_max[i] = r2_perm.reshape(num_subjects, eeg_time, len(subsets)).mean(axis=0).max(axis=0)
+            p_values = (1 + (null_max[:, None, :] >= observed[None]).sum(axis=0)) / (1 + n_permutations)
+            # NaN R2 (e.g. NaN in the brain RDMs) would otherwise count as never exceeded and give the smallest p
+            p_values[np.isnan(observed) | np.isnan(null_max).any(axis=0)] = np.nan
+            if np.isnan(observed).any():
+                warnings.warn("R2 is NaN for some brain RDMs (NaN values, or no variance), so the p-values of every "
+                              "timepoint are NaN (the test is corrected over timepoints).")
+
+        # Dataframe: R rows, then components, then the noise ceiling
+        data_to_append = []
+        for i, c in enumerate(subsets):
+            data_to_append.append({'Variable': 'R' + ''.join(str(j + 1) for j in c),
+                                   'Description': self._row_description('R', c, k),
+                                   'Values': r2[..., i], 'Significance': p_values[:, i], 'Color': None})
+        for i, c in enumerate(subsets):
+            data_to_append.append({'Variable': 'y' + ''.join(str(j + 1) for j in c),
+                                   'Description': self._row_description('y', c, k),
+                                   'Values': comps[..., i], 'Significance': np.full(eeg_time, np.nan), 'Color': None})
+
+        # Surface the noise ceiling as its own rows instead of discarding it
+        data_to_append.append({'Variable': 'UNC', 'Description': 'Upper Noise Ceiling', 'Values': R_un, 'Significance': np.full(eeg_time, np.nan), 'Color': None})
+        data_to_append.append({'Variable': 'LNC', 'Description': 'Lower Noise Ceiling', 'Values': R_ln, 'Significance': np.full(eeg_time, np.nan), 'Color': None})
+
+        all_variances_df = pd.DataFrame(data_to_append, columns=['Variable', 'Description', 'Values', 'Significance', 'Color'])
 
         # Drop the singleton time axis from the results when the data has no time dimension
         if not is_timeresolved:

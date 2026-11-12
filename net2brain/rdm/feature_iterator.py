@@ -2,7 +2,7 @@ import re
 import warnings
 from abc import ABC, abstractmethod
 from enum import Enum
-from functools import lru_cache, cached_property
+from functools import cached_property
 from pathlib import Path
 from typing import Union, Tuple, List, Iterator, Dict, Type, Iterable, Callable, Optional
 from multiprocessing import Pool, get_context
@@ -34,7 +34,7 @@ def apply_pooling_numpy(features: np.ndarray, pooling: str) -> np.ndarray:
 
     Args:
         features: np.ndarray
-            Features of shape (seq_len, feature_dim) or (feature_dim,)
+            Features of shape (seq_len, feature_dim), (1, seq_len, feature_dim) or (feature_dim,)
         pooling: str
             Pooling method. Options: 'mean', 'max', 'first', 'last'
 
@@ -45,6 +45,8 @@ def apply_pooling_numpy(features: np.ndarray, pooling: str) -> np.ndarray:
         # Already pooled or fixed-length features
         return features
 
+    if features.ndim == 3 and features.shape[0] == 1:  # (1, seq_len, feature_dim) as saved by the extractor
+        features = features[0]
     if features.ndim != 2:
         raise ValueError(f"Features must be 1D or 2D array, got {features.ndim}D")
 
@@ -81,9 +83,12 @@ class FeatureFormat(Enum):
     HDF5 = 3
 
 
-@lru_cache(maxsize=16)
 def open_npz(path: Path) -> Dict[str, np.ndarray]:
     return np.load(path, allow_pickle=True)
+
+
+def _is_feature_file(path: Path) -> bool:
+    return path.is_file() and path.suffix == ".npz" and not path.name.startswith(".")
 
 
 def detect_feature_format(root: Union[str, Path]) -> FeatureFormat:
@@ -102,16 +107,16 @@ def detect_feature_format(root: Union[str, Path]) -> FeatureFormat:
     if not root.exists():
         raise FileNotFoundError(f"Directory {root} does not exist")
     elif root.is_dir():
-        dir_iter = root.iterdir()
-        file = next(dir_iter)
-        if not file.is_file():
-            raise ValueError(f"Directory {root} does not contain any files.")
-        if file.suffix == ".npz":
-            if 'consolidated' in str(file):
-                return FeatureFormat.NPZ_CONSOLIDATED
-            else:
-                return FeatureFormat.NPZ_SEPARATE
-        raise ValueError(f"Invalid file suffix {file.suffix} for directory {root}. Only .npz files are supported.")
+        feature_files = sorted(f for f in root.iterdir() if _is_feature_file(f))
+        if not feature_files:
+            raise ValueError(f"Directory {root} does not contain any .npz feature files.")
+        consolidated = [f.name.startswith('consolidated_') for f in feature_files]
+        if any(consolidated) and not all(consolidated):
+            raise ValueError(f"Directory {root} holds both consolidated_*.npz and per-stimulus .npz files. "
+                             f"Move one of the two kinds to another folder.")
+        if consolidated[0]:
+            return FeatureFormat.NPZ_CONSOLIDATED
+        return FeatureFormat.NPZ_SEPARATE
     elif root.is_file():
         if root.suffix in (".h5", ".hdf5", ".hdf", ".h5py"):
             return FeatureFormat.HDF5
@@ -210,7 +215,7 @@ class NPZConsolidateEngine(FeatureEngine):
     feature_format = FeatureFormat.NPZ_CONSOLIDATED
 
     def get_iterator(self) -> Iterator:
-        return filter(lambda x: x.suffix == '.npz', nsorted(self.root.iterdir(), key=lambda x: x.stem))
+        return filter(_is_feature_file, nsorted(self.root.iterdir(), key=lambda x: x.stem))
 
     @cached_property
     def num_layers(self) -> int:
@@ -229,7 +234,15 @@ class NPZConsolidateEngine(FeatureEngine):
                 pooled_feats.append(apply_pooling_numpy(feat, self.pooling))
             feats = pooled_feats
 
-        return layer, stimuli, np.stack(feats)
+        feats = np.stack(feats)
+        if self.multi_timepoint_rdms is not None:
+            # (stimuli, 1, clips, time, ...) -> (clips, stimuli, time, ...) or (clips, time, stimuli, ...)
+            feats = feats[:, 0]
+            if self.multi_timepoint_rdms == 'clip':
+                feats = np.moveaxis(feats, 1, 0)
+            else:
+                feats = np.moveaxis(feats, (1, 2), (0, 1))
+        return layer, stimuli, feats
 
 
 @engine_registry.register
@@ -245,7 +258,7 @@ class NPZSeparateEngine(FeatureEngine):
 
     @cached_property
     def _stimuli(self) -> List[Path]:
-        return nsorted(self.root.iterdir(), key=lambda x: x.stem)
+        return nsorted((f for f in self.root.iterdir() if _is_feature_file(f)), key=lambda x: x.stem)
 
     def helper(self, sample, item, clip_idx=None, time_idx=None) -> Tuple[List[str], np.ndarray]:
         stimuli = []

@@ -5,22 +5,24 @@ import numpy as np
 
 
 
-def Stacked_Variance_Partitioning(r2s, stacked_r2s, save_path="./"):
+def Stacked_Variance_Partitioning(nested_r2s_forward, nested_r2s_backward, save_path=None):
     """
-    Perform both forward and backward variance partitioning on stacked encoding results.
+    Perform both forward and backward variance partitioning on nested stacked models.
     
     This function applies structured variance partitioning to understand which layers 
     contribute most to the prediction of brain activity. 
     
     Parameters
     ----------
-    r2s : numpy.ndarray
-        R-squared values for individual layer models, shape (n_layers, n_voxels)
-        where n_layers is the number of layers and n_voxels is the number of voxels.
-    stacked_r2s : numpy.ndarray
-        R-squared values for the full stacked model, shape (n_voxels,)
+    nested_r2s_forward : numpy.ndarray
+        R-squared values of the forward nested stacked models, shape (n_layers, n_voxels): row k is the stacked
+        model on layers k+1..K (row 0: all layers, last row: layer K alone). Compute them with
+        stacked_encoding.nested_stacked_r2s, or load 'r2s_array' from the file saved by Stacked_Encoding(vpa=True).
+    nested_r2s_backward : numpy.ndarray
+        R-squared values of the backward nested stacked models, shape (n_layers, n_voxels): row k is the stacked
+        model on layers 1..K-k (row 0: all layers, last row: layer 1 alone), or 'r2sr' from that file.
     save_path : str, optional
-        Path to save the results as an NPZ file
+        Path to save the results as an NPZ file (".npz" is appended); None (default) does not save
         
     Returns
     -------
@@ -28,37 +30,33 @@ def Stacked_Variance_Partitioning(r2s, stacked_r2s, save_path="./"):
         Dictionary containing all variance partitioning results:
         - 'vp': Square root of forward variance partitioning differences (n_layers, n_voxels)
         - 'vp_square': Raw forward variance partitioning differences (n_layers, n_voxels)
-        - 'r2s_array': Combined array of R-squared values used for forward partitioning (n_layers, n_voxels)
+        - 'r2s_array': R-squared values of the forward nested models (n_layers, n_voxels)
         - 'vp_sel_layer_forward': Layer assignments based on forward 95% criterion (n_voxels,)
         - 'vpr': Square root of backward variance partitioning differences (n_layers, n_voxels)
         - 'vpr_square': Raw backward variance partitioning differences (n_layers, n_voxels)
-        - 'r2sr': Combined array of R-squared values used for backward partitioning (n_layers, n_voxels)
+        - 'r2sr': R-squared values of the backward nested models (n_layers, n_voxels)
         - 'vpr_sel_layer_backward': Layer assignments based on backward 95% criterion (n_voxels,)
     """
     print("This code is adapted from https://github.com/brainML/Stacking")
     
     # Check input shapes
-    if r2s.ndim != 2:
-        raise ValueError(f"r2s should be a 2D array, got shape {r2s.shape}")
-    
-    if stacked_r2s.ndim != 1:
-        raise ValueError(f"stacked_r2s should be a 1D array, got shape {stacked_r2s.shape}")
-    
-    if r2s.shape[1] != stacked_r2s.shape[0]:
-        raise ValueError(f"Number of voxels in r2s ({r2s.shape[1]}) must match stacked_r2s ({stacked_r2s.shape[0]})")
+    if nested_r2s_forward.ndim != 2 or nested_r2s_forward.shape != nested_r2s_backward.shape:
+        raise ValueError(f"nested_r2s_forward and nested_r2s_backward should be 2D arrays of the same shape "
+                         f"(n_layers, n_voxels), got {nested_r2s_forward.shape} and {nested_r2s_backward.shape} "
+                         f"(see stacked_encoding.nested_stacked_r2s)")
     
     vp_results = {}
     
     # Forward variance partitioning
     print("Running variance partitioning: Forward Pass")
-    vp, vp_square, r2s_array, vp_sel_layer_forward = forward_variance_partitioning(r2s, stacked_r2s)
+    vp, vp_square, r2s_array, vp_sel_layer_forward = forward_variance_partitioning(nested_r2s_forward)
     print(f"Forward VP shape: {vp.shape}")
     print(f"Forward VP square shape: {vp_square.shape}")
     
     
     # Backward variance partitioning
     print("Running variance partitioning: Backward Pass")
-    vpr, vpr_square, r2sr, vpr_sel_layer_backward = backward_variance_partitioning(r2s)
+    vpr, vpr_square, r2sr, vpr_sel_layer_backward = backward_variance_partitioning(nested_r2s_backward)
     print(f"Backward VP shape: {vpr.shape}")
     print(f"Backward VP square shape: {vpr_square.shape}")
     
@@ -77,8 +75,9 @@ def Stacked_Variance_Partitioning(r2s, stacked_r2s, save_path="./"):
     }
     
     # Save results if save_path is provided
-    np.savez(save_path, **vp_results)
-    print(f"Variance partitioning results saved to {save_path}.npz")
+    if save_path is not None:
+        np.savez(save_path, **vp_results)
+        print(f"Variance partitioning results saved to {save_path}.npz")
  
     return vp_results
 
@@ -86,7 +85,7 @@ def Stacked_Variance_Partitioning(r2s, stacked_r2s, save_path="./"):
 
 
 # ----- Forward Variance Partitioning -----
-def forward_variance_partitioning(r2s, stacked_r2s):
+def forward_variance_partitioning(nested_r2s_forward):
     """
     Perform forward variance partitioning analysis.
     
@@ -96,10 +95,8 @@ def forward_variance_partitioning(r2s, stacked_r2s):
     
     Parameters
     ----------
-    r2s : numpy.ndarray
-        R-squared values for individual models, shape (n_models, n_voxels)
-    stacked_r2s : numpy.ndarray
-        R-squared values for the stacked model, shape (n_voxels,)
+    nested_r2s_forward : numpy.ndarray
+        R-squared values of the stacked models on layers k+1..K for row k, shape (n_models, n_voxels)
         
     Returns
     -------
@@ -108,20 +105,14 @@ def forward_variance_partitioning(r2s, stacked_r2s):
     vp_square : numpy.ndarray
         Raw variance partitioning differences, shape (n_models, n_voxels)
     r2s_array : numpy.ndarray
-        Combined array of R-squared values used for partitioning
+        The nested R-squared values used for partitioning
     vp_sel_layer : numpy.ndarray
         Layer assignments based on 95% performance criterion, shape (n_voxels,)
     """
    
-    r2_7 = r2s[-1, :]
-    num_layers = r2s.shape[0]
-    
-    # Prepare r2s array with stacked encoding results
-    r2s_list = []
-    for k in range(r2s.shape[0] - 1):
-        r2s_list.append(r2s[k, :])
-    r2s_list.append(stacked_r2s)
-    r2s_array = np.array(r2s_list)
+    r2s_array = nested_r2s_forward
+    r2_7 = r2s_array[-1, :]  # last layer alone
+    num_layers = r2s_array.shape[0]
     
     # Calculate variance by difference of R2
     vp = np.zeros((r2s_array.shape[0], r2s_array.shape[1]))
@@ -136,12 +127,12 @@ def forward_variance_partitioning(r2s, stacked_r2s):
     vp[-1, :] = np.sqrt(r2_7)
     vp_square[-1, :] = r2_7
     
-    vp_sel_layer = select_layers_forward(r2s, num_layers)
+    vp_sel_layer = select_layers_forward(r2s_array, num_layers)
     
     return vp, vp_square, r2s_array, vp_sel_layer
 
 # ----- Backward Variance Partitioning -----
-def backward_variance_partitioning(r2s):
+def backward_variance_partitioning(nested_r2s_backward):
     """
     Perform backward variance partitioning analysis.
     
@@ -151,8 +142,8 @@ def backward_variance_partitioning(r2s):
     
     Parameters
     ----------
-    r2s : numpy.ndarray
-        R-squared values for individual models, shape (n_models, n_voxels)
+    nested_r2s_backward : numpy.ndarray
+        R-squared values of the stacked models on layers 1..K-k for row k, shape (n_models, n_voxels)
         
     Returns
     -------
@@ -161,20 +152,14 @@ def backward_variance_partitioning(r2s):
     vpr_square : numpy.ndarray
         Raw variance partitioning differences, shape (n_models, n_voxels)
     r2sr : numpy.ndarray
-        Combined array of R-squared values used for backward partitioning
+        The nested R-squared values used for backward partitioning
     vpr_sel_layer : numpy.ndarray
         Layer assignments based on 95% performance criterion in backward approach,
         shape (n_voxels,)
     """
-    r2_1 = r2s[0, :]
-    num_layers = r2s.shape[0]
-    
-    # Prepare r2sr array
-    r2sr_list = []
-    for k in range(r2s.shape[0] - 1):
-        r2sr_list.append(r2s[k, :])
-    r2sr_list.append(r2_1)
-    r2sr = np.array(r2sr_list)
+    r2sr = nested_r2s_backward
+    r2_1 = r2sr[-1, :]  # first layer alone
+    num_layers = r2sr.shape[0]
     
     # Calculate variance by difference of R2
     vpr = np.zeros((r2sr.shape[0], r2sr.shape[1]))
@@ -197,14 +182,14 @@ def select_layers_forward(r2s, num_layers):
     """
     Select layers based on forward 95% criterion.
     
-    For each voxel, finds the most complex layer that maintains at least 95%
-    of the performance of the full model. This implements the forward feature
-    attribution approach.
+    For each voxel, finds the layer whose removal (together with the layers before it)
+    drops the R-squared below 95% of the full model, i.e. the lowest layer still needed.
+    This implements the forward feature attribution approach.
     
     Parameters
     ----------
     r2s : numpy.ndarray
-        R-squared values for individual models, shape (n_models, n_voxels)
+        R-squared values of the forward nested models, shape (n_models, n_voxels)
     num_layers : int
         Total number of layers/models being compared
         
@@ -234,14 +219,14 @@ def select_layers_backward(r2sr, num_layers):
     """
     Select layers based on backward 95% criterion.
     
-    For each voxel, finds the simplest layer that maintains at least 95%
-    of the performance of the full model. This implements the backward feature
-    attribution approach.
+    For each voxel, finds the layer whose removal (together with the layers after it)
+    drops the R-squared below 95% of the full model, i.e. the highest layer still needed.
+    This implements the backward feature attribution approach.
     
     Parameters
     ----------
     r2sr : numpy.ndarray
-        R-squared values array for backward analysis, shape (n_models, n_voxels)
+        R-squared values of the backward nested models, shape (n_models, n_voxels)
     num_layers : int
         Total number of layers/models being compared
         
@@ -261,7 +246,7 @@ def select_layers_backward(r2sr, num_layers):
         selected_layer = 1  # Default to first layer
         for j in range(1, num_layers):
             if r2sr[j, i] < 0.95 * r2sr[0, i]:
-                selected_layer = num_layers - j
+                selected_layer = num_layers - j + 1  # row j lacks layer K-j+1, which row j-1 has
                 break
         vpr_sel_layer[i] = selected_layer
         

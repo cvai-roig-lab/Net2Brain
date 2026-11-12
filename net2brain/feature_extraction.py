@@ -1,6 +1,6 @@
 from .architectures.netsetbase import NetSetBase
 import os
-from collections import defaultdict
+from collections import Counter, defaultdict
 import numpy as np
 from tqdm import tqdm
 from functools import partial
@@ -146,7 +146,8 @@ class FeatureExtractor:
                 "json" extracts layers from a json file in net2brain/architectures/configs/.
                 You can use the "get_all_layers" function to see all available layers.
             consolidate_per_layer: Bool
-                Whether to consolidate of one file per image to one file per layer
+                Whether to consolidate of one file per image to one file per layer. Raises an error if the
+                consolidated file of an extracted layer in save_path already holds features of other stimuli.
             dim_reduction: str or None
                 Whether to apply dimensionality reduction to the features at the feature extraction stage.
                 If the original full features are needed for further processing, set this to None and apply the
@@ -157,7 +158,7 @@ class FeatureExtractor:
                 The number of samples used for estimating the dimensionality reduction.
             n_components: int or None
                 The number of components to reduce the features to. If None, the number of components is estimated.
-                For PCA, `n_components` must be smaller than `n_samples_estim`.
+                For PCA, `n_components` must be smaller than `n_samples_estim` and the number of stimuli.
             srp_before_pca: bool
                 Only applies if `dim_reduction` is `pca`. If True, a Sparse Random Projection is applied
                 before PCA to make it computationally lighter. Use when features are so
@@ -199,11 +200,13 @@ class FeatureExtractor:
         DataWrapper = DataTypeLoader(self.netset)
         all_supported_extensions = [ext for extensions in DataWrapper.supported_extensions.values() for ext in extensions]
 
-        # Filter data_files to include only files with supported extensions
+        # Filter data_files to include only files with supported extensions, skipping hidden files (e.g. macOS '._')
         if isinstance(data_path, (str, Path)):
-            data_files = [i for i in Path(data_path).iterdir() if i.suffix.lower() in all_supported_extensions]
+            data_files = [i for i in Path(data_path).iterdir()
+                          if i.suffix.lower() in all_supported_extensions and not i.name.startswith(".")]
         else:
-            data_files = [Path(f) for f in data_path if Path(f).suffix.lower() in all_supported_extensions]
+            data_files = [Path(f) for f in data_path
+                          if Path(f).suffix.lower() in all_supported_extensions and not Path(f).name.startswith(".")]
         data_files.sort()
 
         # Detect data type for the current file
@@ -218,6 +221,9 @@ class FeatureExtractor:
         if self.data_type == "multimodal":
             data_files = self._pair_modalities(data_files)
 
+        # agg_frames only applies to this extract call
+        netset_extraction_function = self.netset.extraction_function
+
         if self.data_type == 'video':
             if 'image' in self.netset.supported_data_types:
                 if 'pick_frames' in kwargs:
@@ -230,7 +236,7 @@ class FeatureExtractor:
                 if 'agg_frames' in kwargs and self.extraction_function is None:
                     if kwargs['agg_frames'] not in ['all', 'within_clips', 'across_clips', None]:
                         raise ValueError("`agg_frames` for video models is either 'all', 'within_clips', 'across_clips' or None")
-                    self.netset.extraction_function = partial(self.netset.extraction_function, agg_frames=kwargs['agg_frames'])
+                    netset_extraction_function = partial(self.netset.extraction_function, agg_frames=kwargs['agg_frames'])
 
         # Select preprocessor
         preprocessor = (self.preprocessor if self.preprocessor is not None
@@ -241,7 +247,7 @@ class FeatureExtractor:
         for data_file in progress_bar:
 
             # Get datapath
-            file_name = str(data_file).split(os.sep)[-1].split(".")[0]
+            file_name = Path(data_file[0] if isinstance(data_file, tuple) else data_file).stem
 
             # Load data
             data_from_file = data_loader(data_file)
@@ -265,7 +271,7 @@ class FeatureExtractor:
                 # Extract features
                 if self.extraction_function == None:
                     with torch.no_grad():
-                        features = self.netset.extraction_function(preprocessed_data, layers_to_extract)
+                        features = netset_extraction_function(preprocessed_data, layers_to_extract)
                 else:
                     features = self.extraction_function(preprocessed_data, layers_to_extract, model=self.model)
 
@@ -322,47 +328,45 @@ class FeatureExtractor:
 
 
     def consolidate_per_layer(self):
-        # List all files, ignoring ones ending with "_consolidated.npz"
-        all_files = [f for f in os.listdir(self.save_path) if not f.startswith("consolidated_")]
+        # List the per-stimulus feature files, ignoring consolidated, hidden (e.g. .DS_Store) and non-.npz files
+        all_files = [f for f in os.listdir(self.save_path)
+                     if f.endswith(".npz") and not f.startswith(("consolidated_", "."))]
         if not all_files:
             print("No files to consolidate.")
             return
 
-        # Assuming that each file has the same set of layers
-        sample_file_path = os.path.join(self.save_path, all_files[0])
-        with np.load(sample_file_path, allow_pickle=True) as data:
-            layers = list(data.keys())
-
-        # Initialize a dictionary for combined data for each layer
-        combined_data = {layer: {} for layer in layers}
-
-        # Iterate over each file and update the combined_data structure
+        # Read all files before writing or deleting anything
+        per_file = {}
         for file_name in tqdm(all_files):
-            file_path = os.path.join(self.save_path, file_name)
-            with np.load(file_path, allow_pickle=True) as data:
-                if not data.keys():
-                    #print(f"Error: The file {file_name} is empty.")
-                    continue
+            with np.load(os.path.join(self.save_path, file_name), allow_pickle=True) as data:
+                per_file[file_name[:-len(".npz")]] = {key: data[key] for key in data.keys()}
 
-                for layer in layers:
-                    if layer not in data or data[layer].size == 0:
-                        #print(f"Error: The layer {layer} in file {file_name} is empty.")
-                        continue
+        # Every file must have the same layers
+        layers = Counter(frozenset(content) for content in per_file.values()).most_common(1)[0][0]
+        odd = [f"{name}.npz" for name, content in per_file.items() if content.keys() != layers]
+        if odd:
+            raise ValueError(f"Cannot consolidate: {len(odd)} file(s) in {self.save_path} do not have the layers "
+                             f"{sorted(layers)} of the other files: {odd[:5]}. Nothing was consolidated or deleted.")
 
-                    image_key = file_name.replace('.npz', '')
-                    combined_data[layer][image_key] = data[layer]
+        # Do not overwrite consolidated features of other stimuli (e.g. from an earlier extract into this save_path)
+        for layer in layers:
+            path = os.path.join(self.save_path, f"consolidated_{layer}.npz")
+            if os.path.exists(path):
+                with np.load(path, allow_pickle=True) as data:
+                    other = sorted(set(data.files) - per_file.keys())
+                if other:
+                    raise ValueError(
+                        f"Cannot consolidate: {path} already holds features of {len(other)} other stimuli "
+                        f"({other[:5]}). Use an empty save_path (or remove the old consolidated files), or extract "
+                        f"all stimuli into a new save_path with consolidate_per_layer=False and call "
+                        f"consolidate_per_layer() once. Nothing was consolidated or deleted.")
 
-            # Remove the file after its data has been added to combined_data
-            os.remove(file_path)
-
-        # Save the consolidated data for each layer
-        for layer, data in combined_data.items():
-            if not data:
-                print(f"Error: No data found to consolidate for layer {layer}.")
-                continue
-
-            output_file_path = os.path.join(self.save_path, f"consolidated_{layer}.npz")
-            np.savez_compressed(output_file_path, **data)
+        # Write the consolidated files, then delete the per-stimulus files
+        for layer in layers:
+            np.savez_compressed(os.path.join(self.save_path, f"consolidated_{layer}.npz"),
+                                **{name: content[layer] for name, content in per_file.items()})
+        for file_name in all_files:
+            os.remove(os.path.join(self.save_path, file_name))
 
 
 
@@ -405,9 +409,9 @@ class FeatureExtractor:
 
 
     def reduce_dimensionality(self):
-        # List all files, ignoring ones ending with "_consolidated.npz"
+        # List all files, ignoring consolidated and hidden files
         all_files = [f for f in os.listdir(self.save_path) if (f.endswith(".npz") and not
-                                                               f.endswith("_consolidated.npz"))]
+                                                               f.startswith(("consolidated_", ".")))]
         if not all_files:
             print("No feature files to reduce dimension for.")
             return
