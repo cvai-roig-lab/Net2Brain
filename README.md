@@ -22,6 +22,10 @@ To delve deeper into the toolbox, check out our [ReadTheDocs](https://net2brain.
 
 # Updates 
 
+# Updates 11/26
+1. **Version 1.4.1** with bug fixes in evaluation, feature extraction, RDM creation and plotting. RSA correlation values are unchanged; p-values and some methods (e.g. weighted RSA, stacked encoding) give different results. See the [release notes](https://github.com/cvai-roig-lab/Net2Brain/releases/tag/v.1.4.1) for details.
+
+
 # Updates 08/26
 1. **New netset** `MoCoV3`, with self-supervised ResNet50 (100/300/1000 epochs) and ViT-S/ViT-B (300 epochs) encoders trained on ImageNet
 
@@ -179,13 +183,13 @@ show_taxonomy()
 find_model_by_dataset("Taskonomy")
 
 # Find models based on training method
-find_model_by_training_method("SimCLR")
+find_model_by_training_method("Contrastive Language Image Pre-Training")
 
 # Find models based on visual task
-find_model_by_visual_task("Panoptic Segmentation")
+find_model_by_visual_task("Semantic Segmentation")
 
 # Find models based on custom attributes
-find_model_by_custom(["COCO", "Object Detection"], model_name="fpn")
+find_model_by_custom(["COCO", "Instance Segmentation"], model_name="yolo")
 ```
 
 This taxonomy system provides a convenient way to search for models that align with specific research requirements.
