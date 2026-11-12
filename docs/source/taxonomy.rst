@@ -79,10 +79,10 @@ You can find models based on specific attributes:
     find_model_by_dataset("Taskonomy")
 
     # Discover models by their training method
-    find_model_by_training_method("SimCLR")
+    find_model_by_training_method("Contrastive Language Image Pre-Training")
 
     # Search for models trained for a particular visual task
-    find_model_by_visual_task("Panoptic Segmentation")
+    find_model_by_visual_task("Semantic Segmentation")
 
 Custom Searches
 ^^^^^^^^^^^^^^^
@@ -91,4 +91,4 @@ For tailored searches combining various attributes or focusing on a specific mod
 
 .. code-block:: python
 
-    find_model_by_custom(["COCO", "Object Detection"], model_name="fpn")
+    find_model_by_custom(["COCO", "Instance Segmentation"], model_name="yolo")
